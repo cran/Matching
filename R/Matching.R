@@ -9,10 +9,11 @@
 # the ability to use robust estimation when estimating the propensity
 # score. MatchBalance(), balanceMV() and balanceUV() test for balance.
 
-Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT",M=1,
+Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
                    BiasAdj=FALSE,exact=NULL,caliper=NULL,
                    Weight=1,Weight.matrix=NULL, weights=rep(1,length(Y)),
-                   Var.calc=0, sample=FALSE, tolerance=0.00001)
+                   Var.calc=0, sample=FALSE, tolerance=0.00001,
+                   distance.tolerance=0.00001)
   {
     isna  <- sum(is.na(Y)) + sum(is.na(Tr)) + sum(is.na(X)) + sum(is.na(Z))
     if (isna!=0)
@@ -31,7 +32,7 @@ Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT",M=1,
     sample  <- as.real(sample)
 
     ccc  <- tolerance
-    cdd  <- tolerance
+    cdd  <- distance.tolerance
 
     if (estimand=="ATT")
       {
@@ -47,7 +48,13 @@ Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT",M=1,
 
     if (!is.null(Weight.matrix))
       {
-        if (Weight!=3)
+
+        if(class(Weight.matrix)=="GenMatch")
+          {
+            Weight.matrix = Weight.matrix$Weight.matrix
+          }
+        
+        if (Weight==2)
           {
             warning("User supplied 'Weight.matrix' is being used even though 'Weight' is not set equal to 3")
           }
@@ -304,9 +311,9 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
 # If the standard deviation of a variable is zero, its normalization
 # leads to a variable with all zeros.
 # The matrix AA enables one to transform the user supplied weight matrix 
-# to take account of this transformation.
+# to take account of this transformation.  BUT THIS IS NOT USED!!
 # Mu_X and Sig_X keep track of the original mean and variances
-    AA    <- diag(Kx)
+#    AA    <- diag(Kx)
     Mu.X  <- matrix(0, Kx, 1)
     Sig.X <- matrix(0, Kx, 1)
 
@@ -317,7 +324,7 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
         Sig.X[k,1] <- sqrt(sum(X[,k]*X[,k]*weight)/sum(weight)-Mu.X[k,1]^2)
         Sig.X[k,1] <- Sig.X[k,1]*sqrt(N/(N-1))
         X[,k]=eps/Sig.X[k,1]
-        AA[k,k]=Sig.X[k,1]
+#        AA[k,k]=Sig.X[k,1]
       } #end of k loop
 
     Nv <- nrow(V)
@@ -354,10 +361,12 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
           } else {
             Weight.matrix <- diag(Kx)
           }
-      } else if (Weight==3)
-        {
-          Weight.matrix <- AA %*% Weight.matrix %*% AA
-        }
+      }
+      # DO NOT RESCALE THE Weight.matrix!!
+      #else if (Weight==3)
+      #  {
+      #    Weight.matrix <- AA %*% Weight.matrix %*% AA
+      #  }
 
 #    if (exact==1)
 #      {
@@ -465,7 +474,7 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
 
             # selection of actual matches 
             #logical index
-            ACTMAT <- POTMAT & ( Dist <= (Distmax+ccc) )
+            ACTMAT <- POTMAT & ( Dist <= (Distmax+cdd) )
 
             Ii <- i * matrix(1, nrow=sum(ACTMAT), ncol=1)
             IMi <- as.matrix(INN[ACTMAT,1])
@@ -652,62 +661,115 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
         return(list(sum.caliper.drops=sum.caliper.drops))
       }
 
-    # III. Regression of outcome on covariates for matches
-    if (All==1)
+    if (BiasAdj==1)
       {
-        # number of observations
-        NNt <- nrow(Z)
-        # add intercept        
-        ZZt <- cbind(rep(1, NNt), Z)
-        # number of covariates
-        Nx <- nrow(ZZt)
-        Kx <- ncol(ZZt)
-        xw <- ZZt*(sqrt(Tr*Kcount) %*% t(as.matrix(rep(1,Kx))))
+        # III. Regression of outcome on covariates for matches
+        if (All==1)
+          {
+            # number of observations
+            NNt <- nrow(Z)
+            # add intercept        
+            ZZt <- cbind(rep(1, NNt), Z)
+            # number of covariates
+            Nx <- nrow(ZZt)
+            Kx <- ncol(ZZt)
+            xw <- ZZt*(sqrt(Tr*Kcount) %*% t(as.matrix(rep(1,Kx))))
+            
+            foo <- min(eigen(t(xw)%*%xw, only.values=TRUE)$values)
+            foo <- as.real(foo<=ccc)
+            foo2 <- apply(xw, 2, sd)
 
+            options(show.error.messages = FALSE)
+            wout <- NULL
+            try(wout <- solve( t(xw) %*% xw + diag(Kx) * ccc * (foo) * max(foo2)) %*%
+                (t(xw) %*% (Y*sqrt(Tr*Kcount))))
+            if(is.null(wout))
+              {
+                wout2 <- NULL
+                try(wout2 <- ginv( t(xw) %*% xw + diag(Kx) * ccc * (foo) * max(foo2)) %*%
+                    (t(xw) %*% (Y*sqrt(Tr*Kcount))))
+                if(!is.null(wout2))
+                  {
+                    wout <-wout2
+                    warning("using generalized inverse to calculate Bias Adjustment probably because of singular 'Z'")
+                  }
+              }
+            options(show.error.messages = TRUE)
+            if(is.null(wout))
+              {
+                warning("unable to calculate Bias Adjustment probably because of singular 'Z'")
+                BiasAdj <- 0
+              } else {
+                NW <- nrow(wout)
+                KW <- ncol(wout)
+                Alphat <- wout[2:NW,1]
+              }
+          } else {
+            Alphat <- matrix(0, nrow=Kz, ncol=1)
+          } #end if ALL
+      }
+
+    if(BiasAdj==1)
+      {
+        # III.b.  Controls
+        NNc <- nrow(Z)
+        ZZc <- cbind(matrix(1, nrow=NNc, ncol=1),Z)
+        Nx <- nrow(ZZc)
+        Kx <- ncol(ZZc)
+        
+        xw <- ZZc*(sqrt((1-Tr)*Kcount) %*% matrix(1, nrow=1, ncol=Kx))
+        
         foo <- min(eigen(t(xw)%*%xw, only.values=TRUE)$values)
-        foo <- as.real(foo<=cdd)
+        foo <- as.real(foo<=ccc)
         foo2 <- apply(xw, 2, sd)
 
-        wout <- solve( t(xw) %*% xw + diag(Kx) * cdd * (foo) * max(foo2)) %*%
-          (t(xw) %*% (Y*sqrt(Tr*Kcount)))
-
-        NW <- nrow(wout)
-        KW <- ncol(wout)
-        Alphat <- wout[2:NW,1]
-      } else {
-        Alphat <- matrix(0, nrow=Kz, ncol=1)
-      } #end if ALL
-
-    # III.b.  Controls
-    NNc <- nrow(Z)
-    ZZc <- cbind(matrix(1, nrow=NNc, ncol=1),Z)
-    Nx <- nrow(ZZc)
-    Kx <- ncol(ZZc)
-
-    xw <- ZZc*(sqrt((1-Tr)*Kcount) %*% matrix(1, nrow=1, ncol=Kx))
-
-    foo <- min(eigen(t(xw)%*%xw, only.values=TRUE)$values)
-    foo <- as.real(foo<=cdd)
-    foo2 <- apply(xw, 2, sd)
-
-    wout <- solve( t(xw) %*% xw + diag(Kx) * cdd * (foo) * max(foo2)) %*%
-      (t(xw) %*% (Y*sqrt((1-Tr)*Kcount)))
+        options(show.error.messages = FALSE)
+        wout <- NULL        
+        try(wout <- solve( t(xw) %*% xw + diag(Kx) * ccc * (foo) * max(foo2)) %*%
+            (t(xw) %*% (Y*sqrt((1-Tr)*Kcount))))
+        if(is.null(wout))
+          {
+            wout2 <- NULL
+            try(wout2 <- ginv( t(xw) %*% xw + diag(Kx) * ccc * (foo) * max(foo2)) %*%
+                (t(xw) %*% (Y*sqrt((1-Tr)*Kcount))))
+            if(!is.null(wout2))
+              {
+                wout <-wout2
+                warning("using generalized inverse to calculate Bias Adjustment probably because of singular 'Z'")
+              }
+          }        
+        options(show.error.messages = TRUE)
+        if(is.null(wout))
+          {
+            warning("unable to calculate Bias Adjustment probably because of singular 'Z'")
+            BiasAdj <- 0
+          } else {
+            NW <- nrow(wout)
+            KW <- ncol(wout)
+            Alphac <- as.matrix(wout[2:NW,1])
+            
+            Alpha <- cbind(Alphat,Alphac)        
+          }
+      }
     
-    NW <- nrow(wout)
-    KW <- ncol(wout)
-    Alphac <- as.matrix(wout[2:NW,1])
 
-    Alpha <- cbind(Alphat,Alphac)
+    if(BiasAdj==1)
+      {
+        # III.c. adjust matched outcomes using regression adjustment for bias adjusted matching estimator
 
-    # III.c. adjust matched outcomes using regression adjustment for bias adjusted matching estimator
-
-    SCAUS <- YCAUS-Tr*(ZCAUS %*% Alphac)-(1-Tr)*(ZCAUS %*% Alphat)
-    # adjusted treated outcome
-    Yc.adj <- Yc+BiasAdj * (IZ-Zc) %*% Alphac
-    # adjusted control outcome
-    Yt.adj <- Yt+BiasAdj*(IZ-Zt) %*% Alphat
-    Yt.adj <- Yt+BiasAdj*(IZ-Zt) %*% Alphat
-    Tau.i <- Yt.adj - Yc.adj
+        SCAUS <- YCAUS-Tr*(ZCAUS %*% Alphac)-(1-Tr)*(ZCAUS %*% Alphat)
+        # adjusted treated outcome
+        Yc.adj <- Yc+BiasAdj * (IZ-Zc) %*% Alphac
+        # adjusted control outcome
+        Yt.adj <- Yt+BiasAdj*(IZ-Zt) %*% Alphat
+        Yt.adj <- Yt+BiasAdj*(IZ-Zt) %*% Alphat
+        Tau.i <- Yt.adj - Yc.adj
+      } else {
+        Yc.adj <- Yc
+        Yt.adj <- Yt
+        Yt.adj <- Yt
+        Tau.i <- Yt.adj - Yc.adj        
+      }
 
     art.data <- cbind(I,IM,IT,DD,IY,Yc,Yt,W,WWi,ADist,IX.u,Xc.u,Xt.u,
                       Yc.adj,Yt.adj,Tau.i)
@@ -719,7 +781,7 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
     Nx <- nrow(X)
     Kx <- ncol(X)
 
-    ww <- chol(Weight.matrix)
+#   ww <- chol(Weight.matrix)
     NN <- as.matrix(1:N)
     if (Var.calc>0)
       {
@@ -1015,9 +1077,12 @@ summary.balanceUV  <- function(object, ..., digits=5)
         cat("McNemar pval..........", format.pval(object$p.value,digits=digits), "\n")
         if (!is.null(object$ks$ks.boot.pvalue))
           {
-            cat("KS Bootstrap p-value..", format.pval(object$ks$ks.boot.pvalue, digits=digits), "\n")
-            cat("KS Statistic..........", format(object$ks$ks$statistic, digits=digits), "\n")
-            cat("KS Naive p-value......", format(object$ks$ks$p.value, digits=digits), "\n")            
+            if(!is.na(object$ks$ks.boot.pvalue))
+              {
+                cat("KS Bootstrap p-value..", format.pval(object$ks$ks.boot.pvalue, digits=digits), "\n")
+                cat("KS Naive p-value......", format(object$ks$ks$p.value, digits=digits), "\n")            
+                cat("KS Statistic..........", format(object$ks$ks$statistic, digits=digits), "\n")
+              }
           }
       } else {
         cat("mean treatment........", format(object$mean.Tr, digits=digits),"\n")
@@ -1025,13 +1090,16 @@ summary.balanceUV  <- function(object, ..., digits=5)
 #       cat("sdiff.................", format(object$sdiff, digits=digits),"\n")            
 #       cat("Wilcoxon pval.........", format.pval(wc$p.value,digits=digits), "\n")
         cat("var ratio (Tr/Co).....", format(object$var.ratio, digits=digits),"\n")
-        cat("T-test pval...........", format.pval(object$tt$p.value,digits=digits), "\n")            
+        cat("T-test p-value........", format.pval(object$tt$p.value,digits=digits), "\n")            
         if (!is.null(object$ks$ks.boot.pvalue))
           {
-            cat("KS Bootstrap p-value..", format.pval(object$ks$ks.boot.pvalue, digits=digits), "\n")
-            cat("KS Statistic..........", format(object$ks$ks$statistic, digits=digits), "\n")
-            cat("KS Naive p-value......", format(object$ks$ks$p.value, digits=digits), "\n")            
-          }        
+            if(!is.na(object$ks$ks.boot.pvalue))
+              {
+                cat("KS Bootstrap p-value..", format.pval(object$ks$ks.boot.pvalue, digits=digits), "\n")
+                cat("KS Naive p-value......", format(object$ks$ks$p.value, digits=digits), "\n")                        
+                cat("KS Statistic..........", format(object$ks$ks$statistic, digits=digits), "\n")
+              }
+          }
       }
     
     cat("\n")        
@@ -1451,19 +1519,34 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=FALSE, mv=FALSE,
     nvars  <- ncol(xdata)
     names.xdata  <- names(xdata)
 
+    findx  <- 1
+    if (sum(xdata[,1]==rep(1,nrow(xdata)))==nrow(xdata))
+      {
+        findx  <- 2
+      }
+
+    if (nboots > 9)
+      {
+        ks.bm <- KSbootBalanceSummary(index.treated=(Tr==0),
+                                      index.control=(Tr==1),
+                                      X=xdata[,findx:nvars],
+                                      nboots=nboots)
+
+        if (!is.null(match.out))
+          {
+            ks.am <- KSbootBalanceSummary(index.treated=match.out$index.treated,
+                                          index.control=match.out$index.control,
+                                          X=xdata[,findx:nvars],
+                                          nboots=nboots)
+          }
+      }
     
     if (verbose > 0)
       {
-        
-        findx  <- 1
-        if (sum(xdata[,1]==rep(1,nrow(xdata)))==nrow(xdata))
-          {
-            findx  <- 2
-          }
-
         for( i in findx:nvars)
           {
-            cat("\n***** (V",i-findx+1,") ", names.xdata[i]," *****\n",sep="")
+            count <- i-findx+1
+            cat("\n***** (V",count,") ", names.xdata[i]," *****\n",sep="")
 
             ks.do  <- FALSE
             is.dummy  <- length(unique( xdata[,i] )) < 3
@@ -1471,7 +1554,12 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=FALSE, mv=FALSE,
               ks.do  <- TRUE
 
             cat("before matching:\n")
-            foo  <-  balanceUV(xdata[,i][Tr==1],xdata[,i][Tr==0], ks=ks.do, nboots=nboots)
+            foo  <-  balanceUV(xdata[,i][Tr==1], xdata[,i][Tr==0], nboots=0)
+            foo$ks <- list()
+            foo$ks$ks.boot.pvalue <- ks.bm$ks.boot.pval[count]
+            foo$ks$ks <- list()
+            foo$ks$ks$p.value <- ks.bm$ks.naive.pval[count]
+            foo$ks$ks$statistic <- ks.bm$ks.stat[count]
             summary(foo, digits=digits)
             
             if (!is.null(match.out))
@@ -1479,7 +1567,12 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=FALSE, mv=FALSE,
                 cat("after  matching:\n")
                 foo  <- balanceUV(xdata[,i][match.out$index.treated],
                                   xdata[,i][match.out$index.control],
-                                  weights=match.out$weights, ks=ks.do, nboots=nboots)
+                                  weights=match.out$weights, nboots=0)
+                foo$ks <- list()
+                foo$ks$ks.boot.pvalue <- ks.am$ks.boot.pval[count]
+                foo$ks$ks <- list()
+                foo$ks$ks$p.value <- ks.am$ks.naive.pval[count]
+                foo$ks$ks$statistic <- ks.am$ks.stat[count]             
                 summary(foo, digits=digits)                
               }
           }
@@ -1505,7 +1598,7 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=FALSE, mv=FALSE,
           ml  <- NULL
         }
       } else {
-        for( i in 2:nvars)
+        for( i in findx:nvars)
           {
             ks.do  <- FALSE
             is.dummy  <- length(unique( xdata[,i] )) < 3
@@ -1995,8 +2088,8 @@ summary.ks.boot <- function(object, ..., digits=5)
         
     cat("\n")
     cat("Bootstrap p-value:    ", format.pval(object$ks.boot.pvalue, digits=digits), "\n")
-    cat("Full Sample Statistic:", format(object$ks$statistic, digits=digits), "\n")
     cat("Naive p-value:        ", format(object$ks$p.value, digits=digits), "\n")
+    cat("Full Sample Statistic:", format(object$ks$statistic, digits=digits), "\n")
 #    cat("nboots completed      ", object$nboots, "\n")
 #   cat("\n")
   } #end of summary.ks.boot

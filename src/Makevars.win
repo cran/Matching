@@ -1,0 +1,1 @@
+PKG_CXXFLAGS = -finline-func -fweb -funit-at-a-time -ftracer -funswitch-loops -frename-registers -ffast-math -funroll-loops -fexpensive-optimizations 

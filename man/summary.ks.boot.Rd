@@ -20,7 +20,7 @@
 }
 \seealso{
   Also see \code{\link{ks.boot}}, \code{\link{balanceUV}}, \code{\link{balanceMV}},
-  \code{\link{Match}},
+  \code{\link{Match}}, \code{\link{GenMatch}},
   \code{\link{MatchBalance}}, \code{\link{GerberGreenImai}},
   \code{\link{lalonde}}
 }

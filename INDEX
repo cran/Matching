@@ -1,5 +1,6 @@
 balanceMV               Multivariate Tests for Balance
 balanceUV               Univariate Balance Tests
+GenMatch                Genetic Matching
 GerberGreenImai         Gerber and Green Dataset used by Imai
 ks.boot                 Bootstrap Kolmogorov-Smirnov
 lalonde                 Lalonde Dataset

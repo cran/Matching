@@ -124,8 +124,8 @@ balanceMV(formul, data = NULL, match.out=NULL, maxit = 1000,
 }
 \seealso{ Also see \code{\link{summary.balanceMV}},
   \code{\link{MatchBalance}}, \code{\link{balanceUV}},
-  \code{\link{ks.boot}}, \code{\link{Match}}, \code{\link{GerberGreenImai}},
-  \code{\link{lalonde}} }
+  \code{\link{ks.boot}}, \code{\link{Match}}, \code{\link{GenMatch}},
+  \code{\link{GerberGreenImai}}, \code{\link{lalonde}} }
 \examples{
 data(lalonde)
 

@@ -1,5 +1,6 @@
 import(MASS)
-export(balanceMV, balanceUV, ks.boot, Match, MatchBalance, summary.balanceMV, summary.ks.boot, summary.Match)
+useDynLib(Matching)
+export(balanceMV, balanceUV, ks.boot, Match, MatchBalance, summary.balanceMV, summary.ks.boot, summary.Match, GenMatch)
 S3method(summary, balanceMV)
 S3method(summary, balanceUV)
 S3method(summary, ks.boot)

@@ -40,7 +40,9 @@ ks.boot(Tr, Co, nboots=1000, verbose=0)
   American Statistical Association}, 97:457 (March) 284-292.
   }
   \seealso{ Also see \code{\link{summary.ks.boot}},
-    \code{\link{balanceUV}}, \code{\link{Match}}, \code{\link{MatchBalance}},
+    \code{\link{balanceUV}}, \code{\link{Match}},
+    \code{\link{GenMatch}},
+    \code{\link{MatchBalance}},
     \code{\link{balanceMV}}, \code{\link{GerberGreenImai}}, \code{\link{lalonde}} }
 \examples{
 #
