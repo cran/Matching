@@ -13,8 +13,9 @@
   \code{MatchBalance} can be used to test balance.
 }
 \usage{
-MatchBalance(formul, data = NULL, match.out = NULL, MV = TRUE, maxit = 1000,
-             weights=rep(1,nrow(data)), nboots=100, nmc=nboots, digits=5, verbose=1, ...)
+MatchBalance(formul, data = NULL, match.out = NULL, ks = FALSE, mv = FALSE,
+             nboots=1000, nmc=nboots,  maxit = 1000,
+             weights=rep(1,nrow(data)), digits=5, verbose=1, ...)
 }
 \arguments{
   \item{formul}{ A formula denoting the model for which balance should
@@ -35,7 +36,13 @@ MatchBalance(formul, data = NULL, match.out = NULL, MV = TRUE, maxit = 1000,
     function.  If this output is included, \code{\link{MatchBalance}} will provide
     balance tests for both before and after matching. Otherwise
     balance tests will only be conducted for the raw data.}
-  \item{MV}{ A logical flag for if multivariate balance tests (the Kolmogorov-Smirnov and
+  \item{ks}{ A logical flag for if the univariate bootstrap
+    Kolmogorov-Smirnov (KS) test should be calculated.  If the ks option
+    is set to true, the univariate KS test is calculated for all
+    non-dichotomous variables.  The bootstrap KS test is consistent even
+    for non-continuous variables.  See \code{\link{ks.boot}} for more
+    details.}
+  \item{mv}{ A logical flag for if multivariate balance tests (the Kolmogorov-Smirnov and
     Chi-Square tests) should be calculated.}
   \item{maxit}{ The maximum number of iterations for the glm logistic
     procedure. }
@@ -72,21 +79,28 @@ MatchBalance(formul, data = NULL, match.out = NULL, MV = TRUE, maxit = 1000,
 }
 \details{
   The function can be used to determine if matching was successful in
-  achieving balance.  Two multivariate tests are provided.  The
-  Kolmogorov-Smirnov (KS) and Chi-Square null deviance tests.  The KS
-  test is to be preferred over the Chi-Square test because the
-  Chi-Square test is not testing the relevant hypothesis.  The null
-  hypothesis for the KS test is of equal balance in the estimated
-  probabilities between treated and control.  The null hypothesis for
-  the Chi-Square test, however, is of all of the parameters being
-  insignificant; a comparison of residual versus null deviance.  If the
-  covariates being considered are discrete, this KS test is
-  asymptotically nonparametric as long as the logit model does not produce zero
-  parameter estimates.  The bootstrap-Monte Carlo version of the KS
-  test is highly recommended because the usual KS test is not consistent
-  when there are point masses in the distributions being compared, and
-  the bootstrap is needed because parameters are being estimated in the
-  logit model.
+  achieving balance.  Two univariate tests are provided: the t-test and
+  the bootstrap Kolmogorov-Smirnov (KS) test. The bootstrap KS test is
+  highly recommended (see the \code{ks} and \code{nboots} options)
+  because the bootstrap KS is consistent even for non-continuous
+  covariates, and it is more powerful than the t-test.  Before matching
+  the two sample t-test is used, and after matching the paired t-test
+  is used.
+
+  Two multivariate tests are provided.  The KS and Chi-Square null
+  deviance tests.  The KS test is to be preferred over the Chi-Square
+  test because the Chi-Square test is not testing the relevant
+  hypothesis.  The null hypothesis for the KS test is of equal balance
+  in the estimated probabilities between treated and control.  The null
+  hypothesis for the Chi-Square test, however, is of all of the
+  parameters being insignificant; a comparison of residual versus null
+  deviance.  If the covariates being considered are discrete, this KS
+  test is asymptotically nonparametric as long as the logit model does
+  not produce zero parameter estimates.  The bootstrap-Monte Carlo
+  version of the KS test is highly recommended because the usual KS test
+  is not consistent when there are point masses in the distributions
+  being compared, and the bootstrap is needed because parameters are
+  being estimated in the logit model.
   }
 \references{
   Sekhon, Jasjeet S. 2004.  ``Balance Tests for Matching Estimators.''
