@@ -8,7 +8,8 @@
 }
 \usage{
 balanceUV(Tr, Co, weights = rep(1, length(Co)), exact = FALSE, ks=FALSE,
-          nboots = 1000)
+          nboots = 1000, paired=TRUE, match=FALSE,
+          weights.Tr=rep(1,length(Tr)), weights.Co=rep(1,length(Co)))
 }
 \arguments{
   \item{Tr}{A vector containing the treatment observations.}
@@ -31,6 +32,11 @@ balanceUV(Tr, Co, weights = rep(1, length(Co)), exact = FALSE, ks=FALSE,
     only provides correct coverage even for non-continuous covariates. At
     least 500 \code{nboots} (preferably 1000) are
     recommended for publication quality p-values.}
+  \item{paired}{A flag for if the paired \code{\link{t.test}} should be used.}
+  \item{match}{A flag for if the \code{Tr} and \code{Co} objects are the result
+    of a call to \code{\link{Match}}.}
+  \item{weights.Tr}{A vector of weights for the treated observations.}
+  \item{weights.Co}{A vector of weights for the control observations.}
 }
 \value{
   \item{sdiff}{This is the standardized difference which is the
@@ -43,10 +49,7 @@ balanceUV(Tr, Co, weights = rep(1, length(Co)), exact = FALSE, ks=FALSE,
   \item{var.Co}{The variance of the control group.}
   \item{p.value}{The p-value from the two-sided weighted \code{\link{t.test}}.}
   \item{var.ratio}{var.Tr/var.Co.}
-  \item{pdiscordant}{The proportion of observations which are
-    discordant.}
   \item{ks}{The object returned by \code{\link{ks.boot}}.}
-  \item{wc}{The object returned by \code{\link{wilcox.test}}.}
   \item{tt}{The object returned by two-sided weighted \code{\link{t.test}}.}
 }
 \author{

@@ -400,7 +400,8 @@ GenMatchCaliper <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                             max.weight=1000,
                             Domains=NULL,
                             print.level=print.level,
-                            project.path=NULL, ...)
+                            project.path=NULL,
+                            paired=TRUE, ...)
   {
     
     nvars <- ncol(X)
@@ -411,6 +412,9 @@ GenMatchCaliper <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
       {
         Domains <- matrix(min.weight, nrow=nvars, ncol=2)
         Domains[,2] <- max.weight
+      } else {
+        indx <- (starting.values < Domains[,1]) | (starting.values > Domains[,2])
+        starting.values[indx] <- round( (Domains[indx,1]+Domains[indx,2])/2 )
       }
     
     isunix  <- Sys.getenv("OSTYPE")=="linux" | Sys.getenv("OSTYPE")=="darwin"
@@ -485,7 +489,7 @@ GenMatchCaliper <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
 
         rr2 <- rr[,c(4,5,3)]
         a <- GenBalance(rr=rr2, X=BalanceMatrix, nvars=balancevars, nboots=nboots,
-                        ks=ks, verbose=verbose)
+                        ks=ks, verbose=verbose, paired=paired)
         
         return(a)
       }    
@@ -541,7 +545,8 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                      max.weight=1000,
                      Domains=NULL,
                      print.level=2,
-                     project.path=NULL, ...)
+                     project.path=NULL,
+                     paired=TRUE, ...)
   {
 
     Tr <- as.matrix(Tr)
@@ -552,19 +557,21 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
       {
         rr <- GenMatchCaliper(Tr=Tr, X=X, BalanceMatrix=BalanceMatrix, estimand=estimand, M=M,
                               weights=weights,
-                              caliper=caliper, exact=exact,
-                              nboots=nboots, ks=ks, verbose=verbose,
                               pop.size=pop.size, max.generations=max.generations,
-                              wait.generations=wait.generations,
-                              hard.generation.limit=hard.generation.limit,
+                              wait.generations=wait.generations, hard.generation.limit=hard.generation.limit,
                               starting.values=starting.values,
                               data.type.integer=data.type.integer,
                               MemoryMatrix=MemoryMatrix,
+                              exact=exact, caliper=caliper,
+                              nboots=nboots, ks=ks, verbose=verbose,
                               tolerance=tolerance,
                               distance.tolerance=distance.tolerance,
+                              min.weight=min.weight,                              
                               max.weight=max.weight,
+                              Domains=Domains,                              
                               print.level=print.level,
-                              project.path=NULL, ...)
+                              project.path=NULL,
+                              paired=paired, ...)
         return(rr)
       } #!is.null(caliper) | !is.null(exact)
 
@@ -591,6 +598,9 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
       {
         Domains <- matrix(min.weight, nrow=nvars, ncol=2)
         Domains[,2] <- max.weight
+      } else {
+        indx <- (starting.values < Domains[,1]) | (starting.values > Domains[,2])
+        starting.values[indx] <- round( (Domains[indx,1]+Domains[indx,2])/2 )
       }
 
     # create All
@@ -630,7 +640,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                          weights=weights)
         
         a <- GenBalance(rr=rr, X=BalanceMatrix, nvars=balancevars, nboots=nboots,
-                        ks=ks, verbose=verbose)
+                        ks=ks, verbose=verbose, paired=paired)
         
         return(a)
       }    
