@@ -1,0 +1,164 @@
+\name{MatchBalance}
+\alias{MatchBalance}
+\title{Tests for Univariate and Multivariate Balance}
+\description{
+  This function provides a variety of univariate and multivariate tests
+  to determine if balance exists.  The function does no matching.
+  Matching is performed by the \code{\link{Match}} function.
+  \code{MatchBalance} is used to determine if \code{\link{Match}} was
+  successful in achieving balance.  Multivariate balance is determined
+  by the use of a model.  This approach can be used regardless of the
+  algorithm used to do the original matching.  For example, even if
+  \code{\link{Match}} was told NOT to use a propensity score,
+  \code{MatchBalance} can be used to test balance.
+}
+\usage{
+MatchBalance(formul, data = NULL, match.out = NULL, MV = TRUE, maxit = 1000,
+             weights=rep(1,nrow(data)), nboots=100, nmc=nboots, digits=5, verbose=1, ...)
+}
+\arguments{
+  \item{formul}{ A formula denoting the model for which balance should
+    be determined.  This model will be estimated by a binary logistic
+    estimator. The dependent variable in the formula is usually the
+    treatment indicator. Univariate balance tests will be conducted for
+    each of the regressors included in this model. And the multivariate
+    tests will be conducted on the predicted probabilities of treatment
+    for both treated and control based on this formula. The predicted
+    probability densities for both treated and control should be
+    indistinguishable if balance has been achieved. Note that the model
+    defined by this formula is estimated separately for the matched and
+    unmatched datasets.}
+  \item{data}{ A data frame which contains all of the variables in the
+    formula.  If a data frame is not provided, the variables are
+    obtained via lexical scoping.}
+  \item{match.out}{ The output object from the \code{\link{Match}}
+    function.  If this output is included, \code{\link{MatchBalance}} will provide
+    balance tests for both before and after matching. Otherwise
+    balance tests will only be conducted for the raw data.}
+  \item{MV}{ A logical flag for if multivariate balance tests (the Kolmogorov-Smirnov and
+    Chi-Square tests) should be calculated.}
+  \item{maxit}{ The maximum number of iterations for the glm logistic
+    procedure. }
+  \item{weights}{ A vector of observation weights which are passed to
+    \code{balanceMV} and to \code{balanceUV} after matching but not
+    before matching. }
+  \item{nboots}{The number of bootstrap samples to be run.  If zero, no
+    bootstraps are done.  Bootstrapping is highly recommended because
+    the Kolmogorov-Smirnov test only provides correct coverage when
+    bootstrapped due to the existence of nuisance parameters.  At least
+    500 \code{nboots} (preferably 1000) are recommended for publication
+    quality p-values.  Also see the \code{nmc} option.}
+  \item{nmc}{The number of Monte Carlo simulations to be conducted for
+    each Kolmogorov-Smirnov test calculated.  Monte Carlo simulations
+    are highly recommended because the usual Kolmogorov-Smirnov test is not
+    consistent when the densities being compared contain point masses.  At least
+    500 \code{nmc} (preferably 1000) are recommended for publication
+    quality p-values. Also see the \code{nboots} option.}
+  \item{digits}{The number of significant digits that should be
+    displayed.}
+  \item{verbose}{The amount of printing to be done.  If zero, there is
+    no printing.  If one, the results are summarized.  If
+    two, details are printing such as the number of the bootstrap
+    sample currently being estimated.}
+  \item{...}{Further arguments passed to \code{\link{balanceMV}}.}  
+}
+\value{
+  \item{mv}{A return object from a call to \code{\link{balanceMV}}}
+  \item{uv}{A return object from a call to \code{\link{balanceUV}}.  The
+  univariate tests performed on the last variable in \code{formul} are
+  returned.  For the other variables call \code{\link{balanceUV}}
+  directly.  Note that the univariate test results for all of the
+  variables in \code{formul} are printed if \code{verbose > 1}.}
+}
+\details{
+  The function can be used to determine if matching was successful in
+  achieving balance.  Two multivariate tests are provided.  The
+  Kolmogorov-Smirnov (KS) and Chi-Square null deviance tests.  The KS
+  test is to be preferred over the Chi-Square test because the
+  Chi-Square test is not testing the relevant hypothesis.  The null
+  hypothesis for the KS test is of equal balance in the estimated
+  probabilities between treated and control.  The null hypothesis for
+  the Chi-Square test, however, is of all of the parameters being
+  insignificant; a comparison of residual versus null deviance.  If the
+  covariates being considered are discrete, this KS test is
+  asymptotically nonparametric as long as the logit model does not produce zero
+  parameter estimates.  The bootstrap-Monte Carlo version of the KS
+  test is highly recommended because the usual KS test is not consistent
+  when there are point masses in the distributions being compared, and
+  the bootstrap is needed because parameters are being estimated in the
+  logit model.
+  }
+\references{
+  Sekhon, Jasjeet S. 2004.  ``Balance Tests for Matching Estimators.''
+  Working Paper. \url{http://jsekhon.fas.harvard.edu/matching}
+
+  Abadie, Alberto.  2002.  ``Bootstrap Tests for Distributional Treatment
+  Effects in Instrumental Variable Models.'' \emph{Journal of the
+  American Statistical Association}, 97:457 (March) 284-292.  
+
+  Hall, Peter. 1992. \emph{The Bootstrap and Edgeworth Expansion}.  New
+  York: Springer-Verlag.
+
+  Wilcox, Rand R. 1997. \emph{Introduction to Robust Estimation}.  San
+  Diego, CA: Academic Press.
+
+  William J. Conover (1971), \emph{Practical nonparametric statistics}.
+  New York: John Wiley & Sons. Pages 295-301 (one-sample
+  "Kolmogorov" test), 309-314 (two-sample "Smirnov" test).
+
+  Shao, Jun and Dongsheng Tu. 1995. \emph{The Jackknife and Bootstrap}.
+  New York: Springer-Verlag.
+}
+\author{
+  Jasjeet S. Sekhon, Harvard University, \email{jasjeet\_sekhon@harvard.edu},
+  \url{http://jsekhon.fas.harvard.edu/}
+}
+\seealso{
+  Also see \code{\link{Match}}, \code{\link{balanceMV}},
+  \code{\link{balanceUV}}, \code{\link{summary.Match}},
+  \code{\link{summary.balanceMV}}, \code{\link{summary.balanceUV}},
+  \code{\link{GerberGreenImai}}, \code{\link{lalonde}}
+}
+\examples{
+#
+# Replication of Dehejia and Wahba psid3 model
+#
+# Dehejia, Rajeev and Sadek Wahba. 1999.``Causal Effects in Non-Experimental Studies: Re-Evaluating the
+# Evaluation of Training Programs.''Journal of the American Statistical Association 94 (448): 1053-1062.
+#
+data(lalonde)
+
+#
+# Estimate the propensity model
+#
+glm1  <- glm(treat~age + I(age^2) + educ + I(educ^2) + black +
+             hisp + married + nodegr + re74  + I(re74^2) + re75 + I(re75^2) +
+             u74 + u75, family=binomial, data=lalonde)
+
+
+#
+#save data objects
+#
+X  <- glm1$fitted
+Y  <- lalonde$re78
+Tr  <- lalonde$treat
+
+#
+# one-to-one matching with replacement (the "M=1" option).
+# Estimating the treatment effect on the treated (the "estimand" option which defaults to 0).
+#
+rr  <- Match(Y=Y,Tr=Tr,X=X,M=1);
+
+#Let's summarize the output
+summary(rr)
+
+#
+# Let's check for balance
+# 'nboots' and 'nmc' are set to small values in the interest of speed.
+# Please increase to at least 500 each for publication quality p-values.  
+mb  <- MatchBalance(treat~age + I(age^2) + educ + I(educ^2) + black +
+                    hisp + married + nodegr + re74  + I(re74^2) + re75 + I(re75^2) +
+                    u74 + u75, data=lalonde, match.out=rr, nboots=10, nmc=10)
+}
+\keyword{nonparametric}
+\keyword{htest}
