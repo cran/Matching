@@ -1,10 +1,12 @@
 balanceMV               Multivariate Tests for Balance
 balanceUV               Univariate Balance Tests
 GerberGreenImai         Gerber and Green Dataset used by Imai
+ks.boot                 Bootstrap Kolmogorov-Smirnov
 lalonde                 Lalonde Dataset
 Match                   Multivariate and Propensity Score Matching
                         Estimator for Causal Inference
 MatchBalance            Tests for Univariate and Multivariate Balance
 summary.balanceMV       Summarizing output from balanceMV
 summary.balanceUV       Summarizing output from balanceUV
+summary.ks.boot         Summarizing output from ks.boot
 summary.Match           Summarizing output from Match

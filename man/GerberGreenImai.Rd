@@ -64,7 +64,7 @@
   
 } 
 \seealso{ Also see \code{\link{Match}} and \code{\link{MatchBalance}},
-  \code{\link{balanceMV}}, \code{\link{balanceUV}},
+  \code{\link{balanceMV}}, \code{\link{balanceUV}}, \code{\link{ks.boot}}
   \code{\link{lalonde}}
 }
 \keyword{datasets}

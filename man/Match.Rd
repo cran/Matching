@@ -18,7 +18,7 @@
 Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
       BiasAdj = FALSE, Weight = 1, Weight.matrix = NULL, Var.calc = 0,
       weights= rep(1, length(Y)), caliper=FALSE, exact = FALSE,
-      sample = FALSE, tmpdir = NULL, extra.output = FALSE,
+      sample = FALSE, extra.output = FALSE,
       tolerance = 1e-05)
 }
 \arguments{
@@ -92,12 +92,6 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     what is considered to be an exact match. }
   \item{sample}{ A logical flag for whether the population or sample
     variance is returned. }
-  \item{tmpdir}{ The path to a directory where the user has write
-    permission. \code{Match} creates temporary files.  This directory
-    is by default determined by a call to the \code{tempdir} function.  In
-    the temporary directory, \code{Match} produces a file named "Match.out"
-    which can be useful for debugging purposes if the user has passed
-    \code{Match} faulty input.}
   \item{extra.output}{ A logical flag for whether the user wants to
     have the \code{art.data} and \code{aug.data} objects returned.}
   \item{tolerance}{ This is a scalar which is used to determine if distances
@@ -209,7 +203,7 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
   Original Matlab version by Guido Imbens, University of California,
   Berkeley, \url{http://elsa.berkeley.edu/~imbens/} }
 \seealso{ Also see \code{\link{summary.Match}}, \code{\link{MatchBalance}},
-  \code{\link{balanceMV}}, \code{\link{balanceUV}},
+  \code{\link{balanceMV}}, \code{\link{balanceUV}}, \code{\link{ks.boot}},
   \code{\link{GerberGreenImai}}, \code{\link{lalonde}}
 } 
 \examples{

@@ -1,0 +1,27 @@
+\name{summary.ks.boot}
+\alias{summary.ks.boot}
+\title{Summarizing output from ks.boot}
+\description{
+  \code{\link{summary}} method for class \code{\link{ks.boot}}
+}
+\usage{
+  \method{summary}{ks.boot}(object, ..., digits=5)
+}
+\arguments{
+  \item{object}{An object of class "\code{ks.boot}", usually, a
+    result of a call to \code{\link{ks.boot}}.}
+  \item{digits}{The number of significant digits that should be
+    displayed.}
+  \item{...}{Other options for the generic summary function.}  
+}
+\author{
+  Jasjeet S. Sekhon, Harvard University, \email{jasjeet\_sekhon@harvard.edu},
+  \url{http://jsekhon.fas.harvard.edu/}
+}
+\seealso{
+  Also see \code{\link{ks.boot}}, \code{\link{balanceUV}}, \code{\link{balanceMV}},
+  \code{\link{Match}},
+  \code{\link{MatchBalance}}, \code{\link{GerberGreenImai}},
+  \code{\link{lalonde}}
+}
+\keyword{htest}
