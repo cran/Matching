@@ -20,18 +20,8 @@
 }
 \seealso{
   Also see \code{\link{balanceUV}}, \code{\link{balanceMV}},
-  \code{\link{summary.balanceMV}}, \code{\link{Match}},
-  \code{\link{MatchBalance}}, \code{\link{GerberGreenImai}},
+  \code{\link{Match}}, \code{\link{MatchBalance}}, \code{\link{ks.boot}},
+  \code{\link{GerberGreenImai}},
   \code{\link{lalonde}}
-}
-\examples{
-data(lalonde)
-attach(lalonde)
-
-foo  <- balanceUV(re75[treat==1],re75[treat!=1])
-summary(foo)
-
-foo  <- balanceUV(hisp[treat==1],hisp[treat!=1])
-summary(foo)
 }
 \keyword{htest}

@@ -115,8 +115,7 @@ MatchBalance(formul, data = NULL, match.out = NULL, MV = TRUE, maxit = 1000,
 }
 \seealso{
   Also see \code{\link{Match}}, \code{\link{balanceMV}},
-  \code{\link{balanceUV}}, \code{\link{summary.Match}},
-  \code{\link{summary.balanceMV}}, \code{\link{summary.balanceUV}},
+  \code{\link{balanceUV}}, \code{\link{ks.boot}}, 
   \code{\link{GerberGreenImai}}, \code{\link{lalonde}}
 }
 \examples{

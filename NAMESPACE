@@ -1,5 +1,6 @@
 import(MASS)
-export(balanceMV, balanceUV, Match, MatchBalance, summary.balanceMV, summary.Match)
+export(balanceMV, balanceUV, ks.boot, Match, MatchBalance, summary.balanceMV, summary.ks.boot, summary.Match)
 S3method(summary, balanceMV)
 S3method(summary, balanceUV)
+S3method(summary, ks.boot)
 S3method(summary, Match)

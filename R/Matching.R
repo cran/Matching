@@ -2,13 +2,6 @@
 # HTTP://jsekhon.fas.harvard.edu
 # Harvard University
 
-# Match() implements the algorithm described in the following working
-# paper: Alberto Abadie and Guido Imbens. "Large Sample Properties of
-# Matching Estimators for Average Treatment Effects."
-# http://ksghome.harvard.edu/~.aabadie.academic.ksg/sme.pdf For a
-# Matlab version see http://elsa.berkeley.edu/~imbens/
-
-
 # Match(): function to estimate treatments using a matching estimator.
 # Currently only the ability to estimate average treatment effects
 # using the approach of Abadie and Imbens is implemented.  In the
@@ -20,7 +13,7 @@ Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)),
                    estimand="ATT",M=1,BiasAdj=FALSE,Weight=1,Weight.matrix=NULL,
                    Var.calc=0,weights=rep(1,length(Y)), 
                    caliper=FALSE, exact=FALSE, sample=FALSE,
-                   tmpdir=NULL, extra.output=FALSE, tolerance=0.00001)
+                   extra.output=FALSE, tolerance=0.00001)
   {
     isna  <- sum(is.na(Y)) + sum(is.na(Tr)) + sum(is.na(X)) + sum(is.na(Z))
     if (isna!=0)
@@ -1923,3 +1916,76 @@ get.ydata <- function(formul, datafr) {
   }
   return(m);
 }
+
+#
+# bootstrap ks test implemented
+#
+
+ks.boot  <- function(Tr, Co, nboots=1000, verbose=0)
+  {
+
+    Tr <- Tr[!is.na(Tr)]
+    Co <- Co[!is.na(Co)]
+
+    w    <- c(Tr, Co)
+    obs  <- length(w)
+    cutp <- round(obs/2)
+    ks.boot.pval <- NULL
+    bbcount <- 0
+
+    if (nboots < 10)
+      {
+        nboots  <- 10
+        warning("At least 10 'nboots' must be run; seting 'nboots' to 10")
+      }
+
+    if (nboots < 500)
+      warning("For publication quality p-values it is recommended that 'nboots'\n be set equal to at least 500 (preferably 1000)") 
+    
+    fs.ks  <- Mks.test(Tr, Co, MC=TRUE)    
+
+    for (bb in 1:nboots)
+      {
+        if (verbose > 1)
+          cat("s:", bb, "\n")
+        
+        sindx  <- sample(1:obs, obs, replace=TRUE)
+        
+        
+        X1tmp  <- w[sindx[1:cutp]]
+        X2tmp  <- w[sindx[(cutp+1):obs]]
+        
+        s.ks   <- Mks.test(X1tmp, X2tmp, exact=FALSE, MC=TRUE)$statistic
+        
+        if (s.ks >= fs.ks$statistic)
+          bbcount  <- bbcount + 1
+        
+      }
+    ks.boot.pval  <- bbcount/nboots
+
+    ret  <- list(ks.boot.pvalue=ks.boot.pval, ks=fs.ks, nboots=nboots)
+    class(ret)  <- "ks.boot"
+
+    return(ret)
+  } #end of ks.boot
+
+summary.ks.boot <- function(object, ..., digits=5)
+  {
+    if(!is.list(object)) {
+      warning("object not a valid 'ks.boot' object")
+      return()
+    }
+
+    if (class(object) != "ks.boot") {
+      warning("Object not of class 'ks.boot'")
+      return()
+    }    
+        
+    cat("\n")
+    cat("Bootstrap p-value:    ", format.pval(object$ks.boot.pvalue, digits=digits), "\n")
+    cat("Full Sample Statistic:", format(object$ks$statistic, digits=digits), "\n")
+    cat("Naive p-value:        ", format(object$ks$p.value, digits=digits), "\n")
+#    cat("nboots completed      ", object$nboots, "\n")
+    cat("\n")
+  } #end of summary.ks.boot
+

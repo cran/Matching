@@ -42,6 +42,6 @@
   Training Programs.''  \emph{American Economic Review} 76:604-620.
 } 
   \seealso{ Also see \code{\link{Match}} and \code{\link{MatchBalance}},
-  \code{\link{balanceMV}},
-  \code{\link{balanceUV}}, \code{\link{GerberGreenImai}} }
+    \code{\link{balanceMV}}, \code{\link{balanceUV}},
+    \code{\link{ks.boot}}, \code{\link{GerberGreenImai}} }
 \keyword{datasets}

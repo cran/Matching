@@ -46,7 +46,8 @@ balanceUV(Tr, Co, weights = rep(1, length(Co)), exact = FALSE)
   Sekhon, Jasjeet S. 2004.  ``Balance Tests for Matching
   Estimators.''  Working Paper.  
   }
-  \seealso{ Also see \code{\link{summary.balanceUV}}, \code{\link{Match}}, \code{\link{MatchBalance}},
+  \seealso{ Also see \code{\link{summary.balanceUV}},
+    \code{\link{ks.boot}}, \code{\link{Match}}, \code{\link{MatchBalance}},
     \code{\link{balanceMV}}, \code{\link{GerberGreenImai}}, \code{\link{lalonde}} }
 \examples{
 data(lalonde)
@@ -55,7 +56,5 @@ attach(lalonde)
 foo  <- balanceUV(re75[treat==1],re75[treat!=1])
 summary(foo)
 
-foo  <- balanceUV(hisp[treat==1],hisp[treat!=1])
-summary(foo)
 }
 \keyword{univar}
