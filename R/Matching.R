@@ -125,7 +125,8 @@ Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
           }
       }    
 
-    if(version=="fast" & is.null(ecaliper) & sum(weights==1)==orig.nobs)
+#    if(version=="fast" & is.null(ecaliper) & sum(weights==1)==orig.nobs)
+    if(version=="fast")
       {
         ret <- RmatchLoop(Y=Y, Tr=Tr, X=X, Z=Z, V=V, All=estimand, M=M, BiasAdj=BiasAdj,
                           Weight=Weight, Weight.matrix=Weight.matrix, Var.calc=Var.calc,
@@ -268,7 +269,6 @@ summary.Match  <- function(object, ..., full=FALSE, digits=5)
 Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.calc, weight,
                    SAMPLE, ccc, cdd, ecaliper=NULL)
   {
-
     sum.caliper.drops <- 0
     X.orig <- X
     
@@ -755,8 +755,6 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
             NW <- nrow(wout)
             KW <- ncol(wout)
             Alphac <- as.matrix(wout[2:NW,1])
-            
-            Alpha <- cbind(Alphat,Alphac)        
           }
       }
     
@@ -766,10 +764,9 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
         # III.c. adjust matched outcomes using regression adjustment for bias adjusted matching estimator
 
         SCAUS <- YCAUS-Tr*(ZCAUS %*% Alphac)-(1-Tr)*(ZCAUS %*% Alphat)
-        # adjusted treated outcome
-        Yc.adj <- Yc+BiasAdj * (IZ-Zc) %*% Alphac
         # adjusted control outcome
-        Yt.adj <- Yt+BiasAdj*(IZ-Zt) %*% Alphat
+        Yc.adj <- Yc+BiasAdj * (IZ-Zc) %*% Alphac
+        # adjusted treated outcome
         Yt.adj <- Yt+BiasAdj*(IZ-Zt) %*% Alphat
         Tau.i <- Yt.adj - Yc.adj
       } else {
@@ -1083,14 +1080,14 @@ summary.balanceUV  <- function(object, ..., digits=5)
         cat("var ratio (Tr/Co).....", format(object$var.ratio, digits=digits),"\n")
         cat("Discordant prop.......", format(object$pdiscordant,digits=digits),"\n")
         cat("McNemar pval..........", format.pval(object$p.value,digits=digits), "\n")
-        if (!is.null(object$ks$ks.boot.pvalue))
+        if (!is.null(object$ks))
           {
             if(!is.na(object$ks$ks.boot.pvalue))
               {
                 cat("KS Bootstrap p-value..", format.pval(object$ks$ks.boot.pvalue, digits=digits), "\n")
-                cat("KS Naive p-value......", format(object$ks$ks$p.value, digits=digits), "\n")            
-                cat("KS Statistic..........", format(object$ks$ks$statistic, digits=digits), "\n")
               }
+            cat("KS Naive p-value......", format(object$ks$ks$p.value, digits=digits), "\n")            
+            cat("KS Statistic..........", format(object$ks$ks$statistic, digits=digits), "\n")
           }
       } else {
         cat("mean treatment........", format(object$mean.Tr, digits=digits),"\n")
@@ -1099,14 +1096,14 @@ summary.balanceUV  <- function(object, ..., digits=5)
 #       cat("Wilcoxon pval.........", format.pval(wc$p.value,digits=digits), "\n")
         cat("var ratio (Tr/Co).....", format(object$var.ratio, digits=digits),"\n")
         cat("T-test p-value........", format.pval(object$tt$p.value,digits=digits), "\n")            
-        if (!is.null(object$ks$ks.boot.pvalue))
+        if (!is.null(object$ks))
           {
             if(!is.na(object$ks$ks.boot.pvalue))
               {
                 cat("KS Bootstrap p-value..", format.pval(object$ks$ks.boot.pvalue, digits=digits), "\n")
-                cat("KS Naive p-value......", format(object$ks$ks$p.value, digits=digits), "\n")                        
-                cat("KS Statistic..........", format(object$ks$ks$statistic, digits=digits), "\n")
               }
+            cat("KS Naive p-value......", format(object$ks$ks$p.value, digits=digits), "\n")                        
+            cat("KS Statistic..........", format(object$ks$ks$statistic, digits=digits), "\n")
           }
       }
     
@@ -1491,7 +1488,7 @@ Mt.test  <- function(Tr, Co, weights)
 
 
 
-MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=FALSE, mv=FALSE, 
+MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE, 
                          nboots=1000, nmc=nboots, 
                          maxit=1000, weights=rep(1,nrow(data)),
                          digits=5, verbose=1, ...)
@@ -1533,8 +1530,14 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=FALSE, mv=FALSE,
         findx  <- 2
       }
 
-    if(nboots < 10)
-      ks <- FALSE
+#    if(nboots < 10)
+#      ks <- FALSE
+    
+    if(nboots < 10 & nboots > 0)
+      nboots <- 10
+    
+    if(nmc < 10 & nmc > 0)
+      nmc <- 10    
 
     if (ks)
       {
@@ -1569,12 +1572,17 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=FALSE, mv=FALSE,
             if (ks.do)
               {
               foo$ks <- list()
-              foo$ks$ks.boot.pvalue <- ks.bm$ks.boot.pval[count]
+              if (nboots > 0)
+                {
+                  foo$ks$ks.boot.pvalue <- ks.bm$ks.boot.pval[count]
+                } else {
+                  foo$ks$ks.boot.pvalue <- NA
+                }
               foo$ks$ks <- list()
               foo$ks$ks$p.value <- ks.bm$ks.naive.pval[count]
               foo$ks$ks$statistic <- ks.bm$ks.stat[count]
             } else {
-              foo$ks <- NA
+              foo$ks <- NULL
             }
             summary(foo, digits=digits)
             
@@ -1588,12 +1596,17 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=FALSE, mv=FALSE,
                 if (ks.do)
                   {                
                     foo$ks <- list()
-                    foo$ks$ks.boot.pvalue <- ks.am$ks.boot.pval[count]
+                    if (nboots > 0)
+                      {
+                        foo$ks$ks.boot.pvalue <- ks.am$ks.boot.pval[count]
+                      } else {
+                        foo$ks$ks.boot.pvalue <- NA
+                      }                    
                     foo$ks$ks <- list()
                     foo$ks$ks$p.value <- ks.am$ks.naive.pval[count]
                     foo$ks$ks$statistic <- ks.am$ks.stat[count]
                   } else {
-                    foo$ks <- NA
+                    foo$ks <- NULL
                   }
                 summary(foo, digits=digits)                
               }
@@ -2121,7 +2134,8 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
                        SAMPLE, ccc, cdd, ecaliper=NULL, exact=NULL, caliper=NULL)
   {
     s1 <- MatchGenoudStage1caliper(Tr=Tr, X=X, All=All, M=M, weights=weight,
-                                   exact=exact, caliper=caliper);
+                                   exact=exact, caliper=caliper,
+                                   distance.tolerance=cdd);
 #    indx <- FastMatchGenoud(Tr=Tr, X=X, All=All, M=M, Weight=Weight, Weight.matrix=Weight.matrix,
 #                            weights=weight, tolerance=ccc, distance.tolerance=cdd);    
 
@@ -2267,11 +2281,31 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
                        ww=ww, Tr=s1$Tr, Xmod=s1$X,
                        weights=weight,
                        CaliperVec=use.ecaliper, Xorig=X.orig)
+
+    if(indx[1,1]==0)
+      {
+        ret <- list()
+        if (caliperflag)
+          {
+            ret$sum.caliper.drops <- indx[1,6]
+          } else {
+            ret$sum.caliper.drops <- 0
+          }
+        return(ret)
+      }
+    
     if (All==2)
       {
         foo <- indx[,5]
         indx[,5] <- indx[,4]
         indx[,4] <- foo
+      }
+
+    if (caliperflag)
+      {
+        sum.caliper.drops <- indx[1,6]
+      } else {
+        sum.caliper.drops <- 0
       }
 
     #
@@ -2489,8 +2523,6 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
             NW <- nrow(wout)
             KW <- ncol(wout)
             Alphac <- as.matrix(wout[2:NW,1])
-            
-            Alpha <- cbind(Alphat,Alphac)        
           }
       }
     
@@ -2498,12 +2530,15 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
     if(BiasAdj==1)
       {
         # III.c. adjust matched outcomes using regression adjustment for bias adjusted matching estimator
+        IZ <- as.matrix(IZ)
+        Zc <- as.matrix(Zc)
+        Zt <- as.matrix(Zt)
+        Alphat <- as.matrix(Alphat)
 
         SCAUS <- YCAUS-Tr*(ZCAUS %*% Alphac)-(1-Tr)*(ZCAUS %*% Alphat)
-        # adjusted treated outcome
-        Yc.adj <- Yc+BiasAdj * (IZ-Zc) %*% Alphac
         # adjusted control outcome
-        Yt.adj <- Yt+BiasAdj*(IZ-Zt) %*% Alphat
+        Yc.adj <- Yc+BiasAdj * (IZ-Zc) %*% Alphac
+        # adjusted treated outcome
         Yt.adj <- Yt+BiasAdj*(IZ-Zt) %*% Alphat
         Tau.i <- Yt.adj - Yc.adj
       } else {
@@ -2646,7 +2681,6 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
 #        em[2,1] <- sum(Vdif>0.000001)
 #      }#end of exact==1
 
-    sum.caliper.drops <- 0
     return(list(est=est, se=se, se.cond=se.cond, em=em, W=W,
                 sum.caliper.drops=sum.caliper.drops,
                 art.data=art.data, aug.data=aug.data))

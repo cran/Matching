@@ -17,16 +17,6 @@ FastMatchC <- function(N, xvars, All, M, cdd, ww, Tr, Xmod, weights)
     return(ret)
   }
 
-FastMatchCcaliper <- function(N, xvars, All, M, cdd, caliperflag, ww, Tr, Xmod, weights, CaliperVec, Xorig)
-  {
-    ret <- .Call("FastMatchCcaliper", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
-                 as.double(cdd), as.integer(caliperflag), as.real(ww), as.real(Tr),
-                 as.real(Xmod), as.real(weights), as.real(CaliperVec), as.real(Xorig),
-                 PACKAGE="Matching")
-    return(ret)
-  }
-
-
 MatchGenoudStage1 <- function(Tr=Tr, X=X, All=All, M=M, weights=weights)
   {
     N  <- nrow(X)
@@ -148,11 +138,13 @@ FastMatchGenoud <- function(Tr, X, All=1, M=1, Weight=1,
 ###############################################################################
 
 MatchGenoudStage1caliper <- function(Tr=Tr, X=X, All=All, M=M, weights=weights,
-                                     exact=exact, caliper=caliper)
+                                     exact=exact, caliper=caliper,
+                                     distance.tolerance=0.00001)
   {
     Xorig  <- X;
     N  <- nrow(X)
     xvars <- ncol(X)
+    weights.orig  <- as.matrix(weights)
 
     if (!is.null(exact))
       {
@@ -198,14 +190,14 @@ MatchGenoudStage1caliper <- function(Tr=Tr, X=X, All=All, M=M, weights=weights,
       {
         if(is.null(caliper))
           {
-            max.diff <- abs(max(X)-min(X) + tolerance * 100)
+            max.diff <- abs(max(X)-min(X) + distance.tolerance * 100)
             ecaliper <- matrix(max.diff, nrow=xvars, ncol=1)
           }
         
         for (i in 1:xvars)
           {
             if (exact[i])
-              ecaliper[i] <- tolerance;
+              ecaliper[i] <- distance.tolerance;
           }
       }        
     
@@ -407,7 +399,8 @@ GenMatchCaliper <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                             min.weight=0,
                             max.weight=1000,
                             Domains=NULL,
-                            print.level=print.level, ...)
+                            print.level=print.level,
+                            project.path=NULL, ...)
   {
     
     nvars <- ncol(X)
@@ -421,16 +414,19 @@ GenMatchCaliper <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
       }
     
     isunix  <- Sys.getenv("OSTYPE")=="linux" | Sys.getenv("OSTYPE")=="darwin"
-    if (print.level < 3 & isunix)
+    if (is.null(project.path))
       {
-        project.path="/dev/null"
-      } else {
-        project.path=paste(tempdir(),"/genoud.pro",sep="")
-
-        #work around for rgenoud bug
-        if (print.level==3)
-          print.level <- 2
-      }
+        if (print.level < 3 & isunix)
+          {
+            project.path="/dev/null"
+          } else {
+            project.path=paste(tempdir(),"/genoud.pro",sep="")
+            
+            #work around for rgenoud bug
+            #if (print.level==3)
+            #print.level <- 2
+          }
+      } 
     
     # create All
     if (estimand=="ATT")
@@ -455,7 +451,7 @@ GenMatchCaliper <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
     s1.N <- s1$N
     s1.ecaliper  <- s1$ecaliper
     
-    if (is.null(ecaliper))
+    if (is.null(s1.ecaliper))
       {
         caliperFlag  <- 0
         Xorig  <- 0
@@ -477,13 +473,18 @@ GenMatchCaliper <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         
         ww <- chol(wmatrix)
 
-        rr <- FastMatchC(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
+        rr <- MatchLoopC(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
                          cdd=distance.tolerance,
                          caliperflag=caliperFlag,
                          ww=ww, Tr=s1.Tr, Xmod=s1.X, weights=weights,
                          CaliperVec=CaliperVec, Xorig=Xorig)
-        
-        a <- GenBalance(rr=rr, X=BalanceMatrix, nvars=balancevars, nboots=nboots,
+
+        #no matches
+        if(rr[1,1]==0)
+          return(-9999)
+
+        rr2 <- rr[,c(4,5,3)]
+        a <- GenBalance(rr=rr2, X=BalanceMatrix, nvars=balancevars, nboots=nboots,
                         ks=ks, verbose=verbose)
         
         return(a)
@@ -505,11 +506,11 @@ GenMatchCaliper <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         
     ww <- chol(wmatrix)
     
-    mout <- FastMatchCaliper(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
-                             cdd=distance.tolerance,
-                             caliperflag=caliperFlag,
-                             ww=ww, Tr=s1.Tr, Xmod=s1.X, weights=weights,
-                             CaliperVec=CaliperVec, Xorig=Xorig)
+    mout <- MatchLoopC(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
+                       cdd=distance.tolerance,
+                       caliperflag=caliperFlag,
+                       ww=ww, Tr=s1.Tr, Xmod=s1.X, weights=weights,
+                       CaliperVec=CaliperVec, Xorig=Xorig)
 
     rr2 <- list(value=rr$value, par=rr$par, Weight.matrix=wmatrix, matches=mout, ecaliper=CaliperVec)
 
@@ -539,7 +540,8 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                      min.weight=0,
                      max.weight=1000,
                      Domains=NULL,
-                     print.level=2, ...)
+                     print.level=2,
+                     project.path=NULL, ...)
   {
 
     Tr <- as.matrix(Tr)
@@ -561,21 +563,25 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                               tolerance=tolerance,
                               distance.tolerance=distance.tolerance,
                               max.weight=max.weight,
-                              print.level=print.level, ...)
+                              print.level=print.level,
+                              project.path=NULL, ...)
         return(rr)
       } #!is.null(caliper) | !is.null(exact)
 
     isunix  <- Sys.getenv("OSTYPE")=="linux" | Sys.getenv("OSTYPE")=="darwin"
-    if (print.level < 3 & isunix)
+    if (is.null(project.path))
       {
-        project.path="/dev/null"
-      } else {
-        project.path=paste(tempdir(),"/genoud.pro",sep="")
-
-        #work around for rgenoud bug
-        if (print.level==3)
-          print.level <- 2
-      }
+        if (print.level < 3 & isunix)
+          {
+            project.path="/dev/null"
+          } else {
+            project.path=paste(tempdir(),"/genoud.pro",sep="")
+            
+            #work around for rgenoud bug
+            #if (print.level==3)
+            #print.level <- 2
+          }
+      } 
     
     nvars <- ncol(X)
     balancevars <- ncol(BalanceMatrix)
