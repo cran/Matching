@@ -15,7 +15,8 @@
 \usage{
 MatchBalance(formul, data = NULL, match.out = NULL, ks = TRUE, mv = FALSE,
              nboots=1000, nmc=nboots,  maxit = 1000,
-             weights=rep(1,nrow(data)), digits=5, verbose=1, ...)
+             weights=rep(1,nrow(data)), digits=5, verbose=1,
+             paired=TRUE, ...)
 }
 \arguments{
   \item{formul}{ A formula denoting the model for which balance should
@@ -46,9 +47,7 @@ MatchBalance(formul, data = NULL, match.out = NULL, ks = TRUE, mv = FALSE,
     Chi-Square tests) should be calculated.}
   \item{maxit}{ The maximum number of iterations for the glm logistic
     procedure. }
-  \item{weights}{ A vector of observation weights which are passed to
-    \code{balanceMV} and to \code{balanceUV} after matching but not
-    before matching. }
+  \item{weights}{A vector of observation specific weights.}
   \item{nboots}{The number of bootstrap samples to be run.  If zero, no
     bootstraps are done.  Bootstrapping is highly recommended because
     the Kolmogorov-Smirnov test only provides correct coverage when
@@ -67,6 +66,7 @@ MatchBalance(formul, data = NULL, match.out = NULL, ks = TRUE, mv = FALSE,
     no printing.  If one, the results are summarized.  If
     two, details are printing such as the number of the bootstrap
     sample currently being estimated.}
+  \item{paired}{A flag for if the paired \code{\link{t.test}} should be used.}
   \item{...}{Further arguments passed to \code{\link{balanceMV}}.}  
 }
 \value{

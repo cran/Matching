@@ -19,7 +19,7 @@ Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
     if (isna!=0)
       {
         stop("Match(): input includes NAs")
-        return(NULL)
+        return(invisible(NULL))
       }
 
     Y  <- as.matrix(Y)
@@ -141,11 +141,20 @@ Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
 
     if(is.null(ret$est))
       {
-        if (ret$sum.caliper.drops > 0) {
-          warning("'Match' object contains no valid matches (probably because of the caliper or the exact option).") 
-        } else {
-          warning("'Match' object contains no valid matches")
-        }
+        if(ret$valid < 1)
+          {
+            if (ret$sum.caliper.drops > 0) {
+              warning("'Match' object contains no valid matches (probably because of the caliper or the exact option).") 
+            } else {
+              warning("'Match' object contains no valid matches")
+            }
+          } else {
+            if (ret$sum.caliper.drops > 0) {
+              warning("'Match' object contains only 1 valid match (probably because of the caliper or the exact option).") 
+            } else {
+              warning("'Match' object contains only one valid match")
+            }            
+          }
 
         z <- NA
         class(z)  <- "Match"    
@@ -153,7 +162,7 @@ Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
       }
     
     indx <-  cbind(ret$art.data[,1],  ret$art.data[,2],  ret$W)
-    
+
     index.treated  <- indx[,1]
     index.control  <- indx[,2]
     weights        <- indx[,3]
@@ -218,13 +227,13 @@ Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
 summary.Match  <- function(object, ..., full=FALSE, digits=5)
   {
     if(!is.list(object)) {
-      warning("'Match' object contains no valid matches")
-      return()
+      warning("'Match' object contains less than two valid matches.  Cannot proceed.")
+      return(invisible(NULL))
     }
     
     if (class(object) != "Match") {
       warning("Object not of class 'Match'")
-      return()
+      return(invisible(NULL))
     }
 
     cat("\n")
@@ -666,8 +675,11 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
 
     if (length(I) < 1)
       {
-        return(list(sum.caliper.drops=sum.caliper.drops))
-      }
+        return(list(sum.caliper.drops=sum.caliper.drops,valid=0))
+      } else if(length(I) < 2)
+        {
+          return(list(sum.caliper.drops=sum.caliper.drops,valid=1))          
+        }
 
     if (BiasAdj==1)
       {
@@ -920,22 +932,29 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
 #
 # See Rosenbaum and Rubin (1985) and Smith and Todd Rejoinder (JofEconometrics) p.9
 #
-sdiff  <- function(Tr, Co, weights=rep(1,length(Co)))
+sdiff  <- function(Tr, Co, weights=rep(1,length(Co)),
+                   weights.Tr=rep(1,length(Tr)),
+                   weights.Co=rep(1,length(Co)),
+                   match=FALSE)
   {
-    equal  <- FALSE
-    if (length(Tr)==length(Co))
-      equal  <- TRUE
-
-    if (!equal)
+    if (!match)
       {
-        diff  <- mean(Tr)-mean(Co)
-        sdiff <- 100*diff/sqrt( (var(Tr)+var(Co))/2 )
+        obs.Tr <- sum(weights.Tr)
+        obs.Co <- sum(weights.Co)
+        
+        mean.Tr <- sum(Tr*weights.Tr)/obs.Tr
+        mean.Co <- sum(Co*weights.Co)/obs.Co
+        var.Tr  <- sum( ( (Tr - mean.Tr)^2 )*weights.Tr)/(obs.Tr-1)
+        var.Co  <- sum( ( (Co - mean.Co)^2 )*weights.Co)/(obs.Co-1)
+        
+        diff  <- mean.Tr - mean.Co
+        sdiff <- 100*diff/sqrt( var.Tr+var.Co/2 )
       } else{
         diff  <- sum( (Tr-Co)*weights ) /sum(weights)
         mean.Tr <- sum(Tr*weights)/sum(weights)
         mean.Co <- sum(Co*weights)/sum(weights)
-        var.Tr  <- sum( ( (Tr - mean.Tr)^2 )*weights)/sum(weights)
-        var.Co  <- sum( ( (Co - mean.Co)^2 )*weights)/sum(weights)
+        var.Tr  <- sum( ( (Tr - mean.Tr)^2 )*weights)/(sum(weights)-1)
+        var.Co  <- sum( ( (Co - mean.Co)^2 )*weights)/(sum(weights)-1)
         sdiff  <- 100*diff/sqrt( (var.Tr+var.Co)/2 )
       }
 
@@ -944,117 +963,59 @@ sdiff  <- function(Tr, Co, weights=rep(1,length(Co)))
 
 # function runs sdiff and t.test
 #
-balanceUV  <- function(Tr, Co, weights=rep(1,length(Co)), exact=FALSE, ks=FALSE, nboots=1000)
+balanceUV  <- function(Tr, Co, weights=rep(1,length(Co)), exact=FALSE, ks=FALSE, nboots=1000,
+                       paired=TRUE, match=FALSE,
+                       weights.Tr=rep(1,length(Tr)), weights.Co=rep(1,length(Co)))
   {
-    try.McNemar <- FALSE
-    equal  <- FALSE
-    if (length(Tr)==length(Co))
-      equal  <- TRUE
-
     ks.out  <- NULL
 
-    categorical  <- is.factor(Tr)
-
-    if (categorical & equal)
+    if (!match)
       {
-        x <- factor(Tr)
-        y <- factor(Co)
-        r <- nlevels(x)
-        if ((r < 2) || (nlevels(y) != r))
-          {
-            cat("reverting to wilcox.test: x and y must have the same number of levels (minimum 2)\n")
-            try.McNemar  <- FALSE
-          } else {
-            efoo  <- sum(levels(x)==levels(y))
-            if (efoo != r)
-              {
-                cat("reverting to wilcox.test: Level sets of factors are different\n")
-                try.McNemar  <- FALSE            
-              }
-          }
-      }    
+        sbalance  <- sdiff(Tr=Tr, Co=Co,
+                           weights.Tr=weights.Tr,
+                           weights.Co=weights.Co,
+                           match=FALSE)
 
-    if (equal & categorical & try.McNemar)
-      {
-        use.McNemar  <- TRUE
-      } else {
-        use.McNemar  <- FALSE
-        Tr  <- as.real(Tr)
-        Co  <- as.real(Co)
-      }
-
-    if (!equal)
-      {
-        sbalance  <- sdiff(Tr, Co, weights)
+        obs.Tr <- sum(weights.Tr)
+        obs.Co <- sum(weights.Co)        
         
-        mean.Tr  <- mean(Tr);
-        mean.Co  <- mean(Co);
-        var.Tr  <- var(Tr)
-        var.Co  <- var(Co)
+        mean.Tr <- sum(Tr*weights.Tr)/obs.Tr
+        mean.Co <- sum(Co*weights.Co)/obs.Co
+        estimate <- mean.Tr-mean.Co
+        var.Tr  <- sum( ( (Tr - mean.Tr)^2 )*weights.Tr)/(obs.Tr-1)
+        var.Co  <- sum( ( (Co - mean.Co)^2 )*weights.Co)/(obs.Co-1)
         var.ratio  <- var.Tr/var.Co
 
-        wc  <- wilcox.test(Tr,Co, exact=exact)
-        tt  <- t.test(Tr, Co)
+        tt  <- Mt.test.unpaired(Tr, Co,
+                                weights.Tr=weights.Tr,
+                                weights.Co=weights.Co)
 
         if (ks)
           ks.out <- ks.boot(Tr, Co,nboots=nboots)
-
-        pdiscordant  <- NA
       } else {
+        sbalance  <- sdiff(Tr=Tr, Co=Co, weights=weights, match=TRUE)
+        
+        mean.Tr  <- sum(Tr*weights)/sum(weights);
+        mean.Co  <- sum(Co*weights)/sum(weights);
+        var.Tr  <- sum( ( (Tr - mean.Tr)^2 )*weights)/sum(weights);
+        var.Co  <- sum( ( (Co - mean.Co)^2 )*weights)/sum(weights);
+        var.ratio  <- var.Tr/var.Co
 
-        if (categorical & use.McNemar)
+        if(paired)
           {
-            sbalance  <- NULL
-            
-            x  <- as.real(Tr)
-            y  <- as.real(Co)
-            mean.Tr  <- sum(x*weights)/sum(weights);
-            mean.Co  <- sum(y*weights)/sum(weights);
-            var.Tr  <- sum( ( (x - mean.Tr)^2 )*weights)/sum(weights);
-            var.Co  <- sum( ( (y - mean.Co)^2 )*weights)/sum(weights);
-            var.ratio  <- var.Tr/var.Co
-
-
-            mc  <- McNemar2(Tr, Co, weights=weights)
-            wc  <- wilcox.test( (as.real(Tr)-as.real(Co))*weights, exact=exact )
-
-            if (ks)
-              ks.out  <- ks.boot(Tr, Co,nboots=nboots)            
-
-          } else {
-            sbalance  <- sdiff(Tr, Co, weights)
-            
-            mean.Tr  <- sum(Tr*weights)/sum(weights);
-            mean.Co  <- sum(Co*weights)/sum(weights);
-            var.Tr  <- sum( ( (Tr - mean.Tr)^2 )*weights)/sum(weights);
-            var.Co  <- sum( ( (Co - mean.Co)^2 )*weights)/sum(weights);
-            var.ratio  <- var.Tr/var.Co
-
-            wc  <- wilcox.test( (Tr-Co)*weights, exact=exact )
-
-#            tt  <- t.test((Tr-Co)*weights)
             tt  <- Mt.test(Tr, Co, weights)
+          } else {
+            tt  <- Mt.test.unpaired(Tr, Co, weights.Tr=weights, weights.Co=weights)
+          }
+        
+        if (ks)
+          ks.out  <- ks.boot(Tr, Co, nboots=nboots)
+      }        
 
-            if (ks)
-              ks.out  <- ks.boot(Tr, Co, nboots=nboots)
-          }        
-      }
-
-
-    if (use.McNemar)
-      {
-        ret  <- list(sdiff=sbalance,mean.Tr=mean.Tr,mean.Co=mean.Co,
-                     var.Tr=var.Tr,var.Co=var.Co, p.value=mc$p.value,
-                     var.ratio=var.ratio,
-                     pdiscordant=mc$pdiscordant, ks=ks.out,
-                     wc=NULL, mc=mc, tt=NULL)        
-      } else {
-        ret  <- list(sdiff=sbalance,mean.Tr=mean.Tr,mean.Co=mean.Co,
-                     var.Tr=var.Tr,var.Co=var.Co, p.value=tt$p.value,
-                     var.ratio=var.ratio,
-                     pdiscordant=NULL, ks=ks.out,
-                     wc=wc, mc=NULL, tt=tt)
-      }
+    ret  <- list(sdiff=sbalance,mean.Tr=mean.Tr,mean.Co=mean.Co,
+                 var.Tr=var.Tr,var.Co=var.Co, p.value=tt$p.value,
+                 var.ratio=var.ratio,
+                 ks=ks.out, tt=tt)
 
     class(ret) <-  "balanceUV"
     return(ret)
@@ -1068,45 +1029,20 @@ summary.balanceUV  <- function(object, ..., digits=5)
       return(NULL)
     }
 
-    use.McNemar <- FALSE
-    if (is.list(object$mc))
-      use.McNemar <- TRUE
-
-    if (use.McNemar)
-      {
-        cat("mean treatment........", format(object$mean.Tr, digits=digits),"\n")
-        cat("mean control..........", format(object$mean.Co, digits=digits),"\n")            
-#       cat("Wilcoxon pval.........", format.pval(wc$p.value,digits=digits), "\n")
-        cat("var ratio (Tr/Co).....", format(object$var.ratio, digits=digits),"\n")
-        cat("Discordant prop.......", format(object$pdiscordant,digits=digits),"\n")
-        cat("McNemar pval..........", format.pval(object$p.value,digits=digits), "\n")
-        if (!is.null(object$ks))
-          {
-            if(!is.na(object$ks$ks.boot.pvalue))
-              {
-                cat("KS Bootstrap p-value..", format.pval(object$ks$ks.boot.pvalue, digits=digits), "\n")
-              }
-            cat("KS Naive p-value......", format(object$ks$ks$p.value, digits=digits), "\n")            
-            cat("KS Statistic..........", format(object$ks$ks$statistic, digits=digits), "\n")
-          }
-      } else {
-        cat("mean treatment........", format(object$mean.Tr, digits=digits),"\n")
-        cat("mean control..........", format(object$mean.Co, digits=digits),"\n")
+    cat("mean treatment........", format(object$mean.Tr, digits=digits),"\n")
+    cat("mean control..........", format(object$mean.Co, digits=digits),"\n")
 #       cat("sdiff.................", format(object$sdiff, digits=digits),"\n")            
-#       cat("Wilcoxon pval.........", format.pval(wc$p.value,digits=digits), "\n")
-        cat("var ratio (Tr/Co).....", format(object$var.ratio, digits=digits),"\n")
-        cat("T-test p-value........", format.pval(object$tt$p.value,digits=digits), "\n")            
-        if (!is.null(object$ks))
+    cat("var ratio (Tr/Co).....", format(object$var.ratio, digits=digits),"\n")
+    cat("T-test p-value........", format.pval(object$tt$p.value,digits=digits), "\n")            
+    if (!is.null(object$ks))
+      {
+        if(!is.na(object$ks$ks.boot.pvalue))
           {
-            if(!is.na(object$ks$ks.boot.pvalue))
-              {
-                cat("KS Bootstrap p-value..", format.pval(object$ks$ks.boot.pvalue, digits=digits), "\n")
-              }
-            cat("KS Naive p-value......", format(object$ks$ks$p.value, digits=digits), "\n")                        
-            cat("KS Statistic..........", format(object$ks$ks$statistic, digits=digits), "\n")
+            cat("KS Bootstrap p-value..", format.pval(object$ks$ks.boot.pvalue, digits=digits), "\n")
           }
+        cat("KS Naive p-value......", format(object$ks$ks$p.value, digits=digits), "\n")                        
+        cat("KS Statistic..........", format(object$ks$ks$statistic, digits=digits), "\n")
       }
-    
     cat("\n")        
   } #end of summary.balanceUV
 
@@ -1486,12 +1422,38 @@ Mt.test  <- function(Tr, Co, weights)
     return(z)
   } #end of Mt.test
 
+Mt.test.unpaired  <- function(Tr, Co,
+                              weights.Tr=rep(1,length(Tr)),
+                              weights.Co=rep(1,length(Co)))
+  {
+    obs.Tr <- sum(weights.Tr)
+    obs.Co <- sum(weights.Co)
+    
+    mean.Tr <- sum(Tr*weights.Tr)/obs.Tr
+    mean.Co <- sum(Co*weights.Co)/obs.Co
+    estimate <- mean.Tr-mean.Co
+    var.Tr  <- sum( ( (Tr - mean.Tr)^2 )*weights.Tr)/(obs.Tr-1)
+    var.Co  <- sum( ( (Co - mean.Co)^2 )*weights.Co)/(obs.Co-1)
+    dim <- sqrt(var.Tr/obs.Tr + var.Co/obs.Co)
 
+    statistic  <- estimate/dim
+    parameter  <- Inf
+
+    a1 <- var.Tr/obs.Tr
+    a2 <- var.Co/obs.Co
+    dof <- ((a1 + a2)^2)/( (a1^2)/(obs.Tr - 1) + (a2^2)/(obs.Co - 1) )    
+    p.value    <- (1-pt(abs(statistic), df=dof))*2    
+    
+
+    z  <- list(statistic=statistic, parameter=parameter, p.value=p.value,
+               estimate=estimate)
+    return(z)
+  } #end of Mt.test.unpaired
 
 MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE, 
                          nboots=1000, nmc=nboots, 
                          maxit=1000, weights=rep(1,nrow(data)),
-                         digits=5, verbose=1, ...)
+                         digits=5, verbose=1, paired=TRUE, ...)
   {
 
     if(!is.list(match.out) & !is.null(match.out)) {
@@ -1568,7 +1530,9 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
               ks.do  <- TRUE
 
             cat("before matching:\n")
-            foo  <-  balanceUV(xdata[,i][Tr==1], xdata[,i][Tr==0], nboots=0)
+            foo  <-  balanceUV(xdata[,i][Tr==1], xdata[,i][Tr==0], nboots=0,
+                               weights.Tr=weights[Tr==1], weights.Co=weights[Tr==0],
+                               match=FALSE)
             if (ks.do)
               {
               foo$ks <- list()
@@ -1591,7 +1555,8 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
                 cat("after  matching:\n")
                 foo  <- balanceUV(xdata[,i][match.out$index.treated],
                                   xdata[,i][match.out$index.control],
-                                  weights=match.out$weights, nboots=0)
+                                  weights=match.out$weights, nboots=0,
+                                  paired=paired, match=TRUE)
 
                 if (ks.do)
                   {                
@@ -1640,14 +1605,16 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
             if (ks & !is.dummy)
               ks.do  <- TRUE
 
-            foo  <-  balanceUV(xdata[,i][Tr==1],xdata[,i][Tr==0],
-                               weights=weights, ks=ks.do, nboots=nboots)
+            foo  <-  balanceUV(xdata[,i][Tr==1], xdata[,i][Tr==0], nboots=0,
+                               weights.Tr=weights[Tr==1], weights.Co=weights[Tr==0],
+                               match=FALSE)
             
             if (!is.null(match.out))
               {
                 foo  <- balanceUV(xdata[,i][match.out$index.treated],
                                   xdata[,i][match.out$index.control],
-                                  weights=match.out$weights, ks=ks.do, nboots=nboots)
+                                  weights=match.out$weights, nboots=0,
+                                  paired=paired, match=TRUE)
               }
           }
         
@@ -2285,6 +2252,7 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
     if(indx[1,1]==0)
       {
         ret <- list()
+        ret$valid <- 0
         if (caliperflag)
           {
             ret$sum.caliper.drops <- indx[1,6]
@@ -2292,7 +2260,19 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
             ret$sum.caliper.drops <- 0
           }
         return(ret)
-      }
+      } else if (nrow(indx)< 2)
+        {
+          ret <- list()
+          ret$valid <- 1
+          if (caliperflag)
+            {
+              ret$sum.caliper.drops <- indx[1,6]
+            } else {
+              ret$sum.caliper.drops <- 0
+            }
+          return(ret)
+        }
+        
     
     if (All==2)
       {

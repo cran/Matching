@@ -28,7 +28,8 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                      distance.tolerance=tolerance,
                      min.weight=0, max.weight=1000,
                      Domains=NULL, print.level=2,
-                     project.path=NULL, ...)
+                     project.path=NULL,
+                     paired=TRUE, ...)
 }
 \arguments{
   \item{Tr}{ A vector indicating the observations which are
@@ -181,6 +182,8 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
     2 or higher, then each new generation is simply appended to the
     project file. No project file is generated for
     \code{print.level=0}.}
+  \item{paired}{A flag for if the paired \code{\link{t.test}} should be
+    used when determining balance.}  
   \item{...}{Other options which are passed on to \code{\link[rgenoud]{genoud}}.}
 }
 
@@ -254,7 +257,7 @@ summary(mout)
 #                        
 mb <- MatchBalance(treat~age +educ+black+ hisp+ married+ nodegr+ u74+ u75+
                    re75+ re74+ I(re74*re75),
-                   match.out=mout, nboots=1000, ks=TRUE, mv=FALSE)
+                   match.out=mout, nboots=500, ks=TRUE, mv=FALSE)
 
 }
 \keyword{nonparametric}

@@ -11,8 +11,30 @@ Mt.test.pvalue  <- function(Tr, Co, weights)
     return(p.value)
   } #end of Mt.test.pvalue
 
+Mt.test.unpaired.pvalue  <- function(Tr, Co, weights)
+  {
+    obs <- sum(weights)
+    
+    mean.Tr <- sum(Tr*weights)/obs
+    mean.Co <- sum(Co*weights)/obs
+    estimate <- mean.Tr-mean.Co
+    var.Tr  <- sum( ( (Tr - mean.Tr)^2 )*weights)/(obs-1)
+    var.Co  <- sum( ( (Co - mean.Co)^2 )*weights)/(obs-1)
+    dim <- sqrt(var.Tr/obs + var.Co/obs)
+
+    statistic  <- estimate/dim
+
+    a1 <- var.Tr/obs
+    a2 <- var.Co/obs
+    dof <- ((a1 + a2)^2)/( (a1^2)/(obs - 1) + (a2^2)/(obs - 1) )    
+    p.value    <- (1-pt(abs(statistic), df=dof))*2    
+
+    return(p.value)
+  } #end of Mt.test.unpaired.pvalue
+
 GenBalance <- function(rr, X, 
-                       nvars=ncol(X), nboots = 0, ks=TRUE, verbose = FALSE)
+                       nvars=ncol(X), nboots = 0, ks=TRUE, verbose = FALSE,
+                       paired=TRUE)
 {
   
   index.treated <- rr[,1]
@@ -37,10 +59,17 @@ GenBalance <- function(rr, X,
   for (i in 1:nvars)
     {
       w[,i] <- c(X[,i][index.treated], X[,i][index.control])
-      
-      t.out <- Mt.test.pvalue(X[,i][index.treated],
-                              X[,i][index.control],
-                              weights = weights)
+
+      if(paired)
+        {
+          t.out <- Mt.test.pvalue(X[,i][index.treated],
+                                  X[,i][index.control],
+                                  weights = weights)
+        } else {
+          t.out <- Mt.test.unpaired.pvalue(X[,i][index.treated],
+                                           X[,i][index.control],
+                                           weights = weights)
+        }
       
       storage.t[i] <- t.out            
       
@@ -103,11 +132,11 @@ GenBalance <- function(rr, X,
 #  cat("storage:\n")
 #  print(storage.k)
 
-      output <- min(c(storage.t, storage.k), na.rm = TRUE)
+      output <- min(c(storage.t, storage.k, 1), na.rm = TRUE)
     } else if(ks){
-      output <- min(c(storage.t, storage.k), na.rm = TRUE)
+      output <- min(c(storage.t, storage.k, 1), na.rm = TRUE)
     } else {
-      output <- min(storage.t, na.rm = TRUE)
+      output <- min(c(storage.t, 1), na.rm = TRUE)
     }
   
   if (verbose == TRUE)
@@ -119,7 +148,7 @@ GenBalance <- function(rr, X,
         }
       cat("\nreturn value:", output, "\n\n")
     }
-  
+
   return(output)
 } #end of genBalance
 
@@ -140,6 +169,7 @@ ks.fast <- function(x, y, n.x, n.y, n)
 KSbootBalanceSummary <- function(index.treated, index.control, X, 
                                  nboots = 1000)
 {
+  X <- as.matrix(X)
   nvars <- ncol(X)
 
   tol  <- .Machine$double.eps*100  
