@@ -9,11 +9,10 @@
 # the ability to use robust estimation when estimating the propensity
 # score. MatchBalance(), balanceMV() and balanceUV() test for balance.
 
-Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)),
-                   estimand="ATT",M=1,BiasAdj=FALSE,Weight=1,Weight.matrix=NULL,
-                   Var.calc=0,weights=rep(1,length(Y)), 
-                   caliper=FALSE, exact=FALSE, sample=FALSE,
-                   extra.output=FALSE, tolerance=0.00001)
+Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT",M=1,
+                   BiasAdj=FALSE,exact=NULL,caliper=NULL,
+                   Weight=1,Weight.matrix=NULL, weights=rep(1,length(Y)),
+                   Var.calc=0, sample=FALSE, tolerance=0.00001)
   {
     isna  <- sum(is.na(Y)) + sum(is.na(Tr)) + sum(is.na(X)) + sum(is.na(Z))
     if (isna!=0)
@@ -29,7 +28,6 @@ Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)),
     V  <- as.matrix(V)
     weights <- as.matrix(weights)
     BiasAdj  <- as.real(BiasAdj)
-    exact  <- as.real(exact)
     sample  <- as.real(sample)
 
     ccc  <- tolerance
@@ -58,218 +56,144 @@ Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)),
         Weight.matrix <- dim(X)[2]
       }
 
-    if ( (caliper < 0) )
-      {
-        warning("caliper < 0, ignoring option")
-        caliper <- FALSE
-      }
-
+    xvars <- ncol(X)
     orig.nobs  <- length(Y)
     nobs  <- orig.nobs
     orig.treated.nobs  <- sum(Tr==1)
     orig.wnobs  <- sum(weights)
     weights.orig  <- as.matrix(weights)
+    
+    if (!is.null(exact))
+      {
+        exact = as.vector(exact)
+        nexacts = length(exact)
+        if ( (nexacts > 1) & (nexacts != xvars) )
+          {
+            warning("length of exact != ncol(X). Ignoring exact option")
+            exact <- NULL
+          } else if (nexacts==1 & (xvars > 1) ){
+            exact <- rep(exact, xvars)
+          }
+      }
+
+    if (!is.null(caliper))
+      {
+        caliper = as.vector(caliper)
+        ncalipers = length(caliper)
+        if ( (ncalipers > 1) & (ncalipers != xvars) )
+          {
+            warning("length of caliper != ncol(X). Ignoring caliper option")
+            caliper <- NULL
+          } else if (ncalipers==1 & (xvars > 1) ){
+            caliper <- rep(caliper, xvars)
+          }
+      }
+
+    if (!is.null(caliper))
+      {
+        ecaliper <- vector(mode="numeric", length=xvars)
+        sweights  <- sum(weights.orig)
+        for (i in 1:xvars)
+          {
+            meanX  <- sum( X[,i]*weights.orig )/sweights
+            sdX  <- sqrt(sum( (X[,i]-meanX)^2 )/sweights)
+            ecaliper[i]  <- caliper[i]*sdX
+          }
+      } else {
+        ecaliper <- NULL
+      }
+
+    if (!is.null(exact))
+      {
+        if(is.null(caliper))
+          {
+            max.diff <- abs(max(X)-min(X) + tolerance * 100)
+            ecaliper <- matrix(max.diff, nrow=xvars, ncol=1)
+          }
+        
+        for (i in 1:xvars)
+          {
+            if (exact[i])
+              ecaliper[i] <- tolerance;
+          }
+      }    
 
     ret <- Rmatch(Y=Y, Tr=Tr, X=X, Z=Z, V=V, All=estimand, M=M, BiasAdj=BiasAdj,
                   Weight=Weight, Weight.matrix=Weight.matrix, Var.calc=Var.calc,
-                  weight=weights, SAMPLE=sample, exact=exact,
-                  ccc=tolerance, cdd=tolerance)
-    ret.use <- ret
+                  weight=weights, SAMPLE=sample, ccc=tolerance, cdd=tolerance,
+                  ecaliper=ecaliper)
 
-    indx <-  cbind(ret$art.data[,1],  ret$art.data[,2],  ret$W)
-
-    index.treated  <- indx[,1]
-    index.control  <- indx[,2]
-    index.treated.indata  <- index.treated
-    index.control.indata  <- index.control
-    weights        <- indx[,3]
-    
-    index.treated.nocaliper  <- index.treated
-    index.control.nocaliper  <- index.control
-    index.caliper  <- rep(TRUE,length(index.treated))
-    index.drop  <- NULL
-    
-    if (caliper!=FALSE)
+    if(is.null(ret$est))
       {
-        n  <- ncol(X)
-        for (i in 1:n)
-          {
-            sweights  <- sum(weights.orig)
-            meanX  <- sum( X[,i]*weights.orig )/sweights
-            sdX  <- sqrt(sum( (X[,i]-meanX)^2 )/sweights)
-            ecaliper  <- caliper*sdX
-            
-            index.caliper  <- (abs(X[index.treated,i]-X[index.control,i]) < ecaliper) & index.caliper
-          }
-#        index.drop.treated  <- as.vector(-1*(index.treated.nocaliper[!index.caliper]))
-#        index.drop.control  <- as.vector(-1*(index.control.nocaliper[!index.caliper]))
-#        index.drop  <- unique(c(index.drop.treated,index.drop.control))        
-        index.drop  <- -1*(unique(index.treated.nocaliper[!index.caliper]))
-        sum.caliper.drops  <- length(index.drop)
-        
-        
-        if( estimand <= 1 ) {
-          #ATT or ATE
-          valid.matches  <- sum(Tr[index.drop]==1)
-        } else {
-          #ATC
-          valid.matches  <- sum(Tr[index.drop]==0)
-        }
-          
-        if (sum.caliper.drops > 0 & valid.matches < 1)
-          {
-            sum.caliper.drops  <- -9999
-            indx  <- as.matrix(NA)
-          }
-
-        if (sum.caliper.drops > 0)
-          {
-            #reestimate with dropped observations
-            
-            cY  <- as.matrix(Y[index.drop])
-            cTr <- as.matrix(Tr[index.drop])
-            cweights <- as.matrix(weights.orig[index.drop])
-            cX  <- as.matrix(X[index.drop,])
-            cZ  <- as.matrix(Z[index.drop,])
-            cV  <- as.matrix(V[index.drop,])
-
-            ret2 <- Rmatch(Y=cY, Tr=cTr, X=cX, Z=cZ, V=cV, All=estimand, M=M, BiasAdj=BiasAdj,
-                           Weight=Weight, Weight.matrix=Weight.matrix, Var.calc=Var.calc,
-                           weight=cweights, SAMPLE=sample, exact=exact,
-                           ccc=tolerance, cdd=tolerance)
-
-            indx <- cbind(ret2$art.data[,1],  ret2$art.data[,2],  ret2$W)
-
-            if(!is.na(indx[1,1]))
-              {
-                index.treated.indata  <- indx[,1]
-                index.control.indata  <- indx[,2]
-                weights        <- indx[,3]
-                
-                #lookup table
-                vdrop  <- abs(index.drop)
-                vdrop.tmp  <- vdrop
-                ndrops  <- length(vdrop)
-                nobs  <- orig.nobs-ndrops
-                lu  <- matrix(0, nrow=nobs,ncol=1)
-                d  <- 1
-                count  <- 0
-                i  <- 1 
-                while (i <= nobs)
-                  {
-#                cat("i:",i,"d:",d,"vdrop.tmp[d]",vdrop.tmp[d],"\n")
-                    if (d <= ndrops)
-                      {
-                        if (vdrop.tmp[d]==i)
-                          {
-                            count  <- count+2
-                            lu[i]  <- count
-                                        #            vdrop.tmp[d+1]  <- vdrop.tmp[d+1]-d
-                            vdrop.tmp[(d+1):ndrops]  <- vdrop.tmp[(d+1):ndrops]-1
-#                        cat("**IN d:",d,"\n")
-#                        print(vdrop.tmp)
-                            d  <- d+1
-                            if (d<=ndrops)
-                              {
-                                if (vdrop.tmp[d]==vdrop.tmp[d-1])
-                                  {
-                                    i  <- i - 1
-                                    count  <- count-1
-#                                cat("reset i:",i,"\n")
-                                  }
-                              }
-                          } else {
-                            count  <- count+1
-                            lu[i]  <- count;
-                          }
-                      } else {
-                        count  <- count+1
-                        lu[i]  <- count;        
-                      }
-                    i  <- i + 1
-                  }
-                index.treated  <- lu[index.treated.indata]
-                index.control  <- lu[index.control.indata]                        
-                
-              }#end of !is.na(indx[1,1])
-            ret.use <- ret2
-          }#end of restimate for caliper portion of code
-      }#end of caliper loop
-
-    if (is.na(indx[1,1]))
-      {
-        if (sum.caliper.drops < 0) {
-          warning("'Match' object contains no valid matches (probably because of the caliper).") 
+        if (ret$sum.caliper.drops > 0) {
+          warning("'Match' object contains no valid matches (probably because of the caliper or the exact option).") 
         } else {
           warning("'Match' object contains no valid matches")
         }
-      }#is.na(indx[1,1])
 
-    if (!is.na(indx[1,1]))
-      {
-        if (!extra.output)
-          {
-            ret.use$art.data  <- NULL
-            ret.use$aug.data  <- NULL
-          }
-        #RESET INDEX.TREATED        
-        indx  <- as.matrix(cbind(index.treated,index.control))
-        if (estimand==0) {
-          #"ATT"
-          index.treated  <- indx[,1]
-          index.control  <- indx[,2]
-        } else if(estimand==1) {
-          #"ATE"
-          tmp.index.treated  <- indx[,1]
-          tmp.index.control  <- indx[,2]
-
-          tl  <- length(tmp.index.treated)
-          index.treated <- vector(length=tl, mode="numeric")
-          index.control <- vector(length=tl, mode="numeric")
-          trt  <- Tr[tmp.index.treated]==1
-          for (i in 1:tl)
-            {
-              if (trt[i]) {
-                index.treated[i]  <- tmp.index.treated[i]
-                index.control[i]  <- tmp.index.control[i]
-              } else {
-                index.treated[i]  <- tmp.index.control[i]
-                index.control[i]  <- tmp.index.treated[i]
-              }
-            }
-        } else if(estimand==2) {
-          #"ATC"
-          index.treated  <- indx[,2]
-          index.control  <- indx[,1]
-        }        
-
-        mdata  <- list()
-        mdata$Y  <- c(Y[index.treated],Y[index.control])
-        mdata$Tr <- c(Tr[index.treated],Tr[index.control])
-        mdata$X  <- rbind(X[index.treated,],X[index.control,])
-        
-        #naive standard errors
-        mest  <- sum((Y[index.treated]-Y[index.control])*weights)/sum(weights)
-        v1  <- Y[index.treated] - Y[index.control]
-        varest  <- sum( ((v1-mest)^2)*weights)/(sum(weights)*sum(weights))
-        se.naive  <- sqrt(varest)
-        
-        z  <- list(est=ret.use$est, se=ret.use$se, est.noadj=mest, se.naive=se.naive,
-                   se.cond=ret.use$se.cond, 
-                   mdata=mdata, em=ret.use$em,
-                   index.treated=index.treated, index.control=index.control,
-                   weights=weights, orig.nobs=orig.nobs, orig.wnobs=orig.wnobs,
-                   orig.treated.nobs=orig.treated.nobs,
-                   nobs=nobs, wnobs=sum(weights),
-                   caliper=caliper, index.caliper.drop=index.drop, 
-                   index.treated.nocaliper = index.treated.nocaliper,
-                   index.control.nocaliper = index.control.nocaliper,
-                   index.treated.indata=index.treated.indata,
-                   index.control.indata=index.control.indata,
-                   art.data=ret.use$art.data, aug.data=ret.use$aug.data)
-      } else  {
-        z  <- NA
+        z <- NA
+        class(z)  <- "Match"    
+        return(z)
       }
+    
+    indx <-  cbind(ret$art.data[,1],  ret$art.data[,2],  ret$W)
+    
+    index.treated  <- indx[,1]
+    index.control  <- indx[,2]
+    weights        <- indx[,3]
+    sum.caliper.drops <- ret$sum.caliper.drops
+    
+   #RESET INDEX.TREATED        
+    indx  <- as.matrix(cbind(index.treated,index.control))
+    if (estimand==0) {
+      #"ATT"
+      index.treated  <- indx[,1]
+      index.control  <- indx[,2]
+    } else if(estimand==1) {
+                                        #"ATE"
+      tmp.index.treated  <- indx[,1]
+      tmp.index.control  <- indx[,2]
+      
+      tl  <- length(tmp.index.treated)
+      index.treated <- vector(length=tl, mode="numeric")
+      index.control <- vector(length=tl, mode="numeric")
+      trt  <- Tr[tmp.index.treated]==1
+      for (i in 1:tl)
+        {
+          if (trt[i]) {
+            index.treated[i]  <- tmp.index.treated[i]
+            index.control[i]  <- tmp.index.control[i]
+          } else {
+            index.treated[i]  <- tmp.index.control[i]
+            index.control[i]  <- tmp.index.treated[i]
+          }
+        }
+    } else if(estimand==2) {
+      #"ATC"
+      index.treated  <- indx[,2]
+      index.control  <- indx[,1]
+    }        
+    
+    mdata  <- list()
+    mdata$Y  <- c(Y[index.treated],Y[index.control])
+    mdata$Tr <- c(Tr[index.treated],Tr[index.control])
+    mdata$X  <- rbind(X[index.treated,],X[index.control,])
+    
+    #naive standard errors
+    mest  <- sum((Y[index.treated]-Y[index.control])*weights)/sum(weights)
+    v1  <- Y[index.treated] - Y[index.control]
+    varest  <- sum( ((v1-mest)^2)*weights)/(sum(weights)*sum(weights))
+    se.naive  <- sqrt(varest)
+
+    z  <- list(est=ret$est, se=ret$se, est.noadj=mest, se.naive=se.naive,
+               se.cond=ret$se.cond, 
+               mdata=mdata, em=ret$em,
+               index.treated=index.treated, index.control=index.control,
+               weights=weights, orig.nobs=orig.nobs, orig.wnobs=orig.wnobs,
+               orig.treated.nobs=orig.treated.nobs,
+               nobs=nobs, wnobs=sum(weights),
+               caliper=caliper, ecaliper=ecaliper, exact=exact,
+               ndrops=sum.caliper.drops)
 
     class(z)  <- "Match"    
     return(z)
@@ -311,10 +235,14 @@ summary.Match  <- function(object, ..., full=FALSE, digits=5)
     cat("Matched number of observations  (unweighted). ", length(object$index.treated),"\n")
 
     cat("\n")
-    if(object$caliper!=FALSE)
+    if(!is.null(object$exact))
       {
-        cat("Caliper (SDs)..............  ",object$caliper,"\n")
-        cat("Matches dropped by caliper.. ",length(object$index.caliper.drop),"\n")
+        cat("Matches dropped by 'exact' or 'caliper'...... ",object$ndrops,"\n")
+        cat("\n\n")        
+      }else if(!is.null(object$caliper))
+      {
+        cat("Caliper (SDs)................  ",object$caliper,"\n")
+        cat("Matches dropped by 'caliper'.. ",object$ndrops,"\n")
         cat("\n\n")
       } else {
         cat("\n")
@@ -323,9 +251,12 @@ summary.Match  <- function(object, ..., full=FALSE, digits=5)
 
 
 Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.calc, weight,
-                   SAMPLE, exact, ccc, cdd)
+                   SAMPLE, ccc, cdd, ecaliper=NULL)
   {
 
+    sum.caliper.drops <- 0
+    X.orig <- X
+    
 # if SATC is to be estimated the treatment indicator is reversed    
     if (All==2)
       Tr <- 1-Tr
@@ -428,16 +359,16 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
           Weight.matrix <- AA %*% Weight.matrix %*% AA
         }
 
-    if (exact==1)
-      {
-        Weight.matrix <- cbind(Weight.matrix, matrix(0,nrow=Kx,ncol=Mv))
-        Weight.matrix <- rbind(Weight.matrix, cbind(matrix(0,nrow=Mv,ncol=Kx),
-                               1000*solve(diag(as.vector(Sig.V*Sig.V), nrow=length(Sig.V)))))
-        Weight.matrix <- as.matrix(Weight.matrix)
-        X <- cbind(X,V)
-        Mu.X  <- rbind(Mu.X, matrix(0, nrow(Mu.V), 1))
-        Sig.X <- rbind(Sig.X, matrix(1, nrow(Sig.V), 1))
-      } #end of exact
+#    if (exact==1)
+#      {
+#        Weight.matrix <- cbind(Weight.matrix, matrix(0,nrow=Kx,ncol=Mv))
+#        Weight.matrix <- rbind(Weight.matrix, cbind(matrix(0,nrow=Mv,ncol=Kx),
+#                               1000*solve(diag(as.vector(Sig.V*Sig.V), nrow=length(Sig.V)))))
+#        Weight.matrix <- as.matrix(Weight.matrix)
+#        X <- cbind(X,V)
+#        Mu.X  <- rbind(Mu.X, matrix(0, nrow(Mu.V), 1))
+#        Sig.X <- rbind(Sig.X, matrix(1, nrow(Sig.V), 1))
+#      } #end of exact
 
     Nx <- nrow(X)
     Kx <- ncol(X)
@@ -535,6 +466,32 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
             # selection of actual matches 
             #logical index
             ACTMAT <- POTMAT & ( Dist <= (Distmax+ccc) )
+
+            Ii <- i * matrix(1, nrow=sum(ACTMAT), ncol=1)
+            IMi <- as.matrix(INN[ACTMAT,1])
+            
+            if(!is.null(ecaliper))
+              {
+                for (j in 1:length(Ii))
+                  {
+                    for( x in 1:Kx)
+                      {
+                        diff <- abs(X.orig[i,x] - X.orig[IMi[j], x])
+                        if (diff > ecaliper[x])
+                          {
+#                            print(diff)
+
+                            ACTMAT[IMi[j]] <- FALSE
+                            sum.caliper.drops <- sum.caliper.drops+1
+                            
+                            break
+                          }
+                      } #x loop
+                  } #j loop
+
+                if (sum(ACTMAT) < 1)
+                  next;
+              } #ecaliper check
 
             # distance to actual matches            
             ACTDIST <- as.matrix(Dist[ACTMAT,1])
@@ -690,6 +647,11 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
         IZ <- as.matrix(IZ[IT==1,])
       } #end of if
 
+    if (length(I) < 1)
+      {
+        return(list(sum.caliper.drops=sum.caliper.drops))
+      }
+
     # III. Regression of outcome on covariates for matches
     if (All==1)
       {
@@ -749,6 +711,7 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
 
     art.data <- cbind(I,IM,IT,DD,IY,Yc,Yt,W,WWi,ADist,IX.u,Xc.u,Xt.u,
                       Yc.adj,Yt.adj,Tau.i)
+
 
     # III. If conditional variance is needed, initialize variance vector
     # and loop through all observations
@@ -868,20 +831,21 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
 
     em <- as.matrix(c(0,0))
 
-    if (exact==1)
-      {
-        Vt.u <- Xt.u[,(Kx-Mv+1):Kx]
-        Vc.u <- Xc.u[,(Kx-Mv+1):Kx]
-        Vdif <- abs(Vt.u-Vc.u)
-
-        if (Mv>1)
-          Vdif <- as.matrix(apply(t(Vdif), 2, sum))
-
-        em[1,1] <- length(Vdif)
-        em[2,1] <- sum(Vdif>0.000001)
-      }#end of exact==1
+#    if (exact==1)
+#      {
+#        Vt.u <- Xt.u[,(Kx-Mv+1):Kx]
+#        Vc.u <- Xc.u[,(Kx-Mv+1):Kx]
+#        Vdif <- abs(Vt.u-Vc.u)
+#
+#        if (Mv>1)
+#          Vdif <- as.matrix(apply(t(Vdif), 2, sum))
+#
+#        em[1,1] <- length(Vdif)
+#        em[2,1] <- sum(Vdif>0.000001)
+#      }#end of exact==1
 
     return(list(est=est, se=se, se.cond=se.cond, em=em, W=W,
+                sum.caliper.drops=sum.caliper.drops,
                 art.data=art.data, aug.data=aug.data))
   }# end of Rmath
 
