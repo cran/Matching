@@ -1533,7 +1533,10 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=FALSE, mv=FALSE,
         findx  <- 2
       }
 
-    if (nboots > 9)
+    if(nboots < 10)
+      ks <- FALSE
+
+    if (ks)
       {
         ks.bm <- KSbootBalanceSummary(index.treated=(Tr==0),
                                       index.control=(Tr==1),
@@ -1547,7 +1550,7 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=FALSE, mv=FALSE,
                                           X=xdata[,findx:nvars],
                                           nboots=nboots)
           }
-      }
+      } 
     
     if (verbose > 0)
       {
@@ -1563,11 +1566,16 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=FALSE, mv=FALSE,
 
             cat("before matching:\n")
             foo  <-  balanceUV(xdata[,i][Tr==1], xdata[,i][Tr==0], nboots=0)
-            foo$ks <- list()
-            foo$ks$ks.boot.pvalue <- ks.bm$ks.boot.pval[count]
-            foo$ks$ks <- list()
-            foo$ks$ks$p.value <- ks.bm$ks.naive.pval[count]
-            foo$ks$ks$statistic <- ks.bm$ks.stat[count]
+            if (ks.do)
+              {
+              foo$ks <- list()
+              foo$ks$ks.boot.pvalue <- ks.bm$ks.boot.pval[count]
+              foo$ks$ks <- list()
+              foo$ks$ks$p.value <- ks.bm$ks.naive.pval[count]
+              foo$ks$ks$statistic <- ks.bm$ks.stat[count]
+            } else {
+              foo$ks <- NA
+            }
             summary(foo, digits=digits)
             
             if (!is.null(match.out))
@@ -1576,11 +1584,17 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=FALSE, mv=FALSE,
                 foo  <- balanceUV(xdata[,i][match.out$index.treated],
                                   xdata[,i][match.out$index.control],
                                   weights=match.out$weights, nboots=0)
-                foo$ks <- list()
-                foo$ks$ks.boot.pvalue <- ks.am$ks.boot.pval[count]
-                foo$ks$ks <- list()
-                foo$ks$ks$p.value <- ks.am$ks.naive.pval[count]
-                foo$ks$ks$statistic <- ks.am$ks.stat[count]             
+
+                if (ks.do)
+                  {                
+                    foo$ks <- list()
+                    foo$ks$ks.boot.pvalue <- ks.am$ks.boot.pval[count]
+                    foo$ks$ks <- list()
+                    foo$ks$ks$p.value <- ks.am$ks.naive.pval[count]
+                    foo$ks$ks$statistic <- ks.am$ks.stat[count]
+                  } else {
+                    foo$ks <- NA
+                  }
                 summary(foo, digits=digits)                
               }
           }
