@@ -1,0 +1,12 @@
+Package: Matching
+Version: 0.48
+Date: 2004/10/21
+Title: Multivariate and Propensity Score Matching with Formal Tests of Balance
+Author: Jasjeet Singh Sekhon <jasjeet_sekhon@harvard.edu>
+Maintainer: Jasjeet Singh Sekhon <jasjeet_sekhon@harvard.edu>
+Description: Provides functions for multivariate matching and a variety of univariate 
+             and multivariate tests to determine if balance has been obtained. 
+Depends: R (>= 1.9.0), MASS (>= 7.2-1)
+License: GPL2 or newer as long as authorship of this code is made clear
+URL: http://jsekhon.fas.harvard.edu/matching
+Packaged: Thu Oct 21 04:39:30 2004; jsekhon
