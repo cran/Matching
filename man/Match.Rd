@@ -63,8 +63,8 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     match on the first, the following would work well: \cr
     \code{> Weight.matrix <- diag(3)}\cr
     \code{> Weight.matrix[1,1] <- 1000/var(X[,1])} \cr
-    \code{> Weight.matrix[1,2] <- 1/var(X[,2])} \cr
-    \code{> Weight.matrix[1,3] <- 1/var(X[,3])} \cr
+    \code{> Weight.matrix[2,2] <- 1/var(X[,2])} \cr
+    \code{> Weight.matrix[3,3] <- 1/var(X[,3])} \cr
     This code changes the weights implied by the
     inverse of the variances by multiplying the first variable by a 1000
     so that it is highly

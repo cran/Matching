@@ -398,7 +398,13 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
       {
         Mu.V[j,1]= ( t(V[,j])%*%weight ) /sum(weight)
         dv <- V[,j]-Mu.V[j,1]
-        sv <- sqrt(sum(V[,j]*V[,j]*weight)/sum(weight)-Mu.V[j,1]^2)
+        sv <- sum(V[,j]*V[,j]*weight)/sum(weight)-Mu.V[j,1]^2
+        if (sv > 0)
+          {
+            sv <- sqrt(sv)
+          } else {
+            sv <- 0
+          }
         sv <- sv * sqrt(N/(N-1))
         Sig.V[j,1] <- sv
       } #end of j loop
@@ -907,12 +913,14 @@ sdiff  <- function(Tr, Co, weights=rep(1,length(Co)))
 
 # function runs sdiff and t.test
 #
-balanceUV  <- function(Tr, Co, weights=rep(1,length(Co)), exact=FALSE)
+balanceUV  <- function(Tr, Co, weights=rep(1,length(Co)), exact=FALSE, ks=FALSE, nboots=1000)
   {
     try.McNemar <- FALSE
     equal  <- FALSE
     if (length(Tr)==length(Co))
       equal  <- TRUE
+
+    ks.out  <- NULL
 
     categorical  <- is.factor(Tr)
 
@@ -957,6 +965,9 @@ balanceUV  <- function(Tr, Co, weights=rep(1,length(Co)), exact=FALSE)
         wc  <- wilcox.test(Tr,Co, exact=exact)
         tt  <- t.test(Tr, Co)
 
+        if (ks)
+          ks.out <- ks.boot(Tr, Co,nboots=nboots)
+
         pdiscordant  <- NA
       } else {
 
@@ -976,6 +987,9 @@ balanceUV  <- function(Tr, Co, weights=rep(1,length(Co)), exact=FALSE)
             mc  <- McNemar2(Tr, Co, weights=weights)
             wc  <- wilcox.test( (as.real(Tr)-as.real(Co))*weights, exact=exact )
 
+            if (ks)
+              ks.out  <- ks.boot(Tr, Co,nboots=nboots)            
+
           } else {
             sbalance  <- sdiff(Tr, Co, weights)
             
@@ -989,6 +1003,9 @@ balanceUV  <- function(Tr, Co, weights=rep(1,length(Co)), exact=FALSE)
 
 #            tt  <- t.test((Tr-Co)*weights)
             tt  <- Mt.test(Tr, Co, weights)
+
+            if (ks)
+              ks.out  <- ks.boot(Tr, Co, nboots=nboots)
           }        
       }
 
@@ -998,12 +1015,14 @@ balanceUV  <- function(Tr, Co, weights=rep(1,length(Co)), exact=FALSE)
         ret  <- list(sdiff=sbalance,mean.Tr=mean.Tr,mean.Co=mean.Co,
                      var.Tr=var.Tr,var.Co=var.Co, p.value=mc$p.value,
                      var.ratio=var.ratio,
-                     pdiscordant=mc$pdiscordant, wc=NULL, mc=mc, tt=NULL)        
+                     pdiscordant=mc$pdiscordant, ks=ks.out,
+                     wc=NULL, mc=mc, tt=NULL)        
       } else {
         ret  <- list(sdiff=sbalance,mean.Tr=mean.Tr,mean.Co=mean.Co,
                      var.Tr=var.Tr,var.Co=var.Co, p.value=tt$p.value,
                      var.ratio=var.ratio,
-                     pdiscordant=NULL, wc=wc, mc=NULL, tt=tt)
+                     pdiscordant=NULL, ks=ks.out,
+                     wc=wc, mc=NULL, tt=tt)
       }
 
     class(ret) <-  "balanceUV"
@@ -1024,19 +1043,31 @@ summary.balanceUV  <- function(object, ..., digits=5)
 
     if (use.McNemar)
       {
-        cat("mean treatment......", format(object$mean.Tr, digits=digits),"\n")
-        cat("mean control........", format(object$mean.Co, digits=digits),"\n")            
-#       cat("Wilcoxon pval.......", format.pval(wc$p.value,digits=digits), "\n")
-        cat("var ratio (Tr/Co)...", format(object$var.ratio, digits=digits),"\n")
-        cat("Discordant prop.....", format(object$pdiscordant,digits=digits),"\n")
-        cat("McNemar pval........", format.pval(object$p.value,digits=digits), "\n")
+        cat("mean treatment........", format(object$mean.Tr, digits=digits),"\n")
+        cat("mean control..........", format(object$mean.Co, digits=digits),"\n")            
+#       cat("Wilcoxon pval.........", format.pval(wc$p.value,digits=digits), "\n")
+        cat("var ratio (Tr/Co).....", format(object$var.ratio, digits=digits),"\n")
+        cat("Discordant prop.......", format(object$pdiscordant,digits=digits),"\n")
+        cat("McNemar pval..........", format.pval(object$p.value,digits=digits), "\n")
+        if (!is.null(object$ks$ks.boot.pvalue))
+          {
+            cat("KS Bootstrap p-value..", format.pval(object$ks$ks.boot.pvalue, digits=digits), "\n")
+            cat("KS Statistic..........", format(object$ks$ks$statistic, digits=digits), "\n")
+            cat("KS Naive p-value......", format(object$ks$ks$p.value, digits=digits), "\n")            
+          }
       } else {
-        cat("mean treatment......", format(object$mean.Tr, digits=digits),"\n")
-        cat("mean control........", format(object$mean.Co, digits=digits),"\n")
-        cat("sdiff...............", format(object$sdiff, digits=digits),"\n")            
-#       cat("Wilcoxon pval.......", format.pval(wc$p.value,digits=digits), "\n")
-        cat("T-test pval.........", format.pval(object$tt$p.value,digits=digits), "\n")            
-        cat("var ratio (Tr/Co)...", format(object$var.ratio, digits=digits),"\n")                
+        cat("mean treatment........", format(object$mean.Tr, digits=digits),"\n")
+        cat("mean control..........", format(object$mean.Co, digits=digits),"\n")
+#       cat("sdiff.................", format(object$sdiff, digits=digits),"\n")            
+#       cat("Wilcoxon pval.........", format.pval(wc$p.value,digits=digits), "\n")
+        cat("var ratio (Tr/Co).....", format(object$var.ratio, digits=digits),"\n")
+        cat("T-test pval...........", format.pval(object$tt$p.value,digits=digits), "\n")            
+        if (!is.null(object$ks$ks.boot.pvalue))
+          {
+            cat("KS Bootstrap p-value..", format.pval(object$ks$ks.boot.pvalue, digits=digits), "\n")
+            cat("KS Statistic..........", format(object$ks$ks$statistic, digits=digits), "\n")
+            cat("KS Naive p-value......", format(object$ks$ks$p.value, digits=digits), "\n")            
+          }        
       }
     
     cat("\n")        
@@ -1410,7 +1441,8 @@ Mt.test  <- function(Tr, Co, weights)
 
     statistic  <- estimate/sqrt(var1)
     parameter  <- Inf
-    p.value    <- (1-pnorm(abs(statistic)))*2
+#    p.value    <- (1-pnorm(abs(statistic)))*2
+    p.value    <- (1-pt(abs(statistic), df=sum(weights)-1))*2
 
     z  <- list(statistic=statistic, parameter=parameter, p.value=p.value,
                estimate=estimate)
@@ -1419,8 +1451,9 @@ Mt.test  <- function(Tr, Co, weights)
 
 
 
-MatchBalance <- function(formul, data=NULL, match.out=NULL, MV=TRUE, maxit=1000,
-                         weights=rep(1,nrow(data)), nboots=100, nmc=nboots,
+MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=FALSE, mv=FALSE, 
+                         nboots=1000, nmc=nboots, 
+                         maxit=1000, weights=rep(1,nrow(data)),
                          digits=5, verbose=1, ...)
   {
 
@@ -1454,7 +1487,7 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, MV=TRUE, maxit=1000,
     nvars  <- ncol(xdata)
     names.xdata  <- names(xdata)
 
-
+    
     if (verbose > 0)
       {
         
@@ -1468,20 +1501,26 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, MV=TRUE, maxit=1000,
           {
             cat("\n***** (V",i-findx+1,") ", names.xdata[i]," *****\n",sep="")
 
+            ks.do  <- FALSE
+            is.dummy  <- length(unique( xdata[,i] )) < 3
+            if (ks & !is.dummy)
+              ks.do  <- TRUE
+
             cat("before matching:\n")
-            foo  <-  balanceUV(xdata[,i][Tr==1],xdata[,i][Tr==0])
+            foo  <-  balanceUV(xdata[,i][Tr==1],xdata[,i][Tr==0], ks=ks.do, nboots=nboots)
             summary(foo, digits=digits)
             
             if (!is.null(match.out))
               {
-                cat("after  matching:\n")    
-                foo  <- balanceUV(xdata[,i][match.out$index.treated],xdata[,i][match.out$index.control],
-                                  weights=match.out$weights)
+                cat("after  matching:\n")
+                foo  <- balanceUV(xdata[,i][match.out$index.treated],
+                                  xdata[,i][match.out$index.control],
+                                  weights=match.out$weights, ks=ks.do, nboots=nboots)
                 summary(foo, digits=digits)                
               }
           }
         
-        if (MV)  {
+        if (mv)  {
           cat("...estimating Kolmogorov-Smirnov tests...\n")
           if (nboots > 0)
             cat("  ",nboots,"bootstraps are being run (see the 'nboots' option) \n")
@@ -1504,16 +1543,23 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, MV=TRUE, maxit=1000,
       } else {
         for( i in 2:nvars)
           {
-            foo  <-  balanceUV(xdata[,i][Tr==1],xdata[,i][Tr==0], weights=weights)
+            ks.do  <- FALSE
+            is.dummy  <- length(unique( xdata[,i] )) < 3
+            if (ks & !is.dummy)
+              ks.do  <- TRUE
+
+            foo  <-  balanceUV(xdata[,i][Tr==1],xdata[,i][Tr==0],
+                               weights=weights, ks=ks.do, nboots=nboots)
             
             if (!is.null(match.out))
               {
-                foo  <- balanceUV(xdata[,i][match.out$index.treated],xdata[,i][match.out$index.control],
-                                  weights=match.out$weights)
+                foo  <- balanceUV(xdata[,i][match.out$index.treated],
+                                  xdata[,i][match.out$index.control],
+                                  weights=match.out$weights, ks=ks.do, nboots=nboots)
               }
           }
         
-        if (MV)  {
+        if (mv)  {
           ml  <- balanceMV(formul=formul, data=datain, match.out=match.out,
                            maxit=maxit, weights=weights, nboots=nboots, nmc=nmc,
                            verbose=verbose, ...)
@@ -1522,7 +1568,7 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, MV=TRUE, maxit=1000,
         }        
       }#verbose end
     
-    return(list(mv=ml,uv=foo))
+    return(invisible(list(mv=ml,uv=foo)))
   } #end of MatchBalance
 
 
@@ -1530,6 +1576,8 @@ balanceMV  <- function(formul, data=NULL, match.out=NULL, maxit=1000, weights=re
                        nboots=100, nmc=nboots, verbose=0, ...)
   {
 
+    tol <- .Machine$double.eps*100
+    
     if(!is.list(match.out) & (!is.null(match.out))) {
       warning("'Match' object contains no valid matches")
       match.out  <- NULL
@@ -1611,7 +1659,7 @@ balanceMV  <- function(formul, data=NULL, match.out=NULL, maxit=1000, weights=re
             
             s.ks   <- Mks.test(X1tmp, X2tmp, exact=FALSE, MC=MC)$statistic
             
-            if (s.ks >= bm.ks$statistic)
+            if (s.ks >= (bm.ks$statistic - tol) )
               bbcount  <- bbcount + 1
             
           }
@@ -1650,12 +1698,12 @@ balanceMV  <- function(formul, data=NULL, match.out=NULL, maxit=1000, weights=re
 
                 s.ks   <- Mks.test(X1tmp, X2tmp, exact=FALSE, MC=MC)
 
-                if (s.ks$statistic >= bm.ks$statistic)
+                if (s.ks$statistic >= (bm.ks$statistic - tol) )
                   bbcount  <- bbcount + 1                
               } #end of nmc
             bb.pval1  <- bbcount/nmc
 
-            if (bb.pval1 >= sim.ks.bm.pval)
+            if (bb.pval1 >= sim.ks.bm.pval )
               {
                 bcount  <- bcount+1
               }
@@ -1742,7 +1790,7 @@ balanceMV  <- function(formul, data=NULL, match.out=NULL, maxit=1000, weights=re
                 
                 s.ks   <- Mks.test(X1tmp, X2tmp, exact=FALSE, MC=MC)$statistic
                 
-                if (s.ks >= am.ks$statistic)
+                if (s.ks >= (am.ks$statistic - tol) )
                   bbcount  <- bbcount + 1
                 
               }
@@ -1782,7 +1830,7 @@ balanceMV  <- function(formul, data=NULL, match.out=NULL, maxit=1000, weights=re
 
                     s.ks   <- Mks.test(X1tmp, X2tmp, exact=FALSE, MC=MC)
 
-                    if (s.ks$statistic >= am.ks$statistic)
+                    if (s.ks$statistic >= (am.ks$statistic - tol) )
                       bbcount  <- bbcount + 1                
                   } #end of nmc
                 bb.pval1  <- bbcount/nmc
@@ -1923,7 +1971,7 @@ get.ydata <- function(formul, datafr) {
 
 ks.boot  <- function(Tr, Co, nboots=1000, verbose=0)
   {
-
+    tol <- .Machine$double.eps*100
     Tr <- Tr[!is.na(Tr)]
     Co <- Co[!is.na(Co)]
 
@@ -1957,7 +2005,7 @@ ks.boot  <- function(Tr, Co, nboots=1000, verbose=0)
         
         s.ks   <- Mks.test(X1tmp, X2tmp, exact=FALSE, MC=TRUE)$statistic
         
-        if (s.ks >= fs.ks$statistic)
+        if (s.ks >= (fs.ks$statistic - tol) )
           bbcount  <- bbcount + 1
         
       }
@@ -1986,6 +2034,9 @@ summary.ks.boot <- function(object, ..., digits=5)
     cat("Full Sample Statistic:", format(object$ks$statistic, digits=digits), "\n")
     cat("Naive p-value:        ", format(object$ks$p.value, digits=digits), "\n")
 #    cat("nboots completed      ", object$nboots, "\n")
-    cat("\n")
+#   cat("\n")
   } #end of summary.ks.boot
+
+
+
 
