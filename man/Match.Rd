@@ -6,18 +6,21 @@
   This function preforms multivariate matching.  This function is
   intended to be used in conjunction with the \code{MatchBalance}
   function which checks if the results of this function have actually
-  achieved balance.  If one wants to do propensity score matching, one
-  should estimate the propensity model before calling \code{Match}, and
-  then send \code{Match} the propensity scores to use.  \code{Match}
-  provides principled standard errors when matching is done with
-  covariates or a known propensity score.  Ties are handled in a
+  achieved balance on a set of covariates.  If one wants to do
+  propensity score matching, one should estimate the propensity model
+  before calling \code{Match}, and then send \code{Match} the propensity
+  scores to use. The \code{\link{GenMatch}} function can be used to
+  \emph{automatically find balance} by the use of a genetic search
+  algorithm which deterimes the optimal weight to give each covariate.
+  \code{Match} provides principled standard errors when matching is done
+  with covariates or a known propensity score.  Ties are handled in a
   deterministic and coherent fashion.
 }
 \usage{
 Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
       BiasAdj = FALSE, exact = NULL, caliper = NULL,
       Weight = 1, Weight.matrix = NULL, weights = rep(1, length(Y)),
-      Var.calc = 0, sample = FALSE, tolerance = 1e-05)
+      Var.calc = 0, sample = FALSE, tolerance = 1e-05, distance.tolerance = 1e-05)
 }
 \arguments{
   \item{Y}{ A vector containing the outcome of interest.
@@ -49,7 +52,7 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     be provided for each covariate in \code{X}. Using a logical vector
     allows the user to specify exact matching for some but not other
     variables.  When exact matches are not found, observations are
-    dropped.  \code{tolerance} determines what is considered to be an
+    dropped.  \code{distance.tolerance} determines what is considered to be an
     exact match. The \code{exact} option takes precedence over the
     \code{caliper} option.}
   \item{caliper}{ A scalar or vector denoting the caliper(s) which
@@ -72,10 +75,14 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     if the user supplies a \code{Weight.matrix}, \code{Weight} will be automatically
     set to be equal to 3.}
   \item{Weight.matrix}{ This matrix denotes the weights the matching
-    algorithm uses when weighting each of the covariates in
-    \code{X}---see the \code{Weight} option. This square matrix should
-    have as many columns as the number of columns of the \code{X}
-    matrix.  For most uses, this matrix has zeros in the off-diagonal
+    algorithm uses when weighting each of the covariates in \code{X}---see
+    the \code{Weight} option. This square matrix should have as many
+    columns as the number of columns of the \code{X} matrix. This matrix
+    is usually provided by a call to the \code{\link{GenMatch}} function
+    which finds the optimal weight each variable should be given so as to
+    achieve balance on the covariates. \cr
+
+    For most uses, this matrix has zeros in the off-diagonal
     cells.  This matrix can be used to weight some variables more than
     others.  For
     example, if \code{X} contains three variables and we want to 
@@ -97,9 +104,13 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     robust variances are calculated using \code{Var.calc} matches. }
   \item{sample}{ A logical flag for whether the population or sample
     variance is returned. }
-  \item{tolerance}{ This is a scalar which is used to determine if distances
-    are different from zero.  Values less than \code{tolerance} are deemed to
-    be equal to zero.}
+  \item{tolerance}{ This is a scalar which is used to determine
+    numerical tolerances.  This option is used by numerical routines
+    such as those used to determine if matrix is singular.}
+  \item{distance.tolerance}{This is a scalar which is used to determine if distances
+    between two observations are different from zero.  Values less than
+    \code{distance.tolerance} are deemed to be equal to zero.  This
+    option can be used to perform a type of optimal matching}
 }
 \details{
   
@@ -110,6 +121,12 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
   function. If one wants to do propensity score matching, one should estimate the
   propensity model before calling \code{Match}, and then place the
   fitted values in the \code{X} matrix---see the provided example.  \cr
+
+  The \code{\link{GenMatch}} function can be used to \emph{automatically
+  find balance} by the use of a genetic search algorithm which deterimes
+  the optimal weight to give each covariate. The object returned by
+  \code{\link{GenMatch}} can be supplied to the \code{Weight.matrix}
+  option of \code{Match} to obtain estimates.\cr
   
   Three demos are included: \code{GerberGreenImai}, \code{DehejiaWahba},
   and \code{AbadieImbens}.  These can be run by calling the
@@ -194,7 +211,9 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
   
   Matlab version by Guido Imbens, University of California,
   Berkeley, \url{http://elsa.berkeley.edu/~imbens/}.}
-\seealso{ Also see \code{\link{summary.Match}}, \code{\link{MatchBalance}},
+\seealso{ Also see \code{\link{summary.Match}},
+  \code{\link{GenMatch}},
+  \code{\link{MatchBalance}},
   \code{\link{balanceMV}}, \code{\link{balanceUV}}, \code{\link{ks.boot}},
   \code{\link{GerberGreenImai}}, \code{\link{lalonde}}
 } 

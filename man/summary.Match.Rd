@@ -20,7 +20,8 @@
   Jasjeet S. Sekhon, Harvard University, \email{jasjeet\_sekhon@harvard.edu},
   \url{http://jsekhon.fas.harvard.edu/}
 }
-\seealso{ Also see \code{\link{Match}}, \code{\link{MatchBalance}}, \code{\link{balanceMV}},
+\seealso{ Also see \code{\link{Match}}, \code{\link{GenMatch}},
+  \code{\link{MatchBalance}}, \code{\link{balanceMV}},
   \code{\link{balanceUV}}, \code{\link{ks.boot}},
   \code{\link{GerberGreenImai}}, \code{\link{lalonde}}
 }

@@ -128,7 +128,7 @@ MatchBalance(formul, data = NULL, match.out = NULL, ks = FALSE, mv = FALSE,
   \url{http://jsekhon.fas.harvard.edu/}
 }
 \seealso{
-  Also see \code{\link{Match}}, \code{\link{balanceMV}},
+  Also see \code{\link{Match}}, \code{\link{GenMatch}}, \code{\link{balanceMV}},
   \code{\link{balanceUV}}, \code{\link{ks.boot}}, 
   \code{\link{GerberGreenImai}}, \code{\link{lalonde}}
 }

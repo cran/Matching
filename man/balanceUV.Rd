@@ -60,7 +60,8 @@ balanceUV(Tr, Co, weights = rep(1, length(Co)), exact = FALSE, ks=FALSE,
   Sekhon, Jasjeet S. 2004.  ``Balance Tests for Matching Estimators.''  Working Paper.  
   }
   \seealso{ Also see \code{\link{summary.balanceUV}},
-    \code{\link{ks.boot}}, \code{\link{Match}}, \code{\link{MatchBalance}},
+    \code{\link{ks.boot}}, \code{\link{Match}}, \code{\link{GenMatch}},
+    \code{\link{MatchBalance}},
     \code{\link{balanceMV}}, \code{\link{GerberGreenImai}}, \code{\link{lalonde}} }
 \examples{
 data(lalonde)
