@@ -241,7 +241,7 @@ MatchGenoudStage1caliper <- function(Tr=Tr, X=X, All=All, M=M, weights=weights,
 
     ret <- list(Tr=Tr, X=X, All=All, M=M, N=N, ecaliper=ecaliper)
     return(ret)
-  } #end of MatchGenoudStage1
+  } #end of MatchGenoudStage1caliper
 
 
 FastMatchGenoudCaliper <- function(Tr, X, All=1, M=1, Weight=1, 

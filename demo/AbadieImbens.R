@@ -86,7 +86,7 @@ summary(rr)
 res  <- rbind(res,cbind(14,rr$est,rr$se))
 
 rr  <- Match(Y=Y,Tr=T,X=X,Z=Z,V=V,estimand="ATE",M=1,BiasAdj=FALSE,Weight=1,Var.calc=0,
-             weight=w.educ,sample=TRUE);
+             weights=w.educ,sample=TRUE);
 summary(rr)
 res  <- rbind(res,cbind(15,rr$est,rr$se))
 
@@ -99,7 +99,7 @@ Weight.matrix  <- diag(4)
 
 rr  <- Match(Y=Y,Tr=T,X=X,Z=Z,V=V,
              sample=FALSE, M=3, estimand="ATT", BiasAdj=TRUE, Weight=3, exact=TRUE,Var.calc=3,
-             weight=w.educ, Weight.matrix=Weight.matrix);
+             weights=w.educ, Weight.matrix=Weight.matrix);
 summary(rr)
 res  <- rbind(res,cbind(75,rr$est,rr$se))
 
@@ -110,7 +110,7 @@ X  <- cbind(lalonde$age, lalonde$educ, lalonde$re74);
 
 rr  <- Match(Y=Y,Tr=T,X=X,Z=Z,V=V,
              sample=TRUE, M=3, estimand="ATE", BiasAdj=TRUE, Weight=2, exact=TRUE,Var.calc=0,
-             weight=w.educ);
+             weights=w.educ);
 summary(rr)
 res  <- rbind(res,cbind(76,rr$est,rr$se))
 
