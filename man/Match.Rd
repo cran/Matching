@@ -9,30 +9,28 @@
   achieved balance.  If one wants to do propensity score matching, one
   should estimate the propensity model before calling \code{Match}, and
   then send \code{Match} the propensity scores to use.  \code{Match}
-  implements the matching algorithm of Abadie and Imbens which provides
-  principled standard errors when matching is done with covariates or a
-  known propensity score.  Ties are handled in a deterministic and
-  coherent fashion.
+  provides principled standard errors when matching is done with
+  covariates or a known propensity score.  Ties are handled in a
+  deterministic and coherent fashion.
 }
 \usage{
 Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
-      BiasAdj = FALSE, Weight = 1, Weight.matrix = NULL, Var.calc = 0,
-      weights= rep(1, length(Y)), caliper=FALSE, exact = FALSE,
-      sample = FALSE, extra.output = FALSE,
-      tolerance = 1e-05)
+      BiasAdj = FALSE, exact = NULL, caliper = NULL,
+      Weight = 1, Weight.matrix = NULL, weights = rep(1, length(Y)),
+      Var.calc = 0, sample = FALSE, tolerance = 1e-05)
 }
 \arguments{
- \item{Y}{ A vector containing the outcome of interest.
+  \item{Y}{ A vector containing the outcome of interest.
     Missing values are not allowed.}
   \item{Tr}{ A vector indicating the observations which are
-  in the treatment regime and those which are not.  This can either be a
-  logical vector or a real vector where 0 denotes control and 1 denotes
-  treatment.}
+    in the treatment regime and those which are not.  This can either be a
+    logical vector or a real vector where 0 denotes control and 1 denotes
+    treatment.}
   \item{X}{ A matrix containing the variables we wish to match on.
     This matrix may contain the actual observed covariates or the
     propensity score or a combination of both.}
   \item{Z}{ A matrix containing the covariates for which we wish to make
-  bias adjustments.}
+    bias adjustments.}
   \item{V}{ A matrix containing the covariates for which the variance
     of the causal effect may vary. Also see the \code{Var.calc} option,
     which takes precedence.}
@@ -41,9 +39,30 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     treated. "ATE" is the sample average treatment effect (for all), and
     "ATC" is the sample average treatment effect for the controls.}
   \item{M}{ A scalar for the number of matches which should be
-  found (with replacement). The default is one-to-one matching. }
+    found (with replacement). The default is one-to-one matching. }
   \item{BiasAdj}{ A logical scalar for whether regression adjustment
     should be used. See the \code{Z} matrix.}
+  \item{exact}{ A logical scalar or vector for whether exact matching
+    should be done.  If a logical scalar is
+    provided, that logical value is applied to all covariates of
+    \code{X}.  If a logical vector is provided, a logical value should
+    be provided for each covariate in \code{X}. Using a logical vector
+    allows the user to specify exact matching for some but not other
+    variables.  When exact matches are not found, observations are
+    dropped.  \code{tolerance} determines what is considered to be an
+    exact match. The \code{exact} option takes precedence over the
+    \code{caliper} option.}
+  \item{caliper}{ A scalar or vector denoting the caliper(s) which
+    should be used when matching.  A caliper is the distance which is
+    acceptable for any match.  Observations which are outside of the
+    caliper are dropped. If a scalar caliper is provided, this caliper is
+    used for all covariates in \code{X}.  If a vector of calipers is
+    provided, a caliper value should be provide for each covariate in
+    \code{X}. The caliper is interpreted to be in standardized units.  For example,
+    \code{caliper=.25} means that all matches not equal to or within .25
+    standard deviations of each covariate in \code{X} are dropped.
+    The \code{ecaliper} object which is returned by \code{Match} shows
+    the enforced caliper on the scale of the \code{X} variables.}
   \item{Weight}{ A scalar for the type of
     weighting scheme the matching algorithm should use when weighting
     each of the covariates in \code{X}.  The default value of
@@ -57,43 +76,27 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     \code{X}---see the \code{Weight} option. This square matrix should
     have as many columns as the number of columns of the \code{X}
     matrix.  For most uses, this matrix has zeros in the off-diagonal
-    cells.  This matrix can be used to perform exact matching on some
-    variables and inexact matching for others.  For
-    example, if \code{X} contains three variables and we want to exactly
-    match on the first, the following would work well: \cr
+    cells.  This matrix can be used to weight some variables more than
+    others.  For
+    example, if \code{X} contains three variables and we want to 
+    match as best as we can on the first, the following would work well:
+    \cr
     \code{> Weight.matrix <- diag(3)}\cr
     \code{> Weight.matrix[1,1] <- 1000/var(X[,1])} \cr
     \code{> Weight.matrix[2,2] <- 1/var(X[,2])} \cr
     \code{> Weight.matrix[3,3] <- 1/var(X[,3])} \cr
     This code changes the weights implied by the
     inverse of the variances by multiplying the first variable by a 1000
-    so that it is highly
-    weighted.  Also see the \code{exact} and \code{caliper} options.}
+    so that it is highly weighted.  In order to enforce exact matching
+    see the \code{exact} and \code{caliper} options.}
+  \item{weights}{ A vector the same length as \code{Y} which
+    provides observations specific weights.}
   \item{Var.calc}{ A scalar for the variance estimate
     that should be used.  By default \code{Var.calc=0} which means that
     homoscedasticity is assumed.  For values of  \code{Var.calc > 0},
     robust variances are calculated using \code{Var.calc} matches. }
-  \item{weights}{ A vector the same length as \code{Y} which
-    provides observations specific weights.}
-  \item{caliper}{ A scalar denoting if a caliper should be used when
-    matching.  A caliper is the distance which is acceptable for any
-    match.  Observations which are outside of the caliper are
-    dropped. If a caliper is to be used, a scalar real value should be
-    provided. This scalar is interpreted to be in standardized units.
-    For example, \code{caliper=.25} means that all matches not equal to
-    or within .25 standard deviations of each covariate in \code{X} are
-    dropped.  Note that a user supplied \code{Weight.matrix} can
-    alter the operation of the \code{caliper} when there are
-    multiple covariates; the \code{caliper} will still operate but
-    different variables will be given precedence.}
-  \item{exact}{ A logical flag for whether exact matching of all
-    covariates in \code{X} should be done.  When exact matches are not found,
-    observations are dropped.  \code{tolerance} determines
-    what is considered to be an exact match. }
   \item{sample}{ A logical flag for whether the population or sample
     variance is returned. }
-  \item{extra.output}{ A logical flag for whether the user wants to
-    have the \code{art.data} and \code{aug.data} objects returned.}
   \item{tolerance}{ This is a scalar which is used to determine if distances
     are different from zero.  Values less than \code{tolerance} are deemed to
     be equal to zero.}
@@ -166,24 +169,13 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
   \item{orig.treated.nobs}{The original number of treated observations (unweighted).}
   \item{nobs }{The number of observations in the matched dataset.}
   \item{wnobs }{The number of weighted observations in the matched dataset.}
-  \item{caliper }{A logical flag indicating if a caliper was used.}
-  \item{index.caliper }{An index listing the observations in the
-    original dataset dropped by the caliper.  This is NULL if no caliper
-    was used.}
-  \item{index.treated.nocaliper }{Similar to \code{index.treated}, but
-    the index that would be produced without a caliper.  This
-    is exactly the same as \code{index.treated} if no caliper was used.}
-  \item{index.control.nocaliper }{Similar to \code{index.control}, but
-    the index that would be produced without a caliper.  This
-    is exactly the same as \code{index.control} if no caliper was used.}
-  \item{index.treated.indata }{An index used to index the matched
-    dataset to keep track of dropped observations.  The end user should not need to use this index.}
-  \item{index.control.indata }{An index used to index the matched
-    dataset to keep track of dropped observations. The end user should not need to use this index.}
-  \item{art.data }{Object that can be requested by the
-    \code{extra.output} flag for compatibility with Imbens's function.}  
-  \item{aug.data }{Object that can be requested by the
-    \code{extra.output} flag for compatibility with Imbens's function.}
+  \item{caliper }{The \code{caliper} which was used.}
+  \item{ecaliper }{The size of the enforced caliper on the scale of the
+    \code{X} variables.  This object has the same length as the number of
+    covariates in \code{X}.}
+  \item{exact}{The value of the \code{exact} function argument.}
+  \item{ndrops}{The number of matches dropped either because of the
+    caliper or exact matching.}
 }
 \references{
 
@@ -196,12 +188,12 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
   Across Democratic Societies.''  Working Paper.
   \url{http://jsekhon.fas.harvard.edu/papers/SekhonInformation.pdf}
 }
-\author{ R version by Jasjeet S. Sekhon, Harvard University,
+\author{R version by Jasjeet S. Sekhon, Harvard University,
   \email{jasjeet\_sekhon@harvard.edu},
   \url{http://jsekhon.fas.harvard.edu/} \cr
   
-  Original Matlab version by Guido Imbens, University of California,
-  Berkeley, \url{http://elsa.berkeley.edu/~imbens/} }
+  Matlab version by Guido Imbens, University of California,
+  Berkeley, \url{http://elsa.berkeley.edu/~imbens/}.}
 \seealso{ Also see \code{\link{summary.Match}}, \code{\link{MatchBalance}},
   \code{\link{balanceMV}}, \code{\link{balanceUV}}, \code{\link{ks.boot}},
   \code{\link{GerberGreenImai}}, \code{\link{lalonde}}

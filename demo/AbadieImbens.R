@@ -1,8 +1,9 @@
 # Replication of Guido Imbens lalonde_exper_04feb2.m file
 # See http://elsa.berkeley.edu/~imbens/estimators.shtml
-# with balance checks
+#
+# Note that the implications of the 'exact' options differ between the
+# two programs
 
-set.seed(10391)
 data(lalonde)
 
 X  <- lalonde$age
