@@ -20,7 +20,8 @@
 Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
       BiasAdj = FALSE, exact = NULL, caliper = NULL,
       Weight = 1, Weight.matrix = NULL, weights = rep(1, length(Y)),
-      Var.calc = 0, sample = FALSE, tolerance = 1e-05, distance.tolerance = 1e-05)
+      Var.calc = 0, sample = FALSE, tolerance = 1e-05,
+      distance.tolerance = 1e-05, version="fast")
 }
 \arguments{
   \item{Y}{ A vector containing the outcome of interest.
@@ -111,6 +112,11 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     between two observations are different from zero.  Values less than
     \code{distance.tolerance} are deemed to be equal to zero.  This
     option can be used to perform a type of optimal matching}
+  \item{version}{The version of the code to be used.  The "fast" C/C++
+    version of the code is used unless the "stable" version is
+    requested.  The "stable" version is automatically used when any of the
+    following options are provided: \code{weights}, \code{exact},
+    \code{caliper}.}
 }
 \details{
   

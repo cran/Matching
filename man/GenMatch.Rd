@@ -231,8 +231,7 @@ Y=re78/1000;
 
 # Now that GenMatch() has found the optimal weights, let's estimate
 # our causal effect of interest using those weights
-mout <- Match(Y=Y, Tr=treat, X=X, estimand="ATE", tolerance=0.00001,
-              Weight.matrix=genout)
+mout <- Match(Y=Y, Tr=treat, X=X, estimand="ATE", Weight.matrix=genout)
 summary(mout)
 
 #                        
