@@ -27,7 +27,8 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                      tolerance=0.000001,
                      distance.tolerance=tolerance,
                      min.weight=0, max.weight=1000,
-                     Domains=NULL, print.level=2, ...)
+                     Domains=NULL, print.level=2,
+                     project.path=NULL, ...)
 }
 \arguments{
   \item{Tr}{ A vector indicating the observations which are
@@ -161,11 +162,25 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
     level printing is requested, details of the \code{\link[rgenoud]{genoud}}
     population are printed in the "genoud.pro" file which is located in
     the temporary \code{R} directory returned by the \code{\link{tempdir}}
-    function.  See the \code{project.path} option of the
-    \code{\link[rgenoud]{genoud}} function for more details.  Because
-    \code{GenMatch} runs may take a long time, it is important for the
+    function.  See the \code{project.path} option for more details.
+    Because \code{GenMatch} runs may take a long time, it is important for the
     user to receive feedback.  Hence, print level 2 has been set as the
     default.}
+  \item{project.path}{ This is the path of the
+    \code{\link[rgenoud]{genoud}} project file.  By default no file is
+    produced unless \code{print.level=3}.  In that case,
+    \code{\link[rgenoud]{genoud}} places it's output in a file called
+    "genoud.pro" located in the temporary directory provided by
+    \code{\link{tempdir}}.  If a file path is provided to the
+    \code{project.path} option, a file will be created regardless of the
+    \code{print.level}. The behavior of the project file, however, will
+    depend on the \code{print.level} chosen.  If the \code{print.level}
+    variable is set to 1, then the project file is rewritten after each
+    generation.  Therefore, only the currently fully completed generation
+    is included in the file.  If the \code{print.level} variable is set to
+    2 or higher, then each new generation is simply appended to the
+    project file. No project file is generated for
+    \code{print.level=0}.}
   \item{...}{Other options which are passed on to \code{\link[rgenoud]{genoud}}.}
 }
 

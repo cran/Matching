@@ -89,7 +89,7 @@ extern "C"
 
     Matrix xx;
     Matrix DX;
-    Matrix Dist, DistPot, TTPotMat, weightPot, S, tt, 
+    Matrix Dist, DistPot, TTPotMat, weightPot, tt, 
       weightPot_sort, weightPot_sum, ACTDIST, Wi, xmat, I, IM, W;
     Matrix ACTMAT, POTMAT, XPOT;
 
@@ -100,8 +100,8 @@ extern "C"
     //    printf("actual: %lf, secs: %d, msecs: %d\n", actual, secs, msecs);
 
     //These are larger than needed; it is just easier this way
-    double *D_weightPot = (double *) malloc(N*sizeof(double));  
-    int *In_DistPot = (int *) malloc(N*sizeof(int));  
+    int *order_DistPot = (int *) malloc(N*sizeof(int));  
+    double *S = (double *) malloc(N*sizeof(double));  
 
     // struct timeval tv1, tv2;	// Required "timeval" structures (see man pg.)
     // struct timezone tz1, tz2;	// Required "timezone" structures (see man pg.)
@@ -152,22 +152,17 @@ extern "C"
 
 	    for(j=0; j< weightPot_size; j++)
 	      {
-		D_weightPot[j] = weightPot[j];
-
 		// assume that weightPot_size = size(DistPot)
-		In_DistPot[j] = (int) DistPot[j];
+		order_DistPot[j] = j;
+		S[j] = (double) DistPot[j];
 	      }
 
-	    //sorted distance of potential matches            
-            S = sortc(DistPot);
+	    rsort_with_index (S, order_DistPot, weightPot_size);
 
-	    rsort_with_index (D_weightPot, In_DistPot, weightPot_size);
-
-	    //S = Matrix(weightPot_size, 1);
 	    weightPot_sort = Matrix(weightPot_size, 1);
 	    for(j=0; j < weightPot_size; j++)
 	      {
-		weightPot_sort[j] = D_weightPot[j];
+		weightPot_sort[j] = weightPot[order_DistPot[j]];
 	      }
             weightPot_sum = cumsum(weightPot_sort);
 
@@ -276,8 +271,8 @@ extern "C"
     // display(rr);
 
     /* Free Memory */
-    free(In_DistPot);
-    free(D_weightPot);
+    free(S);
+    free(order_DistPot);
 
     r = rows(rr);
     c = cols(rr);
@@ -299,344 +294,6 @@ extern "C"
     UNPROTECT(1);
     return(ret);    
   } //end of FastMatchC
-
-  SEXP FastMatchCcaliper(SEXP I_N, SEXP I_xvars, SEXP I_All, SEXP I_M, SEXP I_cdd,
-			 SEXP I_caliper,
-			 SEXP I_ww, SEXP I_Tr, SEXP I_X, SEXP I_weight,
-			 SEXP I_CaliperVec, SEXP I_Xorig)
-  {
-    SEXP ret;
-
-    long N, xvars, All, M, caliper, sum_caliper_drops=0;
-    double cdd, diff;
-
-    long i, j, k, r, c;
-
-    N = asInteger(I_N);
-    xvars = asInteger(I_xvars);
-    All = asInteger(I_All);
-    M = asInteger(I_M);
-    cdd = asReal(I_cdd);
-    caliper = (long) asReal(I_caliper);
-
-    //    struct timeval tv1, tv2;	// Required "timeval" structures (see man pg.)
-    //    struct timezone tz1, tz2;	// Required "timezone" structures (see man pg.)
-    //    long tret = gettimeofday(&tv1,&tz1);
-
-    Matrix ww = Matrix(xvars, xvars);
-    Matrix Tr = Matrix(N, 1);
-    Matrix X = Matrix(N, xvars);
-    Matrix weight = Matrix(N, 1);
-
-    k=0;
-    //rows and colums are fliped!! j,i != i,j
-    for(j=0;j<xvars; j++)
-	{
-	for(i=0;i<xvars; i++)
-	  {
-	    //ww(i,j) = REAL(I_ww)[k];
-	    ww[M(i,j,xvars)] = REAL(I_ww)[k];
-	    k++;
-	  }
-      }
-    
-    for(i=0;i<N; i++)
-      {
-	Tr[i] = REAL(I_Tr)[i];
-      }
-
-    //rows and colums are fliped!! j,i != i,j
-    k=0;
-    for(j=0;j<xvars; j++)
-      {
-	for(i=0;i<N; i++)
-	  {
-	    //X(i,j) = REAL(I_X)[k];
-	    X[M(i,j,xvars)] = REAL(I_X)[k];
-	    k++;
-	  }
-      }
-    
-    for(i=0;i<N; i++)
-      {
-	weight[i] = REAL(I_weight)[i];
-      }
-
-    Matrix IMi;
-    Matrix Xorig;
-    Matrix CaliperVec;
-    if(caliper==1)
-      {
-	Matrix Xorig(N, xvars);
-	Matrix CaliperVec(xvars, 1);
-	for (i=0; i<xvars; i++)
-	  {
-	    CaliperVec[i] = REAL(I_CaliperVec)[i];
-	  }
-
-	//rows and colums are fliped!! j,i != i,j
-	k=0;
-	for(j=0;j<xvars; j++)
-	  {
-	    for(i=0;i<N; i++)
-	      {
-		//X(i,j) = REAL(I_X)[k];
-		Xorig[M(i,j,xvars)] = REAL(I_Xorig)[k];
-		k++;
-	      }
-	  }	
-      } // end of caliper==1
-
-    Matrix INN = seqa(1, 1, N);
-    // TT is just equal to INN
-    Matrix index_onesN = ones(N, 1);
-
-    Matrix Kcount  = zeros(N,1);
-    Matrix KKcount = zeros(N,1);
-    Matrix foo1;
-    Matrix foo2;
-
-    /* set misc */
-    int TREATi = 0, ACTMATsum = 0;
-
-    Matrix xx;
-    Matrix DX;
-    Matrix Dist, DistPot, TTPotMat, weightPot, S, tt, 
-      weightPot_sort, weightPot_sum, ACTDIST, Wi, xmat, I, IM, W;
-    Matrix ACTMAT, POTMAT, XPOT;
-
-    //    tret = gettimeofday(&tv2,&tz2);
-    //    long secs = tv2.tv_sec - tv1.tv_sec;
-    //    long msecs = tv2.tv_usec - tv1.tv_usec;
-    //    double actual = ((double) secs*1000000+ (double) msecs)/1000000;
-    //    printf("actual: %lf, secs: %d, msecs: %d\n", actual, secs, msecs);
-
-    //These are larger than needed; it is just easier this way
-    double *D_weightPot = (double *) malloc(N*sizeof(double));  
-    int *In_DistPot = (int *) malloc(N*sizeof(int));  
-
-    // struct timeval tv1, tv2;	// Required "timeval" structures (see man pg.)
-    // struct timezone tz1, tz2;	// Required "timezone" structures (see man pg.)
-    // long tret = gettimeofday(&tv1,&tz1);
-
-    int first=1;
-    for(i=0; i < N; i++)
-      {
-	// treatment indicator for observation to be matched        
-        TREATi = (int) Tr[i];
-	
-        // proceed with all observations if All==1
-        // but only with treated observations if All=0        
-        if ( (TREATi==1 & All!=1) | All==1 )
-          {
-            // covariate value for observation to be matched                        
-            xx = X(i,_);
-
-
-            DX = (X - (index_onesN * xx)) * t(ww);
-
-            if (xvars>1)
-              {
-                //JSS
-                foo1 = t(multi_scalar(DX, DX));
-		Dist = t(sumc(foo1));
-
-	      } 
-	    else 
-	      {
-		Dist = multi_scalar(DX, DX);
-	      } // end of xvars
-
-	    // Dist distance to observation to be matched
-            // is N by 1 vector	    
-
-            // set of potential matches (all observations with other treatment)
-            // JSS, note:logical vector
-	    POTMAT = EqualityTestScalar(Tr, 1-TREATi);
-
-            // X's for potential matches
-            XPOT = selif(X, POTMAT);
-            DistPot = selif(Dist, POTMAT);
-            TTPotMat = selif(INN, POTMAT); //TT=INN
-            weightPot = selif(weight, POTMAT);
-
-	    long weightPot_size = size(weightPot);
-
-	    for(j=0; j< weightPot_size; j++)
-	      {
-		D_weightPot[j] = weightPot[j];
-
-		// assume that weightPot_size = size(DistPot)
-		In_DistPot[j] = (int) DistPot[j];
-	      }
-
-	    //sorted distance of potential matches            
-            S = sortc(DistPot);
-
-	    rsort_with_index (D_weightPot, In_DistPot, weightPot_size);
-
-	    //S = Matrix(weightPot_size, 1);
-	    weightPot_sort = Matrix(weightPot_size, 1);
-	    for(j=0; j < weightPot_size; j++)
-	      {
-		weightPot_sort[j] = D_weightPot[j];
-	      }
-            weightPot_sum = cumsum(weightPot_sort);
-
-	    tt = seqa(1, 1, rows(weightPot_sum));
-
-	    foo1 = GreaterEqualTestScalar(weightPot_sum, M);
-	    foo2 = selif(tt, foo1);
-
-	    long MMM = (long) min(foo2) - 1;
-
-	    // distance at last match
-            double Distmax = S[MMM];
-
-            // selection of actual matches 
-            // logical index
-	    ACTMAT = LessEqualTestScalar(Dist,  (Distmax+cdd));
-	    ACTMAT = VectorAnd(POTMAT, ACTMAT);
-
-	    if (caliper==1)
-	      {
-		// counts how many times each observation is matched.
-		long Mi = (long) sum(ACTMAT);
-
-		IMi = selif(INN, ACTMAT);
-
-		for (j=0; j<Mi; j++)
-		  {
-		    for (k=0; k<xvars; k++)
-		      {
-			diff = abs(Xorig[M(i, k, xvars)] - (double) Xorig[M((int) IMi[j],k,xvars)]); 
-			if (diff > CaliperVec[k])
-			  {
-			    ACTMAT[(int) IMi[j]] = 0;
-			    sum_caliper_drops++;
-			    
-			    break;
-			  }
-		      }
-		  } 
-		if ( ( (int) sumc(ACTMAT)[0]) < 1)
-		  continue;
-	      }//end of if caliper
-
-            // distance to actual matches            
-            ACTDIST = selif(Dist, ACTMAT);
-
-            // counts how many times each observation is matched.
-	    double Mi = sum(multi_scalar(weight, ACTMAT));
-
-            Kcount = Kcount + 
-	      weight[i] * multi_scalar(weight, ACTMAT)/Mi;
-
-	    foo1 = multi_scalar(weight, weight);
-	    foo1 = multi_scalar(foo1, ACTMAT);
-
-	    KKcount = KKcount + (weight[i]* foo1)/(Mi*Mi);
-
-            Wi = selif(weight, ACTMAT);
-	    Wi = weight[i]*Wi/Mi;
-
-	    ACTMATsum = (int) sumc(ACTMAT)[0];
-
-	    // collect results
-	    if (first==1)
-	      {
-		I = ones(ACTMATsum, 1)*(i+1);
-		IM = selif(INN, ACTMAT);
-		W = Wi;
-		first = 0;
-	      }// end of first==1 
-	    else 
-	      {
-		I = rbind(I, ones(ACTMATsum, 1)*(i+1));
-		IM = rbind(IM, selif(INN, ACTMAT));
-		W = rbind(W, Wi);
-	      } // end of i else
-
-	  } // end of (TREATi==1 & All!=1) | All==1 )
-      } //END OF i MASTER LOOP!
-
-    // tret = gettimeofday(&tv2,&tz2);
-    // long secs = tv2.tv_sec - tv1.tv_sec;
-    // long msecs = tv2.tv_usec - tv1.tv_usec;
-    // double actual = ((double) secs*1000000+ (double) msecs)/1000000;
-    // printf("actual: %lf, secs: %d, msecs: %d\n", actual, secs, msecs);
-
-    /*ATT is okay already */
-    /* ATE*/
-    if(All==1)
-      {
-	long tl  = rows(I);
-	Matrix I2  = zeros(tl, 1);
-	Matrix IM2 = zeros(tl, 1);
-	Matrix trt = zeros(tl, 1);
-
-	for(i=0; i<tl; i++)
-	  {
-	    k =(int) I[i] -1 ;
-	    trt[i] = Tr[k];
-	  }
-
-	for (i=0; i<tl; i++)
-	  {
-	    if (trt[i]==1)
-	      {
-		I2[i] = I[i];
-		IM2[i] = IM[i];
-	      } 
-	    else
-	      {
-		I2[i] = IM[i];
-		IM2[i] = I[i];		
-	      }
-	  }
-
-	I = I2;
-	IM = IM2;
-      } 
-    else if(All==2)     /* ATC */
-      {
-	Matrix Itmp = I;
-	Matrix IMtmp = IM;
-
-	I = IMtmp;
-	IM = Itmp;
-      }
-
-    Matrix rr = cbind(I, IM);
-    rr = cbind(rr, W);
-
-    // display(rr);
-
-    /* Free Memory */
-    free(In_DistPot);
-    free(D_weightPot);
-
-    r = rows(rr);
-    c = cols(rr);
-    
-    PROTECT(ret=allocMatrix(REALSXP, r, c));
-    /* Loop through the data and display the same in matrix format */
-    k = 0;
-    for( i = 0; i < c; i++ )
-      {
-	for( j = 0; j < r; j++ )
-	  {
-	    // REAL(ret)[k] = rr(j,i);
-	    // REAL(ret)[k] = rr[j*c+i];
-	    /* Use Macro to Index */
-	    REAL(ret)[k] = rr[M(j, i, c)];
-	    k++;
-	  }
-      }
-    UNPROTECT(1);
-    return(ret);    
-  } //end of FastMatchCcaliper
-
 
   SEXP MatchLoopC(SEXP I_N, SEXP I_xvars, SEXP I_All, SEXP I_M, SEXP I_cdd,
 		  SEXP I_caliper,
@@ -701,12 +358,10 @@ extern "C"
       }
 
     Matrix IMi;
-    Matrix Xorig;
-    Matrix CaliperVec;
+    Matrix Xorig = Matrix(N, xvars);
+    Matrix CaliperVec = Matrix(xvars, 1);
     if(caliper==1)
       {
-	Matrix Xorig(N, xvars);
-	Matrix CaliperVec(xvars, 1);
 	for (i=0; i<xvars; i++)
 	  {
 	    CaliperVec[i] = REAL(I_CaliperVec)[i];
@@ -739,7 +394,7 @@ extern "C"
 
     Matrix xx;
     Matrix DX;
-    Matrix Dist, DistPot, TTPotMat, weightPot, S, tt, 
+    Matrix Dist, DistPot, TTPotMat, weightPot, tt, 
       weightPot_sort, weightPot_sum, ACTDIST, Wi, xmat, I, IM, W;
     Matrix ACTMAT, POTMAT, XPOT;
 
@@ -750,8 +405,8 @@ extern "C"
     //    printf("actual: %lf, secs: %d, msecs: %d\n", actual, secs, msecs);
 
     //These are larger than needed; it is just easier this way
-    double *D_weightPot = (double *) malloc(N*sizeof(double));  
-    int *In_DistPot = (int *) malloc(N*sizeof(int));  
+    int *order_DistPot = (int *) malloc(N*sizeof(int));  
+    double *S = (double *) malloc(N*sizeof(double));  
 
     // struct timeval tv1, tv2;	// Required "timeval" structures (see man pg.)
     // struct timezone tz1, tz2;	// Required "timezone" structures (see man pg.)
@@ -802,22 +457,17 @@ extern "C"
 
 	    for(j=0; j< weightPot_size; j++)
 	      {
-		D_weightPot[j] = weightPot[j];
-
 		// assume that weightPot_size = size(DistPot)
-		In_DistPot[j] = (int) DistPot[j];
+		order_DistPot[j] = j;
+		S[j] = (double) DistPot[j];
 	      }
 
-	    //sorted distance of potential matches            
-            S = sortc(DistPot);
+	    rsort_with_index (S, order_DistPot, weightPot_size);
 
-	    rsort_with_index (D_weightPot, In_DistPot, weightPot_size);
-
-	    //S = Matrix(weightPot_size, 1);
 	    weightPot_sort = Matrix(weightPot_size, 1);
 	    for(j=0; j < weightPot_size; j++)
 	      {
-		weightPot_sort[j] = D_weightPot[j];
+		weightPot_sort[j] = weightPot[order_DistPot[j]];
 	      }
             weightPot_sum = cumsum(weightPot_sort);
 
@@ -847,10 +497,10 @@ extern "C"
 		  {
 		    for (k=0; k<xvars; k++)
 		      {
-			diff = abs(Xorig[M(i, k, xvars)] - (double) Xorig[M((int) IMi[j],k,xvars)]); 
+			diff = abs(Xorig[M(i, k, xvars)] - (double) Xorig[M((int) (IMi[j]-1),k,xvars)]); 
 			if (diff > CaliperVec[k])
 			  {
-			    ACTMAT[(int) IMi[j]] = 0;
+			    ACTMAT[(int) (IMi[j]-1)] = 0;
 			    sum_caliper_drops++;
 			    
 			    break;
@@ -907,11 +557,11 @@ extern "C"
     Matrix rr = cbind(I, IM);
     rr = cbind(rr, W);
 
+    long tl  = rows(I);
     /*ATT is okay already */
     /* ATE*/
-    if(All==1)
+    if(All==1 & I[0]!=0)
       {
-	long tl  = rows(I);
 	Matrix I2  = zeros(tl, 1);
 	Matrix IM2 = zeros(tl, 1);
 	Matrix trt = zeros(tl, 1);
@@ -951,12 +601,20 @@ extern "C"
     rr = cbind(rr, I);
     rr = cbind(rr, IM);
 
+    if (caliper==1)
+      {
+	Matrix scalar_returns = zeros(tl, 1);
+	scalar_returns[0] = sum_caliper_drops;
+	rr = cbind(rr, scalar_returns);
+      }
+
     // rr key
     // 1] I (unadjusted); 2] IM (unadjusted); 3] weight; 4] I (adjusted); 5] IM (adjusted);
+    // scalar returns [0]: caliper drops
 
     /* Free Memory */
-    free(In_DistPot);
-    free(D_weightPot);
+    free(S);
+    free(order_DistPot);
 
     r = rows(rr);
     c = cols(rr);

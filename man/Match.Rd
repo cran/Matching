@@ -113,10 +113,8 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     \code{distance.tolerance} are deemed to be equal to zero.  This
     option can be used to perform a type of optimal matching}
   \item{version}{The version of the code to be used.  The "fast" C/C++
-    version of the code is used unless the "stable" version is
-    requested.  The "stable" version is automatically used when any of the
-    following options are provided: \code{weights}, \code{exact},
-    \code{caliper}.}
+    version of the code is used unless the "old" (stable) version is
+    requested.}
 }
 \details{
   

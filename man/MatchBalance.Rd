@@ -13,7 +13,7 @@
   \code{MatchBalance} can be used to test balance.
 }
 \usage{
-MatchBalance(formul, data = NULL, match.out = NULL, ks = FALSE, mv = FALSE,
+MatchBalance(formul, data = NULL, match.out = NULL, ks = TRUE, mv = FALSE,
              nboots=1000, nmc=nboots,  maxit = 1000,
              weights=rep(1,nrow(data)), digits=5, verbose=1, ...)
 }
