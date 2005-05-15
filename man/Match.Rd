@@ -47,7 +47,9 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
   \item{BiasAdj}{ A logical scalar for whether regression adjustment
     should be used. See the \code{Z} matrix.}
   \item{exact}{ A logical scalar or vector for whether exact matching
-    should be done.  If a logical scalar is
+    should be done.  \emph{Variables which are to be exactly matched on
+      should also be given a very large weight (e.g., 1000) via the
+      \code{Weight.matrix} option}. If a logical scalar is
     provided, that logical value is applied to all covariates of
     \code{X}.  If a logical vector is provided, a logical value should
     be provided for each covariate in \code{X}. Using a logical vector

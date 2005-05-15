@@ -15,21 +15,21 @@
 
 }
 \usage{
-GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
-                     weights=rep(1,length(Tr)),
-                     pop.size = 50, max.generations=100,
-                     wait.generations=4, hard.generation.limit=FALSE,
-                     starting.values=rep(1,ncol(X)),
-                     data.type.integer=TRUE,
-                     MemoryMatrix=TRUE,
-                     exact=NULL, caliper=NULL, 
-                     nboots=0, ks=TRUE, verbose=FALSE,
-                     tolerance = 1e-05,
-                     distance.tolerance=tolerance,
-                     min.weight=0, max.weight=1000,
-                     Domains=NULL, print.level=2,
-                     project.path=NULL,
-                     paired=TRUE, ...)
+GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
+         weights=rep(1,length(Tr)),
+         pop.size = 50, max.generations=100,
+         wait.generations=4, hard.generation.limit=FALSE,
+         starting.values=rep(1,ncol(X)),
+         data.type.integer=TRUE,
+         MemoryMatrix=TRUE,
+         exact=NULL, caliper=NULL, 
+         nboots=0, ks=TRUE, verbose=FALSE,
+         tolerance = 1e-05,
+         distance.tolerance=tolerance,
+         min.weight=0, max.weight=1000,
+         Domains=NULL, print.level=2,
+         project.path=NULL,
+         paired=TRUE, ...)
 }
 \arguments{
   \item{Tr}{ A vector indicating the observations which are
