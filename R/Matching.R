@@ -130,12 +130,12 @@ Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
       {
         ret <- RmatchLoop(Y=Y, Tr=Tr, X=X, Z=Z, V=V, All=estimand, M=M, BiasAdj=BiasAdj,
                           Weight=Weight, Weight.matrix=Weight.matrix, Var.calc=Var.calc,
-                          weight=weights, SAMPLE=sample, ccc=tolerance, cdd=tolerance,
+                          weight=weights, SAMPLE=sample, ccc=ccc, cdd=cdd,
                           ecaliper=ecaliper, exact=exact, caliper=caliper)
       } else {
         ret <- Rmatch(Y=Y, Tr=Tr, X=X, Z=Z, V=V, All=estimand, M=M, BiasAdj=BiasAdj,
                       Weight=Weight, Weight.matrix=Weight.matrix, Var.calc=Var.calc,
-                      weight=weights, SAMPLE=sample, ccc=tolerance, cdd=tolerance,
+                      weight=weights, SAMPLE=sample, ccc=ccc, cdd=cdd,
                       ecaliper=ecaliper)
       }
 
@@ -1417,6 +1417,13 @@ Mt.test  <- function(Tr, Co, weights)
 #    p.value    <- (1-pnorm(abs(statistic)))*2
     p.value    <- (1-pt(abs(statistic), df=sum(weights)-1))*2
 
+    #get rid of NA for t.test!
+    if (estimate==0 & var1==0)
+      {
+        statistic = 0        
+        p.value = 1
+      }
+
     z  <- list(statistic=statistic, parameter=parameter, p.value=p.value,
                estimate=estimate)
     return(z)
@@ -1442,8 +1449,14 @@ Mt.test.unpaired  <- function(Tr, Co,
     a1 <- var.Tr/obs.Tr
     a2 <- var.Co/obs.Co
     dof <- ((a1 + a2)^2)/( (a1^2)/(obs.Tr - 1) + (a2^2)/(obs.Co - 1) )    
-    p.value    <- (1-pt(abs(statistic), df=dof))*2    
-    
+    p.value    <- (1-pt(abs(statistic), df=dof))*2
+
+    #get rid of NA for t.test!
+    if (estimate==0 & dim==0)
+      {
+        statistic = 0
+        p.value = 1
+      }    
 
     z  <- list(statistic=statistic, parameter=parameter, p.value=p.value,
                estimate=estimate)
