@@ -101,6 +101,11 @@ balanceMV(formul, data = NULL, match.out=NULL, maxit = 1000,
   Estimators.''  Working
   Paper. \url{http://jsekhon.fas.harvard.edu/matching}
 
+  Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
+  Estimating Causal Effects: A New Method of Achieving Balance in
+  Observational Studies.''  Working Paper.
+  \url{http://jsekhon.fas.harvard.edu/papers/GenMatch.pdf} 
+
   Abadie, Alberto.  2002.  ``Bootstrap Tests for Distributional Treatment
   Effects in Instrumental Variable Models.'' \emph{Journal of the
   American Statistical Association}, 97:457 (March) 284-292.

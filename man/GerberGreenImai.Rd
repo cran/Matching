@@ -4,10 +4,11 @@
 \title{Gerber and Green Dataset used by Imai}
 \description{
 
-  This is the dataset used by Imai (forthcoming) to replicate and evaluate
-  the field experiment done by Gerber and Green (2000). The accompanying
-  example code provides a model with good balance which estimates the
-  causal effect of get-out-the-vote telephone calls on turnout.
+  This is the dataset used by Imai (2005) to replicate and evaluate the
+  field experiment done by Gerber and Green (2000). The accompanying
+  demo replicates Imai's propensity score model which is then used to
+  estimate the causal effect of get-out-the-vote telephone calls on
+  turnout. 
   
 }
 \usage{data(GerberGreenImai)}
@@ -44,12 +45,10 @@
 }
 \details{
 
-  The demo provided, entitled \code{GerberGreenImai}, estimates the
-  causal effect of get-out-the-vote telephone calls on turnout. The
-  balancing model achieves \emph{exact} balance on all covariates except
-  for age.  And for age, balance is very good.  This model estimates the
-  causal effect of get-out-the-vote telephone calls on turnout to be not
-  significantly different from zero.
+  The demo provided, entitled \code{GerberGreenImai}, uses Imai's
+  propensity score model to estimate the causal effect of
+  get-out-the-vote telephone calls on turnout. The propensity score
+  model fails to balance age.
 
 }
 \references{
@@ -58,9 +57,9 @@
   Canvassing, Telephone Calls, and Direct Mail on Voter Turnout: A Field
   Experiment.'' \emph{American Political Science Review} 94: 653-663.
   
-  Imai, Kosuke. forthcoming. ``Do Get-Out-The-Vote Calls Reduce Turnout?
+  Imai, Kosuke. 2005. ``Do Get-Out-The-Vote Calls Reduce Turnout?
   The Importance of Statistical Methods for Field Experiments.'' 
-  \emph{American Political Science Review}.
+  \emph{American Political Science Review} 99: 283-300.
   
 } 
 \seealso{ Also see \code{\link{Match}} and \code{\link{MatchBalance}},

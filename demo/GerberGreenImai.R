@@ -2,25 +2,33 @@
 # Gerber, Alan S. and Donald P. Green. 2000. "The Effects of Canvassing, Telephone Calls, and
 # Direct Mail on Voter Turnout: A Field Experiment." American Political Science Review 94: 653-663.
 #
-# Imai, Kosuke. forthcoming. "Do Get-Out-The-Vote Calls Reduce Turnout? The Importance of 
-# Statistical Methods for Field Experiments".  http://www.princeton.edu/~kimai/research/matching.html
+# Imai, Kosuke. 2005. "Do Get-Out-The-Vote Calls Reduce Turnout? The Importance of 
+# Statistical Methods for Field Experiments".  American Political Science Review 99: 283-300.
 #
 
 set.seed(10391)
 data(GerberGreenImai)
 
-Tr<-GerberGreenImai$PHN.C1 #treatment
-Y<-GerberGreenImai$VOTED98 #outcome
+#replication of Imai's propensity score matching model
+pscore.glm<-glm(PHN.C1 ~ PERSONS + VOTE96.1 + NEW + MAJORPTY + AGE +
+                WARD + PERSONS:VOTE96.1 + PERSONS:NEW + AGE2, 
+                family=binomial(logit), data=GerberGreenImai)
 
-Z  <- as.matrix(cbind(GerberGreenImai$WARD, GerberGreenImai$MAJORPTY,
-                      GerberGreenImai$PERSONS, GerberGreenImai$VOTE96.1,
-                      GerberGreenImai$NEW, GerberGreenImai$AGE, GerberGreenImai$AGE2,
-                      GerberGreenImai$PERSONS*GerberGreenImai$VOTE96.1,
-                      GerberGreenImai$PERSONS*GerberGreenImai$NEW))
+D<-GerberGreenImai$PHN.C1 #treatment phone calls
+Y<-GerberGreenImai$VOTED98 #outcome, turnout
 
-r1  <- Match(Y=Y, Tr=Tr, Z=Z, X=Z, M=1, BiasAdj=TRUE, caliper=.1)
-summary(r1, full=TRUE)
-mb1  <- MatchBalance(PHN.C1 ~ PERSONS + VOTE96.1 + NEW + MAJORPTY + AGE +
-                     WARD + I(PERSONS*VOTE96.1) + I(PERSONS*NEW) + AGE2, match.out=r1,
-                     data=GerberGreenImai, nboots=100, nmc=500)
+foo  <- GerberGreenImai
+Tr  <- D
+
+cat("\nTHIS MODEL FAILS TO BALANCE AGE\n")
+X  <- fitted(pscore.glm)
+
+#propensity score matching estimator
+r1  <- Match(Y=Y, Tr=D, X=X, M=3)
+summary(r1)
+
+#check for balance before and after matching
+mb1  <- MatchBalance(PHN.C1 ~ AGE + AGE2 + PERSONS + VOTE96.1 + NEW + MAJORPTY +
+                     WARD + I(PERSONS*VOTE96.1) + I(PERSONS*NEW), match.out=r1,
+                     data=GerberGreenImai)
 
