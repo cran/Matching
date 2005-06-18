@@ -32,7 +32,9 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     treatment.}
   \item{X}{ A matrix containing the variables we wish to match on.
     This matrix may contain the actual observed covariates or the
-    propensity score or a combination of both.}
+    propensity score or a combination of both. All columns of this
+    matrix must have positive variance or \code{Match} will return an
+    error.}
   \item{Z}{ A matrix containing the covariates for which we wish to make
     bias adjustments.}
   \item{V}{ A matrix containing the covariates for which the variance
@@ -59,16 +61,18 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     exact match. The \code{exact} option takes precedence over the
     \code{caliper} option.}
   \item{caliper}{ A scalar or vector denoting the caliper(s) which
-    should be used when matching.  A caliper is the distance which is
+    should be used when matching.  \emph{Variables for which a caliper is
+      to be used should also be given a very large weight (e.g., 1000) via
+      the \code{Weight.matrix} option}.  A caliper is the distance which is
     acceptable for any match.  Observations which are outside of the
     caliper are dropped. If a scalar caliper is provided, this caliper is
     used for all covariates in \code{X}.  If a vector of calipers is
     provided, a caliper value should be provide for each covariate in
-    \code{X}. The caliper is interpreted to be in standardized units.  For example,
-    \code{caliper=.25} means that all matches not equal to or within .25
-    standard deviations of each covariate in \code{X} are dropped.
-    The \code{ecaliper} object which is returned by \code{Match} shows
-    the enforced caliper on the scale of the \code{X} variables.}
+    \code{X}. The caliper is interpreted to be in standardized units.  For
+    example, \code{caliper=.25} means that all matches not equal to or
+    within .25 standard deviations of each covariate in \code{X} are
+    dropped.  The \code{ecaliper} object which is returned by \code{Match}
+    shows the enforced caliper on the scale of the \code{X} variables.}
   \item{Weight}{ A scalar for the type of
     weighting scheme the matching algorithm should use when weighting
     each of the covariates in \code{X}.  The default value of
@@ -197,15 +201,25 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     \code{X} variables.  This object has the same length as the number of
     covariates in \code{X}.}
   \item{exact}{The value of the \code{exact} function argument.}
-  \item{ndrops}{The number of matches dropped either because of the
-    caliper or exact matching.}
+  \item{ndrops}{The number of actual observations which were dropped
+    either because of caliper or exact matching.  This number is not
+    reliable if observation specific weights were passed in using the \code{weights}
+    option.  But \code{ndrops.matches} will always be accurate.}
+  \item{ndrops.matches}{The number of matches including ties which were dropped either because of the
+    caliper or exact matching. Note that since this number includes
+    ties, it is not the same as \code{ndrops}.}  
 }
 \references{
 
   Abadie, Alberto and Guido Imbens. 2004.
   ``Large Sample Properties of Matching Estimators for Average
   Treatment Effects.'' Working Paper.
-  \url{http://ksghome.harvard.edu/~.aabadie.academic.ksg/sme.pdf} \cr
+  \url{http://ksghome.harvard.edu/~.aabadie.academic.ksg/sme.pdf} 
+
+  Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
+  Estimating Causal Effects: A New Method of Achieving Balance in
+  Observational Studies.''  Working Paper.
+  \url{http://jsekhon.fas.harvard.edu/papers/GenMatch.pdf} 
   
   Sekhon, Jasjeet S. 2004.  ``The Varying Role of Voter Information
   Across Democratic Societies.''  Working Paper.

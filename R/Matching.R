@@ -34,6 +34,35 @@ Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
     ccc  <- tolerance
     cdd  <- distance.tolerance
 
+    xvars <- ncol(X)
+
+    ###########################
+    # BEGIN: produce and error if some column of X has zero variance
+    #
+    X.var <- (apply(X, 2, var)==0)
+    Xadjust <- sum(X.var)
+    if(Xadjust > 0)
+      {
+        #which variables have no variance?
+        Xadjust.variables <- vector(length=Xadjust, mode="numeric")
+        count <- 0
+        for (i in 1:xvars)
+          {
+            if(X.var[i])
+              {
+                count <- count + 1
+                Xadjust.variables[count] <- i
+              }
+          }#end of for loop
+
+        foo <- paste("The following column of 'X' has zero variance and need to be removed before proceeding: ",Xadjust.variables,"\n\t")
+        stop(foo)
+        return(invisible(NULL))            
+      }
+    # 
+    # END: produce and error if some column of X has zero variance   
+    ###########################
+
     if (estimand=="ATT")
       {
         estimand  <- 0
@@ -63,11 +92,11 @@ Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
         Weight.matrix <- dim(X)[2]
       }
 
-    xvars <- ncol(X)
     orig.nobs  <- length(Y)
     nobs  <- orig.nobs
     orig.treated.nobs  <- sum(Tr==1)
     orig.wnobs  <- sum(weights)
+    orig.weighted.treated.nobs <- sum( weights[Tr==1] )    
     weights.orig  <- as.matrix(weights)
     
     if (!is.null(exact))
@@ -203,6 +232,7 @@ Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
     mdata$Y  <- c(Y[index.treated],Y[index.control])
     mdata$Tr <- c(Tr[index.treated],Tr[index.control])
     mdata$X  <- rbind(X[index.treated,],X[index.control,])
+    mdata$orig.weighted.treated.nobs <- orig.weighted.treated.nobs    
     
     #naive standard errors
     mest  <- sum((Y[index.treated]-Y[index.control])*weights)/sum(weights)
@@ -210,15 +240,31 @@ Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
     varest  <- sum( ((v1-mest)^2)*weights)/(sum(weights)*sum(weights))
     se.naive  <- sqrt(varest)
 
+    wnobs <- sum(weights)
+    
+    if(estimand==0)
+      {
+        #ATT
+        actual.drops <- orig.weighted.treated.nobs-wnobs
+      } else if (estimand==1)
+        {
+          #ATE
+          actual.drops <- orig.wnobs-wnobs
+        } else {
+          #ATC
+          actual.drops <- (orig.wnobs-orig.weighted.treated.nobs)-wnobs 
+        }
+            
+
     z  <- list(est=ret$est, se=ret$se, est.noadj=mest, se.naive=se.naive,
                se.cond=ret$se.cond, 
                mdata=mdata, em=ret$em,
                index.treated=index.treated, index.control=index.control,
                weights=weights, orig.nobs=orig.nobs, orig.wnobs=orig.wnobs,
                orig.treated.nobs=orig.treated.nobs,
-               nobs=nobs, wnobs=sum(weights),
+               nobs=nobs, wnobs=wnobs,
                caliper=caliper, ecaliper=ecaliper, exact=exact,
-               ndrops=sum.caliper.drops)
+               ndrops=actual.drops, ndrops.matches=sum.caliper.drops)
 
     class(z)  <- "Match"    
     return(z)
@@ -252,22 +298,27 @@ summary.Match  <- function(object, ..., full=FALSE, digits=5)
         cat("\n")
       }
 
-    
-    cat("Original number of observations (weighted)... ", object$orig.wnobs,"\n")
-    cat("Original number of observations (unweighted). ", object$orig.nobs,"\n")
-    cat("Original number of treated obs  (unweighted). ", object$orig.treated.nobs,"\n")    
-    cat("Matched number of observations  (weighted)... ", signif(object$wnobs),"\n")
+
+    if(object$orig.wnobs!=object$orig.nobs)
+      cat("Original number of observations (weighted)... ", round(object$orig.wnobs, 3),"\n")
+    cat("Original number of observations.............. ", object$orig.nobs,"\n")
+    if(object$mdata$orig.weighted.treated.nobs!=object$orig.treated.nobs)
+      cat("Original number of treated obs (weighted).... ", round(object$mdata$orig.weighted.treated.nobs, 3),"\n")    
+    cat("Original number of treated obs............... ", object$orig.treated.nobs,"\n")    
+    cat("Matched number of observations............... ", round(object$wnobs, 3),"\n")
     cat("Matched number of observations  (unweighted). ", length(object$index.treated),"\n")
 
     cat("\n")
     if(!is.null(object$exact))
       {
-        cat("Matches dropped by 'exact' or 'caliper'...... ",object$ndrops,"\n")
+        cat("Actual number of observations dropped by 'exact' or 'caliper'... ",round(object$ndrops, 3),"\n")        
+        cat("Matches including ties dropped by 'exact' or 'caliper'.......... ",object$ndrops.matches,"\n")
         cat("\n\n")        
       }else if(!is.null(object$caliper))
       {
-        cat("Caliper (SDs)................  ",object$caliper,"\n")
-        cat("Matches dropped by 'caliper'.. ",object$ndrops,"\n")
+        cat("Caliper (SDs)........................................  ",object$caliper,"\n")            
+        cat("Actual number of observations dropped by 'caliper'... ",round(object$ndrops, 3),"\n")        
+        cat("Matches including ties dropped by 'caliper'.......... ",object$ndrops.matches,"\n")
         cat("\n\n")
       } else {
         cat("\n")

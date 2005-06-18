@@ -212,6 +212,10 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
     covariates in \code{X}.}
 }
 \references{
+  Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
+  Estimating Causal Effects: A New Method of Achieving Balance in
+  Observational Studies.''  Working Paper.
+  \url{http://jsekhon.fas.harvard.edu/papers/GenMatch.pdf}   
 }
 \author{
   Jasjeet S. Sekhon, Harvard University, \email{jasjeet\_sekhon@harvard.edu},
