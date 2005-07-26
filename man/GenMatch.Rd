@@ -198,15 +198,13 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
   \item{Weight.matrix}{A matrix whose diagonal corresponds to the weight
     given to each variable in \code{X}.  This object corresponds to the
     \code{Weight.matrix} in the \code{\link{Match}} function.}
-  \item{matches}{A matrix with three columns.  The first column contains
-    the row numbers of the treated observations in the matched dataset.
-    This column corresponds to the \code{index.treated} object which is
-    returned by \code{\link{Match}}.  The second column gives the row numbers of
-    the control observations.  This column corresponds to the
-    \code{index.control} object which is returned by \code{\link{Match}}.  And
-    the last column gives the weight that each matched pair is given.
-    This column corresponds to the \code{weights} object which is returned
-    by \code{\link{Match}}}
+  \item{matches}{A matrix where the first column contains the row
+    numbers of the treated observations in the matched dataset. The second
+    column contains the row numbers of the control observations. And the
+    third column contains the weight that each matched pair is given.
+    These columns respectively correspond to the \code{index.treated},
+    \code{index.control} and \code{weights} objects which are returned by
+    \code{\link{Match}}.}
   \item{ecaliper }{The size of the enforced caliper on the scale of the
     \code{X} variables.  This object has the same length as the number of
     covariates in \code{X}.}
@@ -215,11 +213,16 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
   Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
   Estimating Causal Effects: A New Method of Achieving Balance in
   Observational Studies.''  Working Paper.
-  \url{http://jsekhon.fas.harvard.edu/papers/GenMatch.pdf}   
+  \url{http://sekhon.polisci.berkeley.edu/papers/GenMatch.pdf}
+
+  Sekhon, Jasjeet Singh and Walter R. Mebane, Jr. 1998.  ``Genetic
+  Optimization Using Derivatives: Theory and Application to Nonlinear
+  Models.'' \emph{Political Analysis}, 7: 187-210.
+  \url{http://sekhon.polisci.berkeley.edu/genoud/genoud.pdf} 
 }
 \author{
-  Jasjeet S. Sekhon, Harvard University, \email{jasjeet\_sekhon@harvard.edu},
-  \url{http://jsekhon.fas.harvard.edu/}
+  Jasjeet S. Sekhon, UC Berkeley, \email{sekhon@berkeley.edu},
+  \url{http://sekhon.polisci.berkeley.edu/}  
 }
 \seealso{ Also see \code{\link{Match}}, \code{\link{summary.Match}},
   \code{\link{MatchBalance}}, \code{\link[rgenoud]{genoud}},
