@@ -442,7 +442,7 @@ GenMatchCaliper <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         All  <- 2
       } else {
         All  <- 0
-        warning("estimand is not valid.  Defaulting to 'ATT'")
+        warning("User set 'estimand' to an illegal value.  Resetting to the default which is 'ATT'")
       }
 
     #stage 1 Match, only needs to be called once
@@ -553,6 +553,125 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
     X  <- as.matrix(X)
     BalanceMatrix  <- as.matrix(BalanceMatrix)
 
+    xvars <- ncol(X)
+
+    #check inputs
+    if (pop.size < 0 | pop.size!=round(pop.size) )
+      {
+        warning("User set 'pop.size' to an illegal value.  Resetting to the default which is 50.")
+        pop.size <- 50
+      }
+    if (max.generations < 0 | max.generations!=round(max.generations) )
+      {
+        warning("User set 'max.generations' to an illegal value.  Resetting to the default which is 100.")
+        max.generations <-100
+      }
+    if (wait.generations < 0 | wait.generations!=round(wait.generations) )
+      {
+        warning("User set 'wait.generations' to an illegal value.  Resetting to the default which is 4.")
+        wait.generations <- 4
+      }
+    if (hard.generation.limit != 0 & hard.generation.limit !=1 )
+      {
+        warning("User set 'hard.generation.limit' to an illegal value.  Resetting to the default which is FALSE.")
+        hard.generation.limit <- FALSE
+      }
+    if (data.type.integer != 0 & data.type.integer !=1 )
+      {
+        warning("User set 'data.type.integer' to an illegal value.  Resetting to the default which is TRUE.")
+        data.type.integer <- TRUE
+      }
+    if (MemoryMatrix != 0 & MemoryMatrix !=1 )
+      {
+        warning("User set 'MemoryMatrix' to an illegal value.  Resetting to the default which is TRUE.")
+        MemoryMatrix <- TRUE
+      }                
+    if (nboots < 0 | nboots!=round(nboots) )
+      {
+        warning("User set 'nboots' to an illegal value.  Resetting to the default which is 0.")
+        nboots <- 0
+      }
+    if (ks != 0 & ks !=1 )
+      {
+        warning("User set 'ks' to an illegal value.  Resetting to the default which is TRUE.")
+        ks <- TRUE
+      }
+    if (verbose != 0 & verbose !=1 )
+      {
+        warning("User set 'verbose' to an illegal value.  Resetting to the default which is FALSE.")
+        verbose <- FALSE
+      }
+    if (min.weight < 0)
+      {
+        warning("User set 'min.weight' to an illegal value.  Resetting to the default which is 0.")
+        min.weight <- 0
+      }
+    if (max.weight < 0)
+      {
+        warning("User set 'max.weight' to an illegal value.  Resetting to the default which is 1000.")
+        max.weight <- 1000
+      }
+    if (print.level != 0 & print.level !=1 & print.level !=2 & print.level !=3)
+      {
+        warning("User set 'print.level' to an illegal value.  Resetting to the default which is 2.")
+        print.level <- 2
+      }    
+    if (paired != 0 & paired !=1 )
+      {
+        warning("User set 'paired' to an illegal value.  Resetting to the default which is TRUE.")
+        paired <- FALSE
+      }    
+    ##from Match()
+    if (tolerance < 0)
+      {
+        warning("User set 'tolerance' to less than 0.  Resetting to the default which is 0.00001.")
+        tolerance <- 0.00001
+      }
+    if (distance.tolerance < 0)
+      {
+        warning("User set 'distance.tolerance' to less than 0.  Resetting to the default which is 0.00001.")
+        distance.tolerance <- 0.00001
+      }
+    if (M < 1)
+      {
+        warning("User set 'M' to less than 1.  Resetting to the default which is 1.")
+        M <- 1
+      }
+    if ( M!=round(M) )
+      {
+        warning("User set 'M' to an illegal value.  Resetting to the default which is 1.")
+        M <- 1        
+      }
+    
+
+
+    ###########################
+    # BEGIN: produce an error if some column of X has zero variance
+    #
+    X.var <- (apply(X, 2, var) <= tolerance)
+    Xadjust <- sum(X.var)
+    if(Xadjust > 0)
+      {
+        #which variables have no variance?
+        Xadjust.variables <- vector(length=Xadjust, mode="numeric")
+        count <- 0
+        for (i in 1:xvars)
+          {
+            if(X.var[i])
+              {
+                count <- count + 1
+                Xadjust.variables[count] <- i
+              }
+          }#end of for loop
+
+        foo <- paste("The following column of 'X' has zero variance and need to be removed before proceeding: ",Xadjust.variables,"\n\t")
+        stop(foo)
+        return(invisible(NULL))            
+      }
+    # 
+    # END: produce and error if some column of X has zero variance   
+    ###########################    
+
     if(!is.null(caliper) | !is.null(exact))
       {
         rr <- GenMatchCaliper(Tr=Tr, X=X, BalanceMatrix=BalanceMatrix, estimand=estimand, M=M,
@@ -575,7 +694,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         return(rr)
       } #!is.null(caliper) | !is.null(exact)
 
-    isunix  <- Sys.getenv("OSTYPE")=="linux" | Sys.getenv("OSTYPE")=="darwin"
+    isunix  <- .Platform$OS.type=="unix"
     if (is.null(project.path))
       {
         if (print.level < 3 & isunix)
@@ -613,7 +732,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         All  <- 2
       } else {
         All  <- 0
-        warning("estimand is not valid.  Defaulting to 'ATT'")
+        warning("User set 'estimand' to an illegal value.  Resetting to the default which is 'ATT'")
       }
 
     #stage 1 Match, only needs to be called once

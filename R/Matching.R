@@ -10,7 +10,7 @@
 # score. MatchBalance(), balanceMV() and balanceUV() test for balance.
 
 Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
-                   BiasAdj=FALSE,exact=NULL,caliper=NULL,
+                   BiasAdjust=FALSE,exact=NULL,caliper=NULL,
                    Weight=1,Weight.matrix=NULL, weights=rep(1,length(Y)),
                    Var.calc=0, sample=FALSE, tolerance=0.00001,
                    distance.tolerance=0.00001, version="fast")
@@ -28,18 +28,65 @@ Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
     Z  <- as.matrix(Z)
     V  <- as.matrix(V)
     weights <- as.matrix(weights)
-    BiasAdj  <- as.real(BiasAdj)
+    BiasAdj  <- as.real(BiasAdjust)
     sample  <- as.real(sample)
+
+    xvars <- ncol(X)
+
+    #check inputs
+    if (tolerance < 0)
+      {
+        warning("User set 'tolerance' to less than 0.  Resetting to the default which is 0.00001.")
+        tolerance <- 0.00001
+      }
+    if (distance.tolerance < 0)
+      {
+        warning("User set 'distance.tolerance' to less than 0.  Resetting to the default which is 0.00001.")
+        distance.tolerance <- 0.00001
+      }
+    if (M < 1)
+      {
+        warning("User set 'M' to less than 1.  Resetting to the default which is 1.")
+        M <- 1
+      }
+    if ( M != round(M) )
+      {
+        warning("User set 'M' to an illegal value.  Resetting to the default which is 1.")
+        M <- 1        
+      }
+    if (Var.calc < 0)
+      {
+        warning("User set 'Var.calc' to less than 0.  Resetting to the default which is 0.")
+        Var.calc <- 0
+      }
+    if ( (BiasAdj != 0) & (BiasAdj != 1) )
+      {
+        warning("User set 'BiasAdjust' to a non-logical value.  Resetting to the default which is FALSE.")        
+        BiasAdj <- 0
+      }
+    if ( (sample != 0) & (sample != 1) )
+      {
+        warning("User set 'sample' to a non-logical value.  Resetting to the default which is FALSE.")        
+        sample <- 0
+      }
+    if (Weight != 1 & Weight != 2 & Weight != 3)
+      {
+        warning("User set 'Weight' to an illegal value.  Resetting to the default which is 1.")        
+        Weight <- 1
+      }
+    if (version!="fast" & version != "stable")
+      {
+        warning("User set 'version' to an illegal value.  Resetting to the default which is 'fast'.")        
+        version <- "fast"
+      }
 
     ccc  <- tolerance
     cdd  <- distance.tolerance
 
-    xvars <- ncol(X)
-
     ###########################
-    # BEGIN: produce and error if some column of X has zero variance
+    # BEGIN: produce an error if some column of X has zero variance
     #
-    X.var <- (apply(X, 2, var)==0)
+    X.var <- (apply(X, 2, var) <= tolerance)
     Xadjust <- sum(X.var)
     if(Xadjust > 0)
       {
@@ -72,7 +119,7 @@ Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
         estimand  <- 2
       } else {
         estimand  <- 0
-        warning("estimand is not valid.  Defaulting to 'ATT'")
+        warning("User set 'estimand' to an illegal value.  Resetting to the default which is 'ATT'")
       }
 
     if (!is.null(Weight.matrix))
@@ -992,21 +1039,39 @@ sdiff  <- function(Tr, Co, weights=rep(1,length(Co)),
       {
         obs.Tr <- sum(weights.Tr)
         obs.Co <- sum(weights.Co)
+        obs.total <- obs.Tr+obs.Co
         
         mean.Tr <- sum(Tr*weights.Tr)/obs.Tr
         mean.Co <- sum(Co*weights.Co)/obs.Co
-        var.Tr  <- sum( ( (Tr - mean.Tr)^2 )*weights.Tr)/(obs.Tr-1)
-        var.Co  <- sum( ( (Co - mean.Co)^2 )*weights.Co)/(obs.Co-1)
-        
         diff  <- mean.Tr - mean.Co
-        sdiff <- 100*diff/sqrt( var.Tr+var.Co/2 )
+
+#old        
+#        var.Tr  <- sum( ( (Tr - mean.Tr)^2 )*weights.Tr)/(obs.Tr-1)
+#        var.Co  <- sum( ( (Co - mean.Co)^2 )*weights.Co)/(obs.Co-1)
+#        sdiff <- 100*diff/sqrt( (var.Tr+var.Co)/2 )
+
+#match Rubin
+        mean.total <- sum(Tr*weights.Tr)/obs.total + sum(Co*weights.Co)/obs.total
+        var.total  <- sum( ( (Tr - mean.total)^2 )*weights.Tr)/(obs.total-1) +
+          sum( ( (Co - mean.total)^2 )*weights.Co)/(obs.total-1)
+        sdiff <- diff/sqrt( var.total )
+        
       } else{
         diff  <- sum( (Tr-Co)*weights ) /sum(weights)
         mean.Tr <- sum(Tr*weights)/sum(weights)
         mean.Co <- sum(Co*weights)/sum(weights)
-        var.Tr  <- sum( ( (Tr - mean.Tr)^2 )*weights)/(sum(weights)-1)
-        var.Co  <- sum( ( (Co - mean.Co)^2 )*weights)/(sum(weights)-1)
-        sdiff  <- 100*diff/sqrt( (var.Tr+var.Co)/2 )
+
+#old        
+#        var.Tr  <- sum( ( (Tr - mean.Tr)^2 )*weights)/(sum(weights)-1)
+#        var.Co  <- sum( ( (Co - mean.Co)^2 )*weights)/(sum(weights)-1)
+#        sdiff  <- 100*diff/sqrt( (var.Tr+var.Co)/2 )
+
+#match Rubin
+        obs <- sum(weights)*2
+        mean.total <- (mean.Tr + mean.Co)/2
+        var.total  <- sum( ( (Tr - mean.total)^2 )*weights)/(obs-1) +
+          sum( ( (Co - mean.total)^2 )*weights)/(obs-1)
+        sdiff <- diff/sqrt(var.total)
       }
 
     return(sdiff)
@@ -1546,6 +1611,8 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
 
     if (sum(is.na(data)!=0))
       stop("MatchBalance: NAs found in data input")
+
+    formul <- formula(formul)
 
     nvars  <- ncol(xdata)
     names.xdata  <- names(xdata)

@@ -108,12 +108,12 @@ MatchBalance(formul, data = NULL, match.out = NULL, ks = TRUE, mv = FALSE,
   }
 \references{
   Sekhon, Jasjeet S. 2004.  ``Balance Tests for Matching Estimators.''
-  Working Paper. \url{http://jsekhon.fas.harvard.edu/matching}
+  Working Paper. \url{http://sekhon.polisci.berkeley.edu/matching}
 
   Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
   Estimating Causal Effects: A New Method of Achieving Balance in
   Observational Studies.''  Working Paper.
-  \url{http://jsekhon.fas.harvard.edu/papers/GenMatch.pdf}       
+  \url{http://sekhon.polisci.berkeley.edu/papers/GenMatch.pdf}       
 
   Abadie, Alberto.  2002.  ``Bootstrap Tests for Distributional Treatment
   Effects in Instrumental Variable Models.'' \emph{Journal of the
@@ -133,8 +133,8 @@ MatchBalance(formul, data = NULL, match.out = NULL, ks = TRUE, mv = FALSE,
   New York: Springer-Verlag.
 }
 \author{
-  Jasjeet S. Sekhon, Harvard University, \email{jasjeet\_sekhon@harvard.edu},
-  \url{http://jsekhon.fas.harvard.edu/}
+  Jasjeet S. Sekhon, UC Berkeley, \email{sekhon@berkeley.edu},
+  \url{http://sekhon.polisci.berkeley.edu/}  
 }
 \seealso{
   Also see \code{\link{Match}}, \code{\link{GenMatch}}, \code{\link{balanceMV}},

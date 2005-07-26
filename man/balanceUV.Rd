@@ -39,10 +39,9 @@ balanceUV(Tr, Co, weights = rep(1, length(Co)), exact = FALSE, ks=FALSE,
   \item{weights.Co}{A vector of weights for the control observations.}
 }
 \value{
-  \item{sdiff}{This is the standardized difference which is the
-    mean difference between treatment and control divided by the square
-    root of the average variance (of treatment and control).  The
-    entire quantity is then multiplied by a 100.}
+  \item{sdiff}{This is the standardized difference between the treated
+    and control units.  That is, the mean difference between treatment
+    and control units divided by the pooled standard deviation.}
   \item{mean.Tr}{The mean of the treatment group.}
   \item{mean.Co}{The mean of the control group.}
   \item{var.Tr}{The variance of the treatment group.}
@@ -53,8 +52,8 @@ balanceUV(Tr, Co, weights = rep(1, length(Co)), exact = FALSE, ks=FALSE,
   \item{tt}{The object returned by two-sided weighted \code{\link{t.test}}.}
 }
 \author{
-  Jasjeet S. Sekhon, Harvard University, \email{jasjeet\_sekhon@harvard.edu},
-  \url{http://jsekhon.fas.harvard.edu/}
+  Jasjeet S. Sekhon, UC Berkeley, \email{sekhon@berkeley.edu},
+  \url{http://sekhon.polisci.berkeley.edu/}  
 }
 \references{
   Hollander, Myles and Douglas A. Wolfe. 1973. \emph{Nonparametric

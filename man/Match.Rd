@@ -18,7 +18,7 @@
 }
 \usage{
 Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
-      BiasAdj = FALSE, exact = NULL, caliper = NULL,
+      BiasAdjust = FALSE, exact = NULL, caliper = NULL,
       Weight = 1, Weight.matrix = NULL, weights = rep(1, length(Y)),
       Var.calc = 0, sample = FALSE, tolerance = 1e-05,
       distance.tolerance = 1e-05, version="fast")
@@ -46,7 +46,7 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     "ATC" is the sample average treatment effect for the controls.}
   \item{M}{ A scalar for the number of matches which should be
     found (with replacement). The default is one-to-one matching. }
-  \item{BiasAdj}{ A logical scalar for whether regression adjustment
+  \item{BiasAdjust}{ A logical scalar for whether regression adjustment
     should be used. See the \code{Z} matrix.}
   \item{exact}{ A logical scalar or vector for whether exact matching
     should be done.  \emph{Variables which are to be exactly matched on
@@ -152,7 +152,7 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     uncertainty involved in its estimation is not accounted for although the
     uncertainty of the matching procedure itself still is.}
   \item{est.noadj }{The estimated average causal effect without any
-    \code{BiasAdj}.  If \code{BiasAdj} is not requested, this is the
+    \code{BiasAdjust}.  If \code{BiasAdjust} is not requested, this is the
     same as \code{est}.}
   \item{se.naive }{The naive standard error.  This is the standard error
     calculated on the matched data using the usual method of calculating
@@ -162,7 +162,7 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     of the matching procedure while \code{se.naive} does not.  Neither
     \code{se} nor \code{se.naive} take into account the uncertainty of
     estimating a propensity score.  \code{se.naive} does
-    not take into account any \code{BiasAdj}.  Summary of the naive
+    not take into account any \code{BiasAdjust}.  Summary of the naive
     results can be requested by setting the \code{full=TRUE} flag when
     using the \code{\link{summary.Match}} function on the object
     returned by
@@ -219,15 +219,14 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
   Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
   Estimating Causal Effects: A New Method of Achieving Balance in
   Observational Studies.''  Working Paper.
-  \url{http://jsekhon.fas.harvard.edu/papers/GenMatch.pdf} 
+  \url{http://sekhon.polisci.berkeley.edu/papers/GenMatch.pdf} 
   
   Sekhon, Jasjeet S. 2004.  ``The Varying Role of Voter Information
   Across Democratic Societies.''  Working Paper.
-  \url{http://jsekhon.fas.harvard.edu/papers/SekhonInformation.pdf}
+  \url{http://sekhon.polisci.berkeley.edu/papers/SekhonInformation.pdf}
 }
-\author{R version by Jasjeet S. Sekhon, Harvard University,
-  \email{jasjeet\_sekhon@harvard.edu},
-  \url{http://jsekhon.fas.harvard.edu/} \cr
+\author{R version by Jasjeet S. Sekhon, UC Berkeley, \email{sekhon@berkeley.edu},
+  \url{http://sekhon.polisci.berkeley.edu/}   \cr
   
   Matlab version by Guido Imbens, University of California,
   Berkeley, \url{http://elsa.berkeley.edu/~imbens/}.}

@@ -15,8 +15,8 @@
   \item{...}{Other options for the generic summary function.}  
 }
 \author{
-  Jasjeet S. Sekhon, Harvard University, \email{jasjeet\_sekhon@harvard.edu},
-  \url{http://jsekhon.fas.harvard.edu/}
+  Jasjeet S. Sekhon, UC Berkeley, \email{sekhon@berkeley.edu},
+  \url{http://sekhon.polisci.berkeley.edu/}  
 }
 \seealso{
   Also see \code{\link{balanceUV}}, \code{\link{balanceMV}},

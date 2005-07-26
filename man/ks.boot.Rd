@@ -28,8 +28,8 @@ ks.boot(Tr, Co, nboots=1000, verbose=0)
   \item{nboots}{The number of bootstraps which were completed.}
 }
 \author{
-  Jasjeet S. Sekhon, Harvard University, \email{jasjeet\_sekhon@harvard.edu},
-  \url{http://jsekhon.fas.harvard.edu/}
+  Jasjeet S. Sekhon, UC Berkeley, \email{sekhon@berkeley.edu},
+  \url{http://sekhon.polisci.berkeley.edu/}  
 }
 \references{
   Sekhon, Jasjeet S. 2004.  ``Balance Tests for Matching
@@ -38,7 +38,7 @@ ks.boot(Tr, Co, nboots=1000, verbose=0)
   Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
   Estimating Causal Effects: A New Method of Achieving Balance in
   Observational Studies.''  Working Paper.
-  \url{http://jsekhon.fas.harvard.edu/papers/GenMatch.pdf}     
+  \url{http://sekhon.polisci.berkeley.edu/papers/GenMatch.pdf}     
 
   Abadie, Alberto.  2002.  ``Bootstrap Tests for Distributional Treatment
   Effects in Instrumental Variable Models.'' \emph{Journal of the
