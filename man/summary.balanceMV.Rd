@@ -16,7 +16,7 @@
 }
 \author{
   Jasjeet S. Sekhon, UC Berkeley, \email{sekhon@berkeley.edu},
-  \url{http://sekhon.polisci.berkeley.edu/}  
+  \url{http://sekhon.polisci.berkeley.edu/}.  
 }
 \seealso{
   Also see \code{\link{balanceMV}}, \code{\link{balanceUV}},

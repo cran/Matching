@@ -102,8 +102,8 @@ balanceMV(formul, data = NULL, match.out=NULL, maxit = 1000,
   Paper. \url{http://sekhon.polisci.berkeley.edu/matching}
 
   Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
-  Estimating Causal Effects: A New Method of Achieving Balance in
-  Observational Studies.''  Working Paper.
+  Estimating Causal Effects: A General Multivariate Matching Method for
+  Achieving Balance in Observational Studies.''  Working Paper.
   \url{http://sekhon.polisci.berkeley.edu/papers/GenMatch.pdf} 
 
   Abadie, Alberto.  2002.  ``Bootstrap Tests for Distributional Treatment
@@ -125,7 +125,7 @@ balanceMV(formul, data = NULL, match.out=NULL, maxit = 1000,
 }
 \author{
   Jasjeet S. Sekhon, UC Berkeley, \email{sekhon@berkeley.edu},
-  \url{http://sekhon.polisci.berkeley.edu/}  
+  \url{http://sekhon.polisci.berkeley.edu/}.
 }
 \seealso{ Also see \code{\link{summary.balanceMV}},
   \code{\link{MatchBalance}}, \code{\link{balanceUV}},

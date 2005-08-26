@@ -139,7 +139,7 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
     done by the genetic algorithm.}  
   \item{tolerance}{ This is a scalar which is used to determine
     numerical tolerances.  This option is used by numerical routines
-    such as those used to determine if matrix is singular.}
+    such as those used to determine if a matrix is singular.}
   \item{distance.tolerance}{This is a scalar which is used to determine if distances
     between two observations are different from zero.  Values less than
     \code{distance.tolerance} are deemed to be equal to zero.  This
@@ -211,8 +211,8 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
 }
 \references{
   Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
-  Estimating Causal Effects: A New Method of Achieving Balance in
-  Observational Studies.''  Working Paper.
+  Estimating Causal Effects: A General Multivariate Matching Method for
+  Achieving Balance in Observational Studies.''  Working Paper.
   \url{http://sekhon.polisci.berkeley.edu/papers/GenMatch.pdf}
 
   Sekhon, Jasjeet Singh and Walter R. Mebane, Jr. 1998.  ``Genetic
@@ -222,7 +222,7 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
 }
 \author{
   Jasjeet S. Sekhon, UC Berkeley, \email{sekhon@berkeley.edu},
-  \url{http://sekhon.polisci.berkeley.edu/}  
+  \url{http://sekhon.polisci.berkeley.edu/}.  
 }
 \seealso{ Also see \code{\link{Match}}, \code{\link{summary.Match}},
   \code{\link{MatchBalance}}, \code{\link[rgenoud]{genoud}},

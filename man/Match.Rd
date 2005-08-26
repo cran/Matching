@@ -113,7 +113,7 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     variance is returned. }
   \item{tolerance}{ This is a scalar which is used to determine
     numerical tolerances.  This option is used by numerical routines
-    such as those used to determine if matrix is singular.}
+    such as those used to determine if a matrix is singular.}
   \item{distance.tolerance}{This is a scalar which is used to determine if distances
     between two observations are different from zero.  Values less than
     \code{distance.tolerance} are deemed to be equal to zero.  This
@@ -211,25 +211,26 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
 }
 \references{
 
-  Abadie, Alberto and Guido Imbens. 2004.
+  Abadie, Alberto and Guido Imbens. 2005.
   ``Large Sample Properties of Matching Estimators for Average
-  Treatment Effects.'' Working Paper.
+  Treatment Effects.'' \emph{Econometrica}.
   \url{http://ksghome.harvard.edu/~.aabadie.academic.ksg/sme.pdf} 
 
   Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
-  Estimating Causal Effects: A New Method of Achieving Balance in
-  Observational Studies.''  Working Paper.
-  \url{http://sekhon.polisci.berkeley.edu/papers/GenMatch.pdf} 
+  Estimating Causal Effects: A General Multivariate Matching Method for
+  Achieving Balance in Observational Studies.''  Working Paper.
+  \url{http://sekhon.polisci.berkeley.edu/papers/GenMatch.pdf}
+
+  Imbens, Guido. 2004. Matching Software for Matlab and
+  Stata. \url{http://elsa.berkeley.edu/~imbens/estimators.shtml}
   
   Sekhon, Jasjeet S. 2004.  ``The Varying Role of Voter Information
   Across Democratic Societies.''  Working Paper.
   \url{http://sekhon.polisci.berkeley.edu/papers/SekhonInformation.pdf}
 }
-\author{R version by Jasjeet S. Sekhon, UC Berkeley, \email{sekhon@berkeley.edu},
-  \url{http://sekhon.polisci.berkeley.edu/}   \cr
-  
-  Matlab version by Guido Imbens, University of California,
-  Berkeley, \url{http://elsa.berkeley.edu/~imbens/}.}
+\author{Jasjeet S. Sekhon, UC Berkeley, \email{sekhon@berkeley.edu},
+  \url{http://sekhon.polisci.berkeley.edu/}.
+}
 \seealso{ Also see \code{\link{summary.Match}},
   \code{\link{GenMatch}},
   \code{\link{MatchBalance}},

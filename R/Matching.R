@@ -86,26 +86,35 @@ Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
     ###########################
     # BEGIN: produce an error if some column of X has zero variance
     #
-    X.var <- (apply(X, 2, var) <= tolerance)
+
+    apply.Xvar <- apply(X, 2, var)
+    apply.Xmean <- apply(X, 2, mean)
+    #check just variances
+    X.var <- (apply.Xvar <= tolerance)
     Xadjust <- sum(X.var)
     if(Xadjust > 0)
       {
         #which variables have no variance?
-        Xadjust.variables <- vector(length=Xadjust, mode="numeric")
-        count <- 0
-        for (i in 1:xvars)
-          {
-            if(X.var[i])
-              {
-                count <- count + 1
-                Xadjust.variables[count] <- i
-              }
-          }#end of for loop
+        Xadjust.variables <- order(X.var==TRUE)[(xvars-Xadjust+1):xvars]
 
-        foo <- paste("The following column of 'X' has zero variance and need to be removed before proceeding: ",Xadjust.variables,"\n\t")
+        foo <- paste("The following columns of 'X' have zero variance (within 'tolerance') and need to be removed before proceeding: ",Xadjust.variables,"\n")
         stop(foo)
         return(invisible(NULL))            
       }
+
+    #check mean/variances
+    X.varmean <- (apply.Xvar/apply.Xmean <= tolerance)
+    Xadjust <- sum(X.varmean)
+    if(Xadjust > 0)
+      {
+
+        #which variables have triggered this?
+        Xadjust.variables <- order(X.varmean==TRUE)[(xvars-Xadjust+1):xvars]
+
+        foo <- paste("The variance divided by the mean of the following columns of 'X' is zero (within 'tolerance'):"
+                     ,Xadjust.variables,"\n")
+        warning(foo)
+      }    
     # 
     # END: produce and error if some column of X has zero variance   
     ###########################
@@ -470,7 +479,7 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
       {
         Weight.matrix=diag(Kx)
       } else if (Weight==2) {
-        if (min (eigen( t(X)%*%X/N, only.values=TRUE)$values) > 0.0000001)
+        if (min (eigen( t(X)%*%X/N, only.values=TRUE)$values) > ccc)
           {
             Weight.matrix= solve(t(X)%*%X/N) 
           } else {
