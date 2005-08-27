@@ -141,7 +141,6 @@ MatchGenoudStage1caliper <- function(Tr=Tr, X=X, All=All, M=M, weights=weights,
                                      exact=exact, caliper=caliper,
                                      distance.tolerance=0.00001)
   {
-    Xorig  <- X;
     N  <- nrow(X)
     xvars <- ncol(X)
     weights.orig  <- as.matrix(weights)
@@ -236,148 +235,14 @@ MatchGenoudStage1caliper <- function(Tr=Tr, X=X, All=All, M=M, weights=weights,
   } #end of MatchGenoudStage1caliper
 
 
-FastMatchGenoudCaliper <- function(Tr, X, All=1, M=1, Weight=1, 
-                                   Weight.matrix=NULL,
-                                   weights=rep(1,length(Tr)),
-                                   exact=NULL, caliper=NULL,
-                                   tolerance=0.00001,
-                                   distance.tolerance=0.00001)
-  {
+#function removed as of 0.99-7 (codetools)
+#FastMatchGenoudCaliper <- function(Tr, X, All=1, M=1, Weight=1, 
+#                                   Weight.matrix=NULL,
+#                                   weights=rep(1,length(Tr)),
+#                                   exact=NULL, caliper=NULL,
+#                                   tolerance=0.00001,
+#                                   distance.tolerance=0.00001)
 
-    Xorig  <- X;
-    N  <- nrow(X)
-    xvars <- ncol(X)
-
-    if (!is.null(Weight.matrix))
-      {
-        if (Weight==2)
-          {
-            warning("User supplied 'Weight.matrix' is being used even though 'Weight' is not set equal to 3")
-          }
-        Weight  <- 3
-      } else {
-        Weight.matrix <- diag(xvars)
-      }
-
-    if (!is.null(exact))
-      {
-        exact = as.vector(exact)
-        nexacts = length(exact)
-        if ( (nexacts > 1) & (nexacts != xvars) )
-          {
-            warning("length of exact != ncol(X). Ignoring exact option")
-            exact <- NULL
-          } else if (nexacts==1 & (xvars > 1) ){
-            exact <- rep(exact, xvars)
-          }
-      }
-
-    if (!is.null(caliper))
-      {
-        caliper = as.vector(caliper)
-        ncalipers = length(caliper)
-        if ( (ncalipers > 1) & (ncalipers != xvars) )
-          {
-            warning("length of caliper != ncol(X). Ignoring caliper option")
-            caliper <- NULL
-          } else if (ncalipers==1 & (xvars > 1) ){
-            caliper <- rep(caliper, xvars)
-          }
-      }
-
-    if (!is.null(caliper))
-      {
-        ecaliper <- vector(mode="numeric", length=xvars)
-        sweights  <- sum(weights.orig)
-        for (i in 1:xvars)
-          {
-            meanX  <- sum( X[,i]*weights.orig )/sweights
-            sdX  <- sqrt(sum( (X[,i]-meanX)^2 )/sweights)
-            ecaliper[i]  <- caliper[i]*sdX
-          }
-      } else {
-        ecaliper <- NULL
-      }
-
-    if (!is.null(exact))
-      {
-        if(is.null(caliper))
-          {
-            max.diff <- abs(max(X)-min(X) + tolerance * 100)
-            ecaliper <- matrix(max.diff, nrow=xvars, ncol=1)
-          }
-        
-        for (i in 1:xvars)
-          {
-            if (exact[i])
-              ecaliper[i] <- tolerance;
-          }
-      }            
-    
-# if SATC is to be estimated the treatment indicator is reversed    
-    if (All==2)
-      Tr <- 1-Tr
-
-# check on the number of matches, to make sure the number is within the limits
-# feasible given the number of observations in both groups.
-    if (All==1)
-      {
-        M <- min(M,min(sum(Tr),sum(1-Tr)));        
-      } else {
-        M <- min(M,sum(1-Tr));
-      }
-
-# I.c. normalize regressors to have mean zero and unit variance.
-# If the standard deviation of a variable is zero, its normalization
-# leads to a variable with all zeros.
-    Mu.X  <- matrix(0, xvars, 1)
-    Sig.X <- matrix(0, xvars, 1)
-
-    weights.sum <- sum(weights)
-    
-    for (k in 1:xvars)
-      {
-        Mu.X[k,1] <- sum(X[,k]*weights)/weights.sum;
-        eps <- X[,k]-Mu.X[k,1]
-        Sig.X[k,1] <- sqrt(sum(X[,k]*X[,k]*weights)/weights.sum-Mu.X[k,1]^2)
-        Sig.X[k,1] <- Sig.X[k,1]*sqrt(N/(N-1))
-        X[,k]=eps/Sig.X[k,1]
-      } #end of k loop
-
-    if (Weight==1)
-      {
-        Weight.matrix=diag(xvars)
-      } else if (Weight==2) {
-        if (min (eigen( t(X)%*%X/N, only.values=TRUE)$values) < tolerance)
-          {
-            Weight.matrix= solve(t(X)%*%X/N) 
-          } else {
-            Weight.matrix <- diag(xvars)
-          }
-      }    
-
-    if ( min(eigen(Weight.matrix, only.values=TRUE)$values) < tolerance )
-      Weight.matrix <- Weight.matrix + diag(xvars)*tolerance
-        
-    ww <- chol(Weight.matrix)
-
-    if (is.null(ecaliper))
-      {
-        caliperFlag  <- 0
-        Xorig  <- 0
-        CaliperVec  <- 0
-      } else {
-        caliperFlag  <- 1
-        CaliperVec  <- ecaliper
-      }    
-
-    rr <- FastMatchC(N=N, xvars=xvars, All=All, M=M, cdd=distance.tolerance,
-                     caliperflag=caliperFlag,                     
-                     ww=ww, Tr=Tr, Xmod=X, weights=weights,
-                     CaliperVec=CaliperVec, Xorig=Xorig)    
-
-    return(rr)
-  } #end of
 
 ###############################################################################
 ## GenMatchCaliper
@@ -406,7 +271,6 @@ GenMatchCaliper <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
     
     nvars <- ncol(X)
     balancevars <- ncol(BalanceMatrix)
-    weighting <- 3;
 
     if (is.null(Domains))
       {
@@ -643,15 +507,11 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         M <- 1        
       }
     
-
-
     ###########################
     # BEGIN: produce an error if some column of X has zero variance
     #
 
     apply.Xvar <- apply(X, 2, var)
-    apply.Xmean <- apply(X, 2, mean)
-    #check just variances
     X.var <- (apply.Xvar <= tolerance)
     Xadjust <- sum(X.var)
     if(Xadjust > 0)
@@ -659,27 +519,14 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         #which variables have no variance?
         Xadjust.variables <- order(X.var==TRUE)[(xvars-Xadjust+1):xvars]
 
-        foo <- paste("The following columns of 'X' have zero variance (within 'tolerance') and need to be removed before proceeding: ",Xadjust.variables,"\n")
+        foo <- paste("The following column of 'X' has zero variance (within 'tolerance') and needs to be removed before proceeding: ",Xadjust.variables,"\n")
         stop(foo)
         return(invisible(NULL))            
       }
 
-    #check mean/variances
-    X.varmean <- (apply.Xvar/apply.Xmean <= tolerance)
-    Xadjust <- sum(X.varmean)
-    if(Xadjust > 0)
-      {
-
-        #which variables have triggered this?
-        Xadjust.variables <- order(X.varmean==TRUE)[(xvars-Xadjust+1):xvars]
-
-        foo <- paste("The variance divided by the mean of the following columns of 'X' is zero (within 'tolerance'):"
-                     ,Xadjust.variables,"\n")
-        warning(foo)
-      }    
     # 
     # END: produce and error if some column of X has zero variance   
-    ###########################    
+    ###########################
 
     if(!is.null(caliper) | !is.null(exact))
       {
@@ -720,7 +567,6 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
     
     nvars <- ncol(X)
     balancevars <- ncol(BalanceMatrix)
-    weighting <- 3;
 
     if (is.null(Domains))
       {
