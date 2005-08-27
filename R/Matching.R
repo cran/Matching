@@ -88,8 +88,6 @@ Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
     #
 
     apply.Xvar <- apply(X, 2, var)
-    apply.Xmean <- apply(X, 2, mean)
-    #check just variances
     X.var <- (apply.Xvar <= tolerance)
     Xadjust <- sum(X.var)
     if(Xadjust > 0)
@@ -97,24 +95,11 @@ Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
         #which variables have no variance?
         Xadjust.variables <- order(X.var==TRUE)[(xvars-Xadjust+1):xvars]
 
-        foo <- paste("The following columns of 'X' have zero variance (within 'tolerance') and need to be removed before proceeding: ",Xadjust.variables,"\n")
+        foo <- paste("The following column of 'X' has zero variance (within 'tolerance') and needs to be removed before proceeding: ",Xadjust.variables,"\n")
         stop(foo)
         return(invisible(NULL))            
       }
 
-    #check mean/variances
-    X.varmean <- (apply.Xvar/apply.Xmean <= tolerance)
-    Xadjust <- sum(X.varmean)
-    if(Xadjust > 0)
-      {
-
-        #which variables have triggered this?
-        Xadjust.variables <- order(X.varmean==TRUE)[(xvars-Xadjust+1):xvars]
-
-        foo <- paste("The variance divided by the mean of the following columns of 'X' is zero (within 'tolerance'):"
-                     ,Xadjust.variables,"\n")
-        warning(foo)
-      }    
     # 
     # END: produce and error if some column of X has zero variance   
     ###########################
@@ -427,9 +412,9 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
 
 # K covariates
 # N observations
-    Nt <- sum(Tr)
-    Nc <- sum(1-Tr)
-    on <- as.matrix(rep(1,N))
+#    Nt <- sum(Tr)
+#    Nc <- sum(1-Tr)
+#    on <- as.matrix(rep(1,N))
 
 # I.c. normalize regressors to have mean zero and unit variance.
 # If the standard deviation of a variable is zero, its normalization
@@ -451,7 +436,7 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
 #        AA[k,k]=Sig.X[k,1]
       } #end of k loop
 
-    Nv <- nrow(V)
+#    Nv <- nrow(V)
     Mv <- ncol(V)
     Mu.V  <- matrix(0, Mv, 1)
     Sig.V <- matrix(0, Mv, 1)
@@ -459,7 +444,7 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
     for (j in 1:Mv)
       {
         Mu.V[j,1]= ( t(V[,j])%*%weight ) /sum(weight)
-        dv <- V[,j]-Mu.V[j,1]
+#        dv <- V[,j]-Mu.V[j,1]
         sv <- sum(V[,j]*V[,j]*weight)/sum(weight)-Mu.V[j,1]^2
         if (sv > 0)
           {
@@ -521,7 +506,7 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
 # II. Loop through all observations that need to be matched.
     INN <- as.matrix(1:N)
     ww <- chol(Weight.matrix) # so that ww*ww=w.m
-    TT <- as.matrix(1:N)
+#    TT <- as.matrix(1:N)
 
     # initialize some data objects
     DD <- NULL
@@ -580,9 +565,9 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
             POTMAT <- Tr == (1-TREATi) 
 
             # X's for potential matches
-            XPOT <- X[POTMAT,]
+#            XPOT <- X[POTMAT,]
             DistPot <- Dist[POTMAT,1]
-            TTPotMat <- TT[POTMAT,1]
+#            TTPotMat <- TT[POTMAT,1]
             weightPot <- as.matrix(weight[POTMAT,1])
 
             # sorted distance of potential matches            
@@ -828,7 +813,7 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
                 BiasAdj <- 0
               } else {
                 NW <- nrow(wout)
-                KW <- ncol(wout)
+#                KW <- ncol(wout)
                 Alphat <- wout[2:NW,1]
               }
           } else {
@@ -872,7 +857,7 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
             BiasAdj <- 0
           } else {
             NW <- nrow(wout)
-            KW <- ncol(wout)
+#            KW <- ncol(wout)
             Alphac <- as.matrix(wout[2:NW,1])
           }
       }
@@ -906,7 +891,7 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
     Kx <- ncol(X)
 
 #   ww <- chol(Weight.matrix)
-    NN <- as.matrix(1:N)
+#   NN <- as.matrix(1:N)
     if (Var.calc>0)
       {
         Sig <- matrix(0, nrow=N, ncol=1)
@@ -967,15 +952,15 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
 
     # matching estimator
     est <- t(W) %*% Tau.i/sum(W)
-    est.t <- sum((iot.t*Tr+iot.c*Kcount*Tr)*Y)/sum(iot.t*Tr+iot.c*Kcount*Tr)
-    est.c <- sum((iot.t*(1-Tr)+iot.c*Kcount*(1-Tr))*Y)/sum(iot.t*(1-Tr)+iot.c*Kcount*(1-Tr))
+#    est.t <- sum((iot.t*Tr+iot.c*Kcount*Tr)*Y)/sum(iot.t*Tr+iot.c*Kcount*Tr)
+#    est.c <- sum((iot.t*(1-Tr)+iot.c*Kcount*(1-Tr))*Y)/sum(iot.t*(1-Tr)+iot.c*Kcount*(1-Tr))
 
     if (Var.calc==0)
       {
         eps <- Tau.i - as.real(est)
         eps.sq <- eps*eps
         Sigs <- 0.5 * matrix(1, N, 1) %*% (t(eps.sq) %*% W)/sum(W)
-        sss <- sqrt(Sigs[1,1])
+#        sss <- sqrt(Sigs[1,1])
       } #end of Var.calc==0
 
     SN <- sum(iot.t)
@@ -1106,7 +1091,6 @@ balanceUV  <- function(Tr, Co, weights=rep(1,length(Co)), exact=FALSE, ks=FALSE,
         
         mean.Tr <- sum(Tr*weights.Tr)/obs.Tr
         mean.Co <- sum(Co*weights.Co)/obs.Co
-        estimate <- mean.Tr-mean.Co
         var.Tr  <- sum( ( (Tr - mean.Tr)^2 )*weights.Tr)/(obs.Tr-1)
         var.Co  <- sum( ( (Co - mean.Co)^2 )*weights.Co)/(obs.Co-1)
         var.ratio  <- var.Tr/var.Co
@@ -1172,67 +1156,8 @@ summary.balanceUV  <- function(object, ..., digits=5)
   } #end of summary.balanceUV
 
 
-
-
-McNemar  <- function(Tr, Co, weights=rep(1,length(Tr)))
-{
-#SEE MCNEMAR2 FOR GENERAL FUNCTION  
-#McNemar's test
-#mcnemar.test(x, y = NULL, correct = TRUE)
-#McNemar's test of symmetry is appropriate for parallel measures from
-#matched cases as well as for repeated measures on a single set of
-#cases. In this case, McNemar's test of symmetry is equivalent to
-#Cochran's Q.
-#
-#Siegel, S. Nonparametric Methods for the Behavioral Sciences. New
-#York: McGraw-Hill, 1956. p. 63 (when both variables are two-point
-#scales, McNemar's test of symmetry and McNemar's test for the
-#significance of changes are equivalent); Bowker, A. H., A test for
-#symmetry in contingency tables. Journal of the American Statistical
-#Association 43 (1948): 572-574.
-
-#page 148ff Argesti
-  
-  obs  <- sum(weights);
-  p1.  <- sum(Tr*weights)/obs;
-  p.1  <- sum(Co*weights)/obs;
-  p1  <- p1.;
-  p2  <- p.1;
-  mc.table.obs  <-  as.matrix(table(Tr, Co));
-  mc.table  <-  mc.table.obs/obs;
-  p11  <- mc.table[1,1];
-  p12  <- mc.table[1,2];
-  p21  <- mc.table[2,1];
-  p22  <- mc.table[2,2];
-  
-  #Vd  <- (p1.*(1-p1.) + p.1*(1-p.1) - 2*(p11*p22-p12*p21))/obs;
-  #Sd  <- sqrt(Vd);
-  #d   <- p1-p2;
-
-  #
-  #cat("Mcnemar 10.2 test: ", d/Sd, (1-pnorm(abs(d/Sd)))*2,"\n");
-
-  n11.indx  <- Tr==TRUE  & Co==TRUE
-  n12.indx  <- Tr==TRUE  & Co==FALSE
-  n21.indx  <- Tr==FALSE & Co==TRUE
-  n22.indx  <- Tr==FALSE & Co==FALSE
-    
-  n11  <- sum(n11.indx*weights)
-  n12  <- sum(n12.indx*weights)
-  n21  <- sum(n21.indx*weights)
-  n22  <- sum(n22.indx*weights)
-  
-  mc  <- (n12-n21)/sqrt(n12 + n21);
-  pdiscordant= (n12+n21)/obs
-
-  #this matches the results of mcnemar.test without the continuity correction
-  #cat("Mcnemar 10.3 test: ", mc, ,"\n");
-  
-  # mcnemar  <- mcnemar.test(Tr, Co,correct = FALSE);
-  p.value  <- (1-pnorm(abs(mc)))*2;
-  return(list(statistic=mc,p.value=p.value,pdiscordant=pdiscordant))
-}
-
+#removed as of 0.99-7 (codetools)
+#McNemar  <- function(Tr, Co, weights=rep(1,length(Tr)))
 
 McNemar2 <- function (Tr, Co, correct = TRUE, weights=rep(1,length(Tr)))
 {
@@ -1828,7 +1753,7 @@ balanceMV  <- function(formul, data=NULL, match.out=NULL, maxit=1000, weights=re
     ddata$weights.unmatched <- data$weight37172        
 
     #FULL SAMPLE RUN
-    t1  <- glm(formul, family=binomial(link=logit), weights=weight37172,
+    t1  <- glm(formul, family=binomial(link="logit"), weights=data$weight37172,
                control=glm.control(maxit=maxit, ...), data=data)
 
     t1$df <- t1$df.null-t1$df.residual
@@ -1929,17 +1854,15 @@ balanceMV  <- function(formul, data=NULL, match.out=NULL, maxit=1000, weights=re
         xdata <- as.data.frame(get.xdata(formul, Mdata))
         xdata <- as.matrix(xdata)
         Xs    <- xdata
-        intercept <- FALSE
         if (sum(xdata[,1]==rep(1,nrow(xdata)))==nrow(xdata))
           {
-            intercept <- TRUE
             xdata <- xdata[,2:ncol(xdata)]
 
-            Mt1  <- glm(MTr~xdata, family=quasibinomial(link=logit), 
+            Mt1  <- glm(MTr~xdata, family=quasibinomial(link="logit"), 
                         control=glm.control(maxit=maxit, ...),
                         weights=Mdata$weight37172)
           } else {
-            Mt1  <- glm(MTr~xdata-1, family=quasibinomial(link=logit), weights=Mdata$weight37172,
+            Mt1  <- glm(MTr~xdata-1, family=quasibinomial(link="logit"), weights=Mdata$weight37172,
                         control=glm.control(maxit=maxit, ...))                        
           }
 
@@ -1947,7 +1870,7 @@ balanceMV  <- function(formul, data=NULL, match.out=NULL, maxit=1000, weights=re
         Mdata0$y  <- MTr
         Mdata0$weight37172  <- Mdata$weight37172
         
-        Mt0  <- glm(y~1, family=quasibinomial(link=logit), weights=Mdata0$weight37172,
+        Mt0  <- glm(y~1, family=quasibinomial(link="logit"), weights=Mdata0$weight37172,
                     control=glm.control(maxit=maxit, ...), data=Mdata0)
         
         rd0<-residuals(Mt0) # deviance residuals
@@ -2288,9 +2211,9 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
 
 # K covariates
 # N observations
-    Nt <- sum(Tr)
-    Nc <- sum(1-Tr)
-    on <- as.matrix(rep(1,N))
+#    Nt <- sum(Tr)
+#    Nc <- sum(1-Tr)
+#    on <- as.matrix(rep(1,N))
 
 # I.c. normalize regressors to have mean zero and unit variance.
 # If the standard deviation of a variable is zero, its normalization
@@ -2312,7 +2235,7 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
 #        AA[k,k]=Sig.X[k,1]
       } #end of k loop
 
-    Nv <- nrow(V)
+#    Nv <- nrow(V)
     Mv <- ncol(V)
     Mu.V  <- matrix(0, Mv, 1)
     Sig.V <- matrix(0, Mv, 1)
@@ -2320,7 +2243,7 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
     for (j in 1:Mv)
       {
         Mu.V[j,1]= ( t(V[,j])%*%weight ) /sum(weight)
-        dv <- V[,j]-Mu.V[j,1]
+#        dv <- V[,j]-Mu.V[j,1]
         sv <- sum(V[,j]*V[,j]*weight)/sum(weight)-Mu.V[j,1]^2
         if (sv > 0)
           {
@@ -2597,7 +2520,7 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
                 BiasAdj <- 0
               } else {
                 NW <- nrow(wout)
-                KW <- ncol(wout)
+#                KW <- ncol(wout)
                 Alphat <- wout[2:NW,1]
               }
           } else {
@@ -2641,7 +2564,7 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
             BiasAdj <- 0
           } else {
             NW <- nrow(wout)
-            KW <- ncol(wout)
+#            KW <- ncol(wout)
             Alphac <- as.matrix(wout[2:NW,1])
           }
       }
@@ -2677,7 +2600,7 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
     Kx <- ncol(X)
 
 #   ww <- chol(Weight.matrix)
-    NN <- as.matrix(1:N)
+#   NN <- as.matrix(1:N)
     if (Var.calc>0)
       {
         Sig <- matrix(0, nrow=N, ncol=1)
@@ -2738,15 +2661,15 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
 
     # matching estimator
     est <- t(W) %*% Tau.i/sum(W)
-    est.t <- sum((iot.t*Tr+iot.c*Kcount*Tr)*Y)/sum(iot.t*Tr+iot.c*Kcount*Tr)
-    est.c <- sum((iot.t*(1-Tr)+iot.c*Kcount*(1-Tr))*Y)/sum(iot.t*(1-Tr)+iot.c*Kcount*(1-Tr))
+#    est.t <- sum((iot.t*Tr+iot.c*Kcount*Tr)*Y)/sum(iot.t*Tr+iot.c*Kcount*Tr)
+#    est.c <- sum((iot.t*(1-Tr)+iot.c*Kcount*(1-Tr))*Y)/sum(iot.t*(1-Tr)+iot.c*Kcount*(1-Tr))
 
     if (Var.calc==0)
       {
         eps <- Tau.i - as.real(est)
         eps.sq <- eps*eps
         Sigs <- 0.5 * matrix(1, N, 1) %*% (t(eps.sq) %*% W)/sum(W)
-        sss <- sqrt(Sigs[1,1])
+#        sss <- sqrt(Sigs[1,1])
       } #end of Var.calc==0
 
     SN <- sum(iot.t)

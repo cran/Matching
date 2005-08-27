@@ -1,7 +1,7 @@
 ifeq ($(CXX),g++)
 #CXXFLAGS = -O3 -funroll-loops -fstrict-aliasing -fsched-interblock -falign-loops=16 -falign-jumps=16 -falign-functions=16 -falign-jumps-max-skip=15 -falign-loops-max-skip=15 -malign-natural -ffast-math -mpowerpc-gpopt -force_cpusubtype_ALL -fstrict-aliasing -mtune=G5 -mcpu=G5 -mpowerpc64
 #CXXFLAGS = -O3 -ffast-math -funroll-loops -fexpensive-optimizations -ftree-vectorize -fdump-tree-vect-stats -msse -msse2 -march=pentium4 -mtune=pentium4
-#CXXFLAGS = -O3 -ansi -pedantic
+#CXXFLAGS = -O3 -ansi -pedantic -Wall
 CXXFLAGS = -O3 -ffast-math -funroll-loops -fexpensive-optimizations 
 endif
 

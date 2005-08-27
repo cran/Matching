@@ -89,9 +89,9 @@ extern "C"
 
     Matrix xx;
     Matrix DX;
-    Matrix Dist, DistPot, TTPotMat, weightPot, tt, 
+    Matrix Dist, DistPot, weightPot, tt, 
       weightPot_sort, weightPot_sum, ACTDIST, Wi, xmat, I, IM, W;
-    Matrix ACTMAT, POTMAT, XPOT;
+    Matrix ACTMAT, POTMAT;
 
     //    tret = gettimeofday(&tv2,&tz2);
     //    long secs = tv2.tv_sec - tv1.tv_sec;
@@ -143,9 +143,7 @@ extern "C"
 	    POTMAT = EqualityTestScalar(Tr, 1-TREATi);
 
             // X's for potential matches
-            XPOT = selif(X, POTMAT);
             DistPot = selif(Dist, POTMAT);
-            TTPotMat = selif(INN, POTMAT); //TT=INN
             weightPot = selif(weight, POTMAT);
 
 	    long weightPot_size = size(weightPot);
@@ -394,9 +392,9 @@ extern "C"
 
     Matrix xx;
     Matrix DX;
-    Matrix Dist, DistPot, TTPotMat, weightPot, tt, 
+    Matrix Dist, DistPot, weightPot, tt, 
       weightPot_sort, weightPot_sum, ACTDIST, Wi, xmat, I, IM, W;
-    Matrix ACTMAT, POTMAT, XPOT;
+    Matrix ACTMAT, POTMAT;
 
     //    tret = gettimeofday(&tv2,&tz2);
     //    long secs = tv2.tv_sec - tv1.tv_sec;
@@ -448,9 +446,7 @@ extern "C"
 	    POTMAT = EqualityTestScalar(Tr, 1-TREATi);
 
             // X's for potential matches
-            XPOT = selif(X, POTMAT);
             DistPot = selif(Dist, POTMAT);
-            TTPotMat = selif(INN, POTMAT); //TT=INN
             weightPot = selif(weight, POTMAT);
 
 	    long weightPot_size = size(weightPot);
