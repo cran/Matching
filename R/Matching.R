@@ -9,12 +9,17 @@
 # the ability to use robust estimation when estimating the propensity
 # score. MatchBalance(), balanceMV() and balanceUV() test for balance.
 
-Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
+Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
                    BiasAdjust=FALSE,exact=NULL,caliper=NULL,
                    Weight=1,Weight.matrix=NULL, weights=rep(1,length(Y)),
                    Var.calc=0, sample=FALSE, tolerance=0.00001,
-                   distance.tolerance=0.00001, version="fast")
+                   distance.tolerance=0.00001, restrict=NULL, version="fast")
   {
+
+    #we don't need to use a Y
+    if (is.null(Y))
+      Y = rep(0, length(Tr))
+    
     isna  <- sum(is.na(Y)) + sum(is.na(Tr)) + sum(is.na(X)) + sum(is.na(Z))
     if (isna!=0)
       {
@@ -32,6 +37,10 @@ Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
     sample  <- as.real(sample)
 
     xvars <- ncol(X)
+
+    if (sum(Tr !=1 & Tr !=0) > 0) {
+      stop("Treatment indicator must be a logical variable---i.e., TRUE (1) or FALSE (0)")
+    }    
 
     #check inputs
     if (tolerance < 0)
@@ -139,7 +148,17 @@ Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
     orig.wnobs  <- sum(weights)
     orig.weighted.treated.nobs <- sum( weights[Tr==1] )    
     weights.orig  <- as.matrix(weights)
-    
+
+    #check the restrict matrix input
+    if(!is.null(restrict))
+      {
+        if(!is.matrix(restrict))
+          stop("'restrict' must be a matrix of restricted observations rows and three columns: c(i,j restriction)")
+
+        if(ncol(restrict)!=3 )
+          stop("'restrict' must be a matrix of restricted observations rows and three columns: c(i,j restriction)")
+      }
+
     if (!is.null(exact))
       {
         exact = as.vector(exact)
@@ -201,12 +220,13 @@ Match  <- function(Y,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
         ret <- RmatchLoop(Y=Y, Tr=Tr, X=X, Z=Z, V=V, All=estimand, M=M, BiasAdj=BiasAdj,
                           Weight=Weight, Weight.matrix=Weight.matrix, Var.calc=Var.calc,
                           weight=weights, SAMPLE=sample, ccc=ccc, cdd=cdd,
-                          ecaliper=ecaliper, exact=exact, caliper=caliper)
+                          ecaliper=ecaliper, exact=exact, caliper=caliper,
+                          restrict=restrict)
       } else {
         ret <- Rmatch(Y=Y, Tr=Tr, X=X, Z=Z, V=V, All=estimand, M=M, BiasAdj=BiasAdj,
                       Weight=Weight, Weight.matrix=Weight.matrix, Var.calc=Var.calc,
                       weight=weights, SAMPLE=sample, ccc=ccc, cdd=cdd,
-                      ecaliper=ecaliper)
+                      ecaliper=ecaliper, restrict=restrict)
       }
 
     if(is.null(ret$est))
@@ -368,14 +388,24 @@ summary.Match  <- function(object, ..., full=FALSE, digits=5)
 
 
 Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.calc, weight,
-                   SAMPLE, ccc, cdd, ecaliper=NULL)
+                   SAMPLE, ccc, cdd, ecaliper=NULL, restrict=NULL)
   {
     sum.caliper.drops <- 0
     X.orig <- X
+
+#are we using the restriction matrix?
+    if(is.matrix(restrict)) {
+      restrict.trigger <- TRUE
+    } else {
+      restrict.trigger <- FALSE
+    }
     
-# if SATC is to be estimated the treatment indicator is reversed    
-    if (All==2)
+# if SATC is to be estimated the treatment indicator is reversed  
+    if (All==2) {
       Tr <- 1-Tr
+    }
+
+    
 
 # check on the number of matches, to make sure the number is within the limits
 # feasible given the number of observations in both groups.
@@ -464,7 +494,7 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
       {
         Weight.matrix=diag(Kx)
       } else if (Weight==2) {
-        if (min (eigen( t(X)%*%X/N, only.values=TRUE)$values) > ccc)
+        if (min (eigen( t(X)%*%X/N, only.values=TRUE, EISPACK = TRUE)$values) > ccc)
           {
             Weight.matrix= solve(t(X)%*%X/N) 
           } else {
@@ -491,7 +521,7 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
     Nx <- nrow(X)
     Kx <- ncol(X)
 
-    if ( min(eigen(Weight.matrix, only.values=TRUE)$values) < ccc )
+    if ( min(eigen(Weight.matrix, only.values=TRUE, EISPACK = TRUE)$values) < ccc )
       Weight.matrix <- Weight.matrix + diag(Kx)*ccc
 
     # I.fg. initialize matrices before looping through sample
@@ -529,7 +559,7 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
     for (i in 1:N)
       {
         #treatment indicator for observation to be matched        
-        TREATi <- Tr[i]   
+        TREATi <- Tr[i]
 
         # proceed with all observations if All==1
         # but only with treated observations if All=0        
@@ -560,6 +590,28 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
             # Dist distance to observation to be matched
             # is N by 1 vector
 
+            #use the restriction matrix
+            if (restrict.trigger)
+              {
+                for (j in 1:nrow(restrict))
+                  {
+                    if (restrict[j,1]==i)
+                      {
+                        if (restrict[j,3] < 0) {
+                          Dist[restrict[j,2]] = .Machine$double.xmax
+                        } else {
+                          Dist[restrict[j,2]] = restrict[j,3]
+                        }
+                      } else if (restrict[j,2]==i) {
+                        if (restrict[j,3] < 0) {
+                          Dist[restrict[j,1]] = .Machine$double.xmax
+                        } else {
+                          Dist[restrict[j,1]] = restrict[j,3]
+                        }
+                      }
+                  }
+              } #end if restrict.trigger
+
             # set of potential matches (all observations with other treatment)
             # JSS, note:logical vector
             POTMAT <- Tr == (1-TREATi) 
@@ -567,6 +619,7 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
             # X's for potential matches
 #            XPOT <- X[POTMAT,]
             DistPot <- Dist[POTMAT,1]
+
 #            TTPotMat <- TT[POTMAT,1]
             weightPot <- as.matrix(weight[POTMAT,1])
 
@@ -583,8 +636,16 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
 
             # selection of actual matches 
             #logical index
-            ACTMAT <- POTMAT & ( Dist <= (Distmax+cdd) )
+            if (restrict.trigger)
+              {
+                ACTMAT <- POTMAT & ( (Dist <= (Distmax+cdd))  & (Dist < .Machine$double.xmax) )
 
+                if (sum(ACTMAT) < 1)
+                  next;                
+              } else {
+                ACTMAT <- POTMAT & ( Dist <= (Distmax+cdd) )
+              }
+            
             Ii <- i * matrix(1, nrow=sum(ACTMAT), ncol=1)
             IMi <- as.matrix(INN[ACTMAT,1])
             
@@ -787,7 +848,7 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
             Kx <- ncol(ZZt)
             xw <- ZZt*(sqrt(Tr*Kcount) %*% t(as.matrix(rep(1,Kx))))
             
-            foo <- min(eigen(t(xw)%*%xw, only.values=TRUE)$values)
+            foo <- min(eigen(t(xw)%*%xw, only.values=TRUE, EISPACK = TRUE)$values)
             foo <- as.real(foo<=ccc)
             foo2 <- apply(xw, 2, sd)
 
@@ -831,7 +892,7 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
         
         xw <- ZZc*(sqrt((1-Tr)*Kcount) %*% matrix(1, nrow=1, ncol=Kx))
         
-        foo <- min(eigen(t(xw)%*%xw, only.values=TRUE)$values)
+        foo <- min(eigen(t(xw)%*%xw, only.values=TRUE, EISPACK = TRUE)$values)
         foo <- as.real(foo<=ccc)
         foo2 <- apply(xw, 2, sd)
 
@@ -1462,16 +1523,17 @@ Mt.test  <- function(Tr, Co, weights)
     estimate  <- sum(v1*weights)/sum(weights)
     var1  <- sum( ((v1-estimate)^2)*weights )/( sum(weights)*sum(weights) )
 
-    statistic  <- estimate/sqrt(var1)
     parameter  <- Inf
-#    p.value    <- (1-pnorm(abs(statistic)))*2
-    p.value    <- (1-pt(abs(statistic), df=sum(weights)-1))*2
 
     #get rid of NA for t.test!
     if (estimate==0 & var1==0)
       {
         statistic = 0        
         p.value = 1
+      }  else {
+        statistic  <- estimate/sqrt(var1)
+        
+        p.value    <- (1-MATCHpt(abs(statistic), df=sum(weights)-1))*2
       }
 
     z  <- list(statistic=statistic, parameter=parameter, p.value=p.value,
@@ -1493,20 +1555,22 @@ Mt.test.unpaired  <- function(Tr, Co,
     var.Co  <- sum( ( (Co - mean.Co)^2 )*weights.Co)/(obs.Co-1)
     dim <- sqrt(var.Tr/obs.Tr + var.Co/obs.Co)
 
-    statistic  <- estimate/dim
     parameter  <- Inf
-
-    a1 <- var.Tr/obs.Tr
-    a2 <- var.Co/obs.Co
-    dof <- ((a1 + a2)^2)/( (a1^2)/(obs.Tr - 1) + (a2^2)/(obs.Co - 1) )    
-    p.value    <- (1-pt(abs(statistic), df=dof))*2
 
     #get rid of NA for t.test!
     if (estimate==0 & dim==0)
       {
         statistic = 0
         p.value = 1
-      }    
+      }  else {
+        statistic  <- estimate/dim
+
+        a1 <- var.Tr/obs.Tr
+        a2 <- var.Co/obs.Co
+        dof <- ((a1 + a2)^2)/( (a1^2)/(obs.Tr - 1) + (a2^2)/(obs.Co - 1) )    
+        
+        p.value    <- (1-MATCHpt(abs(statistic), df=dof))*2
+      }
 
     z  <- list(statistic=statistic, parameter=parameter, p.value=p.value,
                estimate=estimate)
@@ -1545,6 +1609,10 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
 
     if (sum(is.na(data)!=0))
       stop("MatchBalance: NAs found in data input")
+
+    if (sum(Tr !=1 & Tr !=0) > 0) {
+      stop("Treatment indicator must be a logical variable---i.e., TRUE (1) or FALSE (0)")
+    }
 
     formul <- formula(formul)
 
@@ -1725,6 +1793,10 @@ balanceMV  <- function(formul, data=NULL, match.out=NULL, maxit=1000, weights=re
 
     if (sum(is.na(data)!=0))
       stop("MatchBalance: NAs found in data input")
+
+    if (sum(Tr !=1 & Tr !=0) > 0) {
+      stop("Treatment indicator must be a logical variable---i.e., TRUE (1) or FALSE (0)")
+    }    
 
     if (nboots!=0 & nboots < 10)
       {
@@ -2161,16 +2233,21 @@ summary.ks.boot <- function(object, ..., digits=5)
 
 
 RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.calc, weight,
-                       SAMPLE, ccc, cdd, ecaliper=NULL, exact=NULL, caliper=NULL)
+                       SAMPLE, ccc, cdd, ecaliper=NULL, exact=NULL, caliper=NULL, restrict=NULL)
   {
     s1 <- MatchGenoudStage1caliper(Tr=Tr, X=X, All=All, M=M, weights=weight,
                                    exact=exact, caliper=caliper,
                                    distance.tolerance=cdd);
-#    indx <- FastMatchGenoud(Tr=Tr, X=X, All=All, M=M, Weight=Weight, Weight.matrix=Weight.matrix,
-#                            weights=weight, tolerance=ccc, distance.tolerance=cdd);    
 
     sum.caliper.drops <- 0
     X.orig <- X
+
+#are we using the restriction matrix?
+    if(is.matrix(restrict)) {
+      restrict.trigger <- TRUE
+    } else {
+      restrict.trigger <- FALSE
+    }    
     
 # if SATC is to be estimated the treatment indicator is reversed    
     if (All==2)
@@ -2263,7 +2340,7 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
       {
         Weight.matrix=diag(Kx)
       } else if (Weight==2) {
-        if (min (eigen( t(X)%*%X/N, only.values=TRUE)$values) > 0.0000001)
+        if (min (eigen( t(X)%*%X/N, only.values=TRUE, EISPACK = TRUE)$values) > 0.0000001)
           {
             Weight.matrix= solve(t(X)%*%X/N) 
           } else {
@@ -2290,7 +2367,7 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
     Nx <- nrow(X)
     Kx <- ncol(X)
 
-    if ( min(eigen(Weight.matrix, only.values=TRUE)$values) < ccc )
+    if ( min(eigen(Weight.matrix, only.values=TRUE, EISPACK = TRUE)$values) < ccc )
       Weight.matrix <- Weight.matrix + diag(Kx)*ccc
 
     ww <- chol(Weight.matrix) # so that ww*ww=w.m
@@ -2310,7 +2387,8 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
                        cdd=cdd, caliperflag=caliperflag,
                        ww=ww, Tr=s1$Tr, Xmod=s1$X,
                        weights=weight,
-                       CaliperVec=use.ecaliper, Xorig=X.orig)
+                       CaliperVec=use.ecaliper, Xorig=X.orig,
+                       restrict.trigger=restrict.trigger, restrict=restrict)
 
     if(indx[1,1]==0)
       {
@@ -2494,7 +2572,7 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
             Kx <- ncol(ZZt)
             xw <- ZZt*(sqrt(Tr*Kcount) %*% t(as.matrix(rep(1,Kx))))
             
-            foo <- min(eigen(t(xw)%*%xw, only.values=TRUE)$values)
+            foo <- min(eigen(t(xw)%*%xw, only.values=TRUE, EISPACK = TRUE)$values)
             foo <- as.real(foo<=ccc)
             foo2 <- apply(xw, 2, sd)
 
@@ -2538,7 +2616,7 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
         
         xw <- ZZc*(sqrt((1-Tr)*Kcount) %*% matrix(1, nrow=1, ncol=Kx))
         
-        foo <- min(eigen(t(xw)%*%xw, only.values=TRUE)$values)
+        foo <- min(eigen(t(xw)%*%xw, only.values=TRUE, EISPACK = TRUE)$values)
         foo <- as.real(foo<=ccc)
         foo2 <- apply(xw, 2, sd)
 
@@ -2729,11 +2807,14 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
                 art.data=art.data, aug.data=aug.data))
   }# end of RmatchLoop
 
-MatchLoopC <- function(N, xvars, All, M, cdd, caliperflag, ww, Tr, Xmod, weights, CaliperVec, Xorig)
+MatchLoopC <- function(N, xvars, All, M, cdd, caliperflag, ww, Tr, Xmod, weights, CaliperVec, Xorig,
+                       restrict.trigger, restrict)
   {
+
     ret <- .Call("MatchLoopC", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
                  as.double(cdd), as.integer(caliperflag), as.real(ww), as.real(Tr),
                  as.real(Xmod), as.real(weights), as.real(CaliperVec), as.real(Xorig),
+                 as.integer(restrict.trigger), as.integer(nrow(restrict)), as.real(restrict),
                  PACKAGE="Matching")
     return(ret)
   } #end of MatchLoopC

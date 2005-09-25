@@ -75,3 +75,7 @@ summary(foo)
 
 }
 \keyword{univar}
+
+%  LocalWords:  balanceUV Univariate MatchBalance nboots Wilcoxon wilcox sdiff
+%  LocalWords:  Kolmogorov tt UC url emph seealso GenMatch balanceMV lalonde
+%  LocalWords:  GerberGreenImai univar

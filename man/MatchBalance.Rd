@@ -184,3 +184,9 @@ mb  <- MatchBalance(treat~age + I(age^2) + educ + I(educ^2) + black +
 }
 \keyword{nonparametric}
 \keyword{htest}
+
+%  LocalWords:  MatchBalance formul mv nboots nmc maxit nrow regressors glm uv
+%  LocalWords:  datasets Kolmogorov balanceMV balanceUV logit url Abadie emph
+%  LocalWords:  Edgeworth Verlag Conover Shao Dongsheng UC seealso GenMatch rr
+%  LocalWords:  GerberGreenImai lalonde Dehejia Wahba psid Rajeev Sadek hisp mb
+%  LocalWords:  nodegr estimand htest

@@ -11,21 +11,24 @@
   before calling \code{Match}, and then send \code{Match} the propensity
   scores to use. The \code{\link{GenMatch}} function can be used to
   \emph{automatically find balance} by the use of a genetic search
-  algorithm which deterimes the optimal weight to give each covariate.
+  algorithm which determines the optimal weight to give each covariate.
   \code{Match} provides principled standard errors when matching is done
   with covariates or a known propensity score.  Ties are handled in a
   deterministic and coherent fashion.
 }
 \usage{
-Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
+Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
       BiasAdjust = FALSE, exact = NULL, caliper = NULL,
       Weight = 1, Weight.matrix = NULL, weights = rep(1, length(Y)),
       Var.calc = 0, sample = FALSE, tolerance = 1e-05,
-      distance.tolerance = 1e-05, version="fast")
+      distance.tolerance = 1e-05, restrict=NULL, version="fast")
 }
 \arguments{
   \item{Y}{ A vector containing the outcome of interest.
-    Missing values are not allowed.}
+    Missing values are not allowed.  An outcome vector is not required
+    because the matches generated will be the same regardless of the
+    outcomes.  Of course without any outcomes, no causal effect
+    estimates will be produced only a matched dataset. }
   \item{Tr}{ A vector indicating the observations which are
     in the treatment regime and those which are not.  This can either be a
     logical vector or a real vector where 0 denotes control and 1 denotes
@@ -118,7 +121,23 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     between two observations are different from zero.  Values less than
     \code{distance.tolerance} are deemed to be equal to zero.  This
     option can be used to perform a type of optimal matching}
-  \item{version}{The version of the code to be used.  The "fast" C/C++
+  \item{restrict}{A matrix which restricts the possible matches.  This
+    matrix has one row for each restriction and three
+    columns.  The first two columns contain the two observation numbers
+    which are to be restricted (for example 4 and 20), and the third
+    column is the restriction imposed on the observation-pair.
+    Negative numbers in the third column imply that the two observations
+    cannot be matched under any circumstances, and positive numbers are
+    passed on as the distance between the two observations for the
+    matching algorithm.  The most commonly used positive restriction is
+    \code{0} which implies that the two observations will always
+    be matched.  \cr
+
+    Exclusion restriction are even more common.  For example, if we want
+    to exclude the observation pair 4 and 20 and
+    the pair 6 and 55 from being matched, the restrict matrix would be:
+    \code{restrict=rbind(c(4,20,-1),c(6,55,-1))}}
+    \item{version}{The version of the code to be used.  The "fast" C/C++
     version of the code is used unless the "old" (stable) version is
     requested.}
 }
@@ -133,7 +152,7 @@ Match(Y, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
   fitted values in the \code{X} matrix---see the provided example.  \cr
 
   The \code{\link{GenMatch}} function can be used to \emph{automatically
-  find balance} by the use of a genetic search algorithm which deterimes
+  find balance} by the use of a genetic search algorithm which determines
   the optimal weight to give each covariate. The object returned by
   \code{\link{GenMatch}} can be supplied to the \code{Weight.matrix}
   option of \code{Match} to obtain estimates.\cr
@@ -278,3 +297,10 @@ mb  <- MatchBalance(treat~age + I(age^2) + educ + I(educ^2) + black +
 }
 \keyword{nonparametric}
 
+
+%  LocalWords:  MatchBalance GenMatch emph estimand ATT BiasAdjust calc dataset
+%  LocalWords:  ATC ecaliper cr diag homoscedasticity rbind GerberGreenImai se
+%  LocalWords:  DehejiaWahba AbadieImbens noadj cond mdata datasets wnobs url
+%  LocalWords:  ndrops Abadie Imbens Econometrica Matlab Stata UC seealso Wahba
+%  LocalWords:  balanceMV balanceUV lalonde Dehejia psid Rajeev Sadek glm hisp
+%  LocalWords:  nodegr rr nboots nmc mb

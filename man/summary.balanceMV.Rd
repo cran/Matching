@@ -25,3 +25,6 @@
   \code{\link{lalonde}}
 }
 \keyword{htest}
+
+%  LocalWords:  balanceMV UC url seealso balanceUV GenMatch MatchBalance htest
+%  LocalWords:  GerberGreenImai lalonde

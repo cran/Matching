@@ -1,13 +1,3 @@
-#RMatchingC.reload <- function()
-#  {
-#    if (is.loaded("FastMatchC", PACKAGE="Matching"))
-#          {
-#            dyn.unload("Matching.so");
-#          }
-#        dyn.load("Matching.so");
-#  }
-#RMatchingC.reload();
-
 FastMatchC <- function(N, xvars, All, M, cdd, ww, Tr, Xmod, weights)
   {
     ret <- .Call("FastMatchC", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
@@ -55,81 +45,6 @@ MatchGenoudStage1 <- function(Tr=Tr, X=X, All=All, M=M, weights=weights)
     ret <- list(Tr=Tr, X=X, All=All, M=M, N=N)
     return(ret)
   } #end of MatchGenoudStage1
-
-
-FastMatchGenoud <- function(Tr, X, All=1, M=1, Weight=1, 
-                            Weight.matrix=NULL,
-                            weights=rep(1,length(Tr)),
-                            tolerance=0.00001,
-                            distance.tolerance=0.00001)
-  {
-    N  <- nrow(X)
-    xvars <- ncol(X)
-
-    if (!is.null(Weight.matrix))
-      {
-        if (Weight==2)
-          {
-            warning("User supplied 'Weight.matrix' is being used even though 'Weight' is not set equal to 3")
-          }
-        Weight  <- 3
-      } else {
-        Weight.matrix <- diag(ncol(X))
-      }    
-    
-# if SATC is to be estimated the treatment indicator is reversed    
-    if (All==2)
-      Tr <- 1-Tr
-
-# check on the number of matches, to make sure the number is within the limits
-# feasible given the number of observations in both groups.
-    if (All==1)
-      {
-        M <- min(M,min(sum(Tr),sum(1-Tr)));        
-      } else {
-        M <- min(M,sum(1-Tr));
-      }
-
-# I.c. normalize regressors to have mean zero and unit variance.
-# If the standard deviation of a variable is zero, its normalization
-# leads to a variable with all zeros.
-    Mu.X  <- matrix(0, xvars, 1)
-    Sig.X <- matrix(0, xvars, 1)
-
-    weights.sum <- sum(weights)
-    
-    for (k in 1:xvars)
-      {
-        Mu.X[k,1] <- sum(X[,k]*weights)/weights.sum;
-        eps <- X[,k]-Mu.X[k,1]
-        Sig.X[k,1] <- sqrt(sum(X[,k]*X[,k]*weights)/weights.sum-Mu.X[k,1]^2)
-        Sig.X[k,1] <- Sig.X[k,1]*sqrt(N/(N-1))
-        X[,k]=eps/Sig.X[k,1]
-      } #end of k loop
-
-    if (Weight==1)
-      {
-        Weight.matrix=diag(xvars)
-      } else if (Weight==2) {
-        if (min (eigen( t(X)%*%X/N, only.values=TRUE)$values) < tolerance)
-          {
-            Weight.matrix= solve(t(X)%*%X/N) 
-          } else {
-            Weight.matrix <- diag(xvars)
-          }
-      }    
-
-    if ( min(eigen(Weight.matrix, only.values=TRUE)$values) < tolerance )
-      Weight.matrix <- Weight.matrix + diag(xvars)*tolerance
-        
-    ww <- chol(Weight.matrix)
-
-    rr <- FastMatchC(N=N, xvars=xvars, All=All, M=M,
-                     cdd=distance.tolerance, ww=ww, Tr=Tr, Xmod=X,
-                     weights=weights)    
-
-    return(rr)
-  } #end of 
 
 
 ###############################################################################
@@ -235,160 +150,6 @@ MatchGenoudStage1caliper <- function(Tr=Tr, X=X, All=All, M=M, weights=weights,
   } #end of MatchGenoudStage1caliper
 
 
-#function removed as of 0.99-7 (codetools)
-#FastMatchGenoudCaliper <- function(Tr, X, All=1, M=1, Weight=1, 
-#                                   Weight.matrix=NULL,
-#                                   weights=rep(1,length(Tr)),
-#                                   exact=NULL, caliper=NULL,
-#                                   tolerance=0.00001,
-#                                   distance.tolerance=0.00001)
-
-
-###############################################################################
-## GenMatchCaliper
-##
-###############################################################################
-
-
-GenMatchCaliper <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
-                            weights=rep(1,length(Tr)),
-                            pop.size = 50, max.generations=100,
-                            wait.generations=4, hard.generation.limit=0,
-                            starting.values=rep(1,ncol(X)),
-                            data.type.integer=TRUE,
-                            MemoryMatrix=TRUE,
-                            exact=NULL, caliper=NULL,
-                            nboots=0, ks=TRUE, verbose=FALSE,
-                            tolerance=0.00001,
-                            distance.tolerance=tolerance,
-                            min.weight=0,
-                            max.weight=1000,
-                            Domains=NULL,
-                            print.level=print.level,
-                            project.path=NULL,
-                            paired=TRUE, ...)
-  {
-    
-    nvars <- ncol(X)
-    balancevars <- ncol(BalanceMatrix)
-
-    if (is.null(Domains))
-      {
-        Domains <- matrix(min.weight, nrow=nvars, ncol=2)
-        Domains[,2] <- max.weight
-      } else {
-        indx <- (starting.values < Domains[,1]) | (starting.values > Domains[,2])
-        starting.values[indx] <- round( (Domains[indx,1]+Domains[indx,2])/2 )
-      }
-    
-    isunix  <- Sys.getenv("OSTYPE")=="linux" | Sys.getenv("OSTYPE")=="darwin"
-    if (is.null(project.path))
-      {
-        if (print.level < 3 & isunix)
-          {
-            project.path="/dev/null"
-          } else {
-            project.path=paste(tempdir(),"/genoud.pro",sep="")
-            
-            #work around for rgenoud bug
-            #if (print.level==3)
-            #print.level <- 2
-          }
-      } 
-    
-    # create All
-    if (estimand=="ATT")
-      {
-        All  <- 0
-      } else if(estimand=="ATE") {
-        All  <- 1
-      } else if(estimand=="ATC") {
-        All  <- 2
-      } else {
-        All  <- 0
-        warning("User set 'estimand' to an illegal value.  Resetting to the default which is 'ATT'")
-      }
-
-    #stage 1 Match, only needs to be called once
-    s1 <- MatchGenoudStage1caliper(Tr=Tr, X=X, All=All, M=M, weights=weights,
-                                   exact=exact, caliper=caliper);
-    s1.Tr <- s1$Tr
-    s1.X <- s1$X
-    s1.All <- s1$All
-    s1.M <- s1$M
-    s1.N <- s1$N
-    s1.ecaliper  <- s1$ecaliper
-    
-    if (is.null(s1.ecaliper))
-      {
-        caliperFlag  <- 0
-        Xorig  <- 0
-        CaliperVec  <- 0
-      } else {
-        caliperFlag  <- 1
-        Xorig  <- X
-        CaliperVec  <- s1$ecaliper
-      }
-    rm(s1)
-    
-    diag.nvars.tol <- diag(nvars)*tolerance
-    
-    genoudfunc  <- function(x)
-      {
-        wmatrix <- diag(x)
-        if ( min(eigen(wmatrix, only.values=TRUE)$values) < tolerance )
-          wmatrix <- wmatrix + diag.nvars.tol
-        
-        ww <- chol(wmatrix)
-
-        rr <- MatchLoopC(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
-                         cdd=distance.tolerance,
-                         caliperflag=caliperFlag,
-                         ww=ww, Tr=s1.Tr, Xmod=s1.X, weights=weights,
-                         CaliperVec=CaliperVec, Xorig=Xorig)
-
-        #no matches
-        if(rr[1,1]==0)
-          return(-9999)
-
-        rr2 <- rr[,c(4,5,3)]
-        a <- GenBalance(rr=rr2, X=BalanceMatrix, nvars=balancevars, nboots=nboots,
-                        ks=ks, verbose=verbose, paired=paired)
-        
-        return(a)
-      }    
-    
-    rr <- genoud(genoudfunc, nvars=nvars, starting.values=starting.values,
-                 pop.size=pop.size, max.generations=max.generations,
-                 wait.generations=wait.generations, hard.generation.limit=hard.generation.limit,
-                 Domains=Domains,
-                 MemoryMatrix=MemoryMatrix,
-                 max=TRUE, gradient.check=FALSE, data.type.int=data.type.integer,
-                 hessian=FALSE,
-                 BFGS=FALSE, project.path=project.path,
-                 print.level=print.level, ...)
-
-    wmatrix <- diag(rr$par)
-    if ( min(eigen(wmatrix, only.values=TRUE)$values) < tolerance )
-      wmatrix <- wmatrix + diag.nvars.tol
-        
-    ww <- chol(wmatrix)
-    
-    mout <- MatchLoopC(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
-                       cdd=distance.tolerance,
-                       caliperflag=caliperFlag,
-                       ww=ww, Tr=s1.Tr, Xmod=s1.X, weights=weights,
-                       CaliperVec=CaliperVec, Xorig=Xorig)
-
-    rr2 <- list(value=rr$value, par=rr$par, Weight.matrix=wmatrix, matches=mout, ecaliper=CaliperVec)
-
-    class(rr2) <- "GenMatch"    
-    return(rr2)
-  } #end of GenMatchCaliper
-
-
-
-
 ###############################################################################
 ## GenMatch
 ##
@@ -410,7 +171,11 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                      Domains=NULL,
                      print.level=2,
                      project.path=NULL,
-                     paired=TRUE, ...)
+                     paired=TRUE,
+                     loss=1,
+                     restrict=NULL,
+                     cluster=FALSE,
+                     balance=TRUE, ...)
   {
 
     Tr <- as.matrix(Tr)
@@ -420,6 +185,10 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
     xvars <- ncol(X)
 
     #check inputs
+    if (sum(Tr !=1 & Tr !=0) > 0) {
+      stop("Treatment indicator must be a logical variable---i.e., TRUE (1) or FALSE (0)")
+    }
+    
     if (pop.size < 0 | pop.size!=round(pop.size) )
       {
         warning("User set 'pop.size' to an illegal value.  Resetting to the default which is 50.")
@@ -528,27 +297,47 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
     # END: produce and error if some column of X has zero variance   
     ###########################
 
-    if(!is.null(caliper) | !is.null(exact))
+    #loss function
+    if (is.real(loss))
       {
-        rr <- GenMatchCaliper(Tr=Tr, X=X, BalanceMatrix=BalanceMatrix, estimand=estimand, M=M,
-                              weights=weights,
-                              pop.size=pop.size, max.generations=max.generations,
-                              wait.generations=wait.generations, hard.generation.limit=hard.generation.limit,
-                              starting.values=starting.values,
-                              data.type.integer=data.type.integer,
-                              MemoryMatrix=MemoryMatrix,
-                              exact=exact, caliper=caliper,
-                              nboots=nboots, ks=ks, verbose=verbose,
-                              tolerance=tolerance,
-                              distance.tolerance=distance.tolerance,
-                              min.weight=min.weight,                              
-                              max.weight=max.weight,
-                              Domains=Domains,                              
-                              print.level=print.level,
-                              project.path=NULL,
-                              paired=paired, ...)
-        return(rr)
-      } #!is.null(caliper) | !is.null(exact)
+        if (loss==1)  {
+          loss.func=sort
+          lexical=ncol(BalanceMatrix)
+          if(ks)
+            lexical=lexical+lexical
+        } else if(loss==2) {
+          loss.func=min
+          lexical=0
+        } else{
+          stop("unknown loss function")
+        }
+      } else if (is.function(loss)) {
+        loss.func=loss
+        lexical=1
+      } else {
+        stop("unknown loss function")
+      }
+
+    #check the restrict matrix input
+    if(!is.null(restrict))
+      {
+        if(!is.matrix(restrict))
+          stop("'restrict' must be a matrix of restricted observations rows and three columns: c(i,j restriction)")
+
+        if(ncol(restrict)!=3 )
+          stop("'restrict' must be a matrix of restricted observations rows and three columns: c(i,j restriction)")
+
+        restrict.trigger <- TRUE
+      }  else {
+        restrict.trigger <- FALSE
+      }
+
+    if(!is.null(caliper) | !is.null(exact) | restrict.trigger)
+      {
+        GenMatchCaliper.trigger <- TRUE
+      } else {
+        GenMatchCaliper.trigger <- FALSE
+      }
 
     isunix  <- .Platform$OS.type=="unix"
     if (is.null(project.path))
@@ -590,34 +379,351 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         warning("User set 'estimand' to an illegal value.  Resetting to the default which is 'ATT'")
       }
 
-    #stage 1 Match, only needs to be called once
-    s1 <- MatchGenoudStage1(Tr=Tr, X=X, All=All, M=M, weights=weights);
-    s1.Tr <- s1$Tr
-    s1.X <- s1$X
-    s1.All <- s1$All
-    s1.M <- s1$M
-    s1.N <- s1$N
-    rm(s1)
+    #stage 1 Match, only needs to be called once    
+    if(!GenMatchCaliper.trigger)
+      {
 
-    diag.nvars.tol <- diag(nvars)*tolerance
+        s1 <- MatchGenoudStage1(Tr=Tr, X=X, All=All, M=M, weights=weights);
+        s1.Tr <- s1$Tr
+        s1.X <- s1$X
+        s1.All <- s1$All
+        s1.M <- s1$M
+        s1.N <- s1$N
+        rm(s1)
+      } else {
+        s1 <- MatchGenoudStage1caliper(Tr=Tr, X=X, All=All, M=M, weights=weights,
+                                       exact=exact, caliper=caliper);
+        s1.Tr <- s1$Tr
+        s1.X <- s1$X
+        s1.All <- s1$All
+        s1.M <- s1$M
+        s1.N <- s1$N
+        s1.ecaliper  <- s1$ecaliper
+        
+        if (is.null(s1.ecaliper))
+          {
+            caliperFlag  <- 0
+            Xorig  <- 0
+            CaliperVec  <- 0
+          } else {
+            caliperFlag  <- 1
+            Xorig  <- X
+            CaliperVec  <- s1$ecaliper
+          }
+        rm(s1)        
+      } #GenMatchCaliper.trigger
 
     genoudfunc  <- function(x)
       {
-        wmatrix <- diag(x)
-        if ( min(eigen(wmatrix, only.values=TRUE)$values) < tolerance )
-          wmatrix <- wmatrix + diag.nvars.tol
+        wmatrix <- diag(x, nrow=nvars)
+        if ( min(eigen(wmatrix, symmetric=TRUE, only.values=TRUE, EISPACK = TRUE)$values) < tolerance )
+            wmatrix <- wmatrix + diag(nvars)*tolerance
         
         ww <- chol(wmatrix)
 
-        rr <- FastMatchC(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
-                         cdd=distance.tolerance, ww=ww, Tr=s1.Tr, Xmod=s1.X,
-                         weights=weights)
+        if(!GenMatchCaliper.trigger)
+          {
+
+            FastMatchC.internal <- function(N, xvars, All, M, cdd, ww, Tr, Xmod, weights)
+              {
+                ret <- .Call("FastMatchC", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
+                             as.double(cdd), as.real(ww), as.real(Tr),
+                             as.real(Xmod), as.real(weights),
+                             PACKAGE="Matching")
+                return(ret)
+              }
+
+            rr <- FastMatchC.internal(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
+                                      cdd=distance.tolerance, ww=ww, Tr=s1.Tr, Xmod=s1.X,
+                                      weights=weights)
+          } else {
+
+            MatchLoopC.internal <- function(N, xvars, All, M, cdd, caliperflag, ww, Tr, Xmod, weights, CaliperVec, Xorig,
+                                            restrict.trigger, restrict)
+              {
+                
+                ret <- .Call("MatchLoopC", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
+                             as.double(cdd), as.integer(caliperflag), as.real(ww), as.real(Tr),
+                             as.real(Xmod), as.real(weights), as.real(CaliperVec), as.real(Xorig),
+                             as.integer(restrict.trigger), as.integer(nrow(restrict)), as.real(restrict),
+                             PACKAGE="Matching")
+                return(ret)
+              } #end of MatchLoopC.internal
+            
+            rr <- MatchLoopC.internal(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
+                                      cdd=distance.tolerance,
+                                      caliperflag=caliperFlag,
+                                      ww=ww, Tr=s1.Tr, Xmod=s1.X, weights=weights,
+                                      CaliperVec=CaliperVec, Xorig=Xorig,
+                                      restrict.trigger=restrict.trigger, restrict=restrict)
+            
+                                        #no matches
+            if(rr[1,1]==0) {
+              warning("no valid matches found in GenMatch evaluation") 
+              return(rep(-9999, balancevars*2))
+            }
+            
+            rr <- rr[,c(4,5,3)]            
+          } #Caliper.Trigger
+
+        #should be the same as GenBalance() in GenBalance.R but we need to include it here because of
+        #cluster scoping issues.
+        GenBalance.internal <-
+          function(rr, X, nvars=ncol(X), nboots = 0, ks=TRUE, verbose = FALSE, paired=TRUE)
+          {
+
+            #CUT-AND-PASTE from GenBalance.R, the functions before GenBalance. but get rid of warn *switch*
+            MATCHpt <- function(q, df, ...)
+              {
+                #don't know how general it is so let's try to work around it.
+                ret=pt(q,df, ...)
+                
+                if (is.na(ret)) {
+                  ret   <- pt(q, df, ...)
+                  if(is.na(ret))
+                    warning("pt() generated NaN. q:",q," df:",df,"\n",date())
+                }
+                
+                return(ret)
+              } #end of MATCHpt
+
+            Mt.test.pvalue  <- function(Tr, Co, weights)
+              {
+                v1  <- Tr-Co
+                estimate  <- sum(v1*weights)/sum(weights)
+                var1  <- sum( ((v1-estimate)^2)*weights )/( sum(weights)*sum(weights) )
+                
+                if (estimate==0 & var1==0)
+                  {
+                    return(1)
+                  }
+                
+                statistic  <- estimate/sqrt(var1)
+                #    p.value    <- (1-pnorm(abs(statistic)))*2
+                p.value    <- (1-MATCHpt(abs(statistic), df=sum(weights)-1))*2
+                
+                return(p.value)
+              } #end of Mt.test.pvalue
+
+            Mt.test.unpaired.pvalue  <- function(Tr, Co, weights)
+              {
+                obs <- sum(weights)
+                
+                mean.Tr <- sum(Tr*weights)/obs
+                mean.Co <- sum(Co*weights)/obs
+                estimate <- mean.Tr-mean.Co
+                var.Tr  <- sum( ( (Tr - mean.Tr)^2 )*weights)/(obs-1)
+                var.Co  <- sum( ( (Co - mean.Co)^2 )*weights)/(obs-1)
+                dim <- sqrt(var.Tr/obs + var.Co/obs)
+                
+                if (estimate==0 & dim==0)
+                  {
+                    return(1)
+                  }
+                
+                statistic  <- estimate/dim
+                
+                a1 <- var.Tr/obs
+                a2 <- var.Co/obs
+                dof <- ((a1 + a2)^2)/( (a1^2)/(obs - 1) + (a2^2)/(obs - 1) )    
+                p.value    <- (1-MATCHpt(abs(statistic), df=dof))*2    
+                
+                return(p.value)
+              } #end of Mt.test.unpaired.pvalue
+
+            ks.fast <- function(x, y, n.x, n.y, n)
+              {
+                w <- c(x, y)
+                z <- cumsum(ifelse(order(w) <= n.x, 1/n.x, -1/n.y))
+                z <- z[c(which(diff(sort(w)) != 0), n.x + n.y)]        
+                
+                return( max(abs(z)) )
+              } #ks.fast
+
+            index.treated <- rr[,1]
+            index.control <- rr[,2]
+            weights <- rr[,3]
+            
+            tol  <- .Machine$double.eps*100  
+            storage.t <- c(rep(9,nvars))
+            storage.k <- c(rep(9,nvars))
+            fs.ks     <- matrix(nrow=nvars, ncol=1)
+            s.ks      <- matrix(nrow=nvars, ncol=1)  
+            bbcount   <- matrix(0, nrow=nvars, ncol=1)
+            dummy.indx  <- matrix(0, nrow=nvars, ncol=1)
+            
+            w  <- c(X[,1][index.treated], X[,1][index.control])
+            obs <- length(w)
+            n.x  <- length(X[,1][index.treated])
+            n.y  <- length(X[,1][index.control])
+            cutp <- round(obs/2)  
+            w  <- matrix(nrow=obs, ncol=nvars)
+            
+            for (i in 1:nvars)
+              {
+                w[,i] <- c(X[,i][index.treated], X[,i][index.control])
+                
+                if(paired)
+                  {
+                    t.out <- Mt.test.pvalue(X[,i][index.treated],
+                                            X[,i][index.control],
+                                            weights = weights)
+                  } else {
+                    t.out <- Mt.test.unpaired.pvalue(X[,i][index.treated],
+                                                     X[,i][index.control],
+                                                     weights = weights)
+                  }
+                
+                storage.t[i] <- t.out            
         
-        a <- GenBalance(rr=rr, X=BalanceMatrix, nvars=balancevars, nboots=nboots,
-                        ks=ks, verbose=verbose, paired=paired)
-        
+                dummy.indx[i]  <- length(unique(X[,i])) < 3
+                
+                if (!dummy.indx[i] & ks & nboots > 9)
+                  {
+                    fs.ks[i]  <- ks.fast(X[,i][index.treated], X[,i][index.control],
+                                         n.x=n.x, n.y=n.y, n=obs)
+                  } else if(!dummy.indx[i] & ks)
+                    {
+                      
+                      storage.k[i] <- Mks.test(X[,i][index.treated], X[,i][index.control],
+                                               MC=TRUE)$p.value
+
+                    }
+              }#end of i loop
+
+            
+            if (ks & nboots > 9)
+              {
+                n.x  <- cutp
+                n.y  <- obs-cutp
+                for (b in 1:nboots)
+                  {
+                    sindx  <- sample(1:obs, obs, replace = TRUE)
+                    
+                    for (i in 1:nvars)
+                      {
+                        
+                        if (dummy.indx[i])
+                          next;
+                        
+                        X1tmp <- w[sindx[1:cutp],i ]
+                        X2tmp <- w[sindx[(cutp + 1):obs], i]
+                        s.ks[i] <- ks.fast(X1tmp, X2tmp, n.x=n.x, n.y=n.y, n=obs)
+                        if (s.ks[i] >= (fs.ks[i] - tol) )
+                          bbcount[i]  <-  bbcount[i] + 1
+                      }#end of i loop
+                  } #end of b loop
+                
+                for (i in 1:nvars)
+                  {
+                    
+                    if (dummy.indx[i])
+                      {
+                        storage.k[i]  <- 9
+                        next;
+                      }
+                    
+                    storage.k[i]  <- bbcount[i]/nboots
+                    
+                  }
+                storage.k[storage.k==9]=storage.t[storage.k==9]
+                output <- c(storage.t, storage.k)
+              } else if(ks){
+                storage.k[storage.k==9]=storage.t[storage.k==9]                
+                output <- c(storage.t, storage.k)
+              } else {
+                output <- storage.t
+              }
+            
+            if(sum(is.na(output)) > 0) {
+              output[is.na(output)] = 2
+              warning("output has NaNs")
+            }
+            
+            if (verbose == TRUE)
+              {
+                for (i in 1:nvars)
+                  {
+                    cat("\n", i, " t-test p-value =", storage.t[i], "\n" )
+                    cat("\n", i, " boot ks-test p-value =", storage.k[i], "\n" )
+                  }
+                cat("\nreturn value:", output, "\n")
+                cat("number of return values:", length(output), "\n")
+                
+              }
+            
+            return(output)
+          } #end of GenBalance.internal
+
+        a <- GenBalance.internal(rr=rr, X=BalanceMatrix, nvars=balancevars, nboots=nboots,
+                                 ks=ks, verbose=verbose, paired=paired)
+        a <- loss.func(a)
+
         return(a)
-      }    
+      } #end genoudfunc
+
+    #cluster info
+    clustertrigger=1
+    if (is.logical(cluster))
+      {
+        if (cluster==FALSE)  {
+          clustertrigger=0
+        } else {
+          stop("cluster option must be either FALSE, an object of the 'cluster' class (from the 'snow' package) or a list of machines so 'genoud' can create such an object")
+        }
+      }
+    
+    if(clustertrigger) {
+      snow.exists = require("snow")
+      if (!snow.exists) {
+        stop("The 'cluster' feature cannot be used unless the package 'snow' can be loaded.")
+      }
+    } 
+
+    if(clustertrigger)
+      {
+
+        GENclusterExport <- function (cl, list) 
+          {
+            gets <- function(n, v) {
+              assign(n, v, env = .GlobalEnv)
+              NULL
+            }
+            for (name in list) {
+              clusterCall(cl, gets, name, get(name))
+            }
+          }        
+
+        if (class(cluster)[1]=="SOCKcluster" | class(cluster)[1]=="PVMcluster" | class(cluster)[1]=="spawnedMPIcluster" | class(cluster)[1]=="MPIcluster") {
+          clustertrigger=1
+          cl <- cluster
+          cl.genoud <- cl
+        } else {
+          clustertrigger=2
+          cluster <- as.vector(cluster)
+          cat("You will now be prompted for passwords so your cluster can be setup.\n")
+          cl <- makeSOCKcluster(cluster)
+          cl.genoud <- cl
+        }      
+      } else {
+        cl.genoud <- FALSE
+      }#end of clustertrigger
+
+    if (clustertrigger > 0)
+      {
+        #create restrict.summary, because passing the entire restrict matrix is too much
+        
+        clusterEvalQ(cl, library("Matching"))
+        GENclusterExport(cl, c("s1.N", "s1.All", "s1.M", "s1.Tr", "s1.X", "nvars",
+                               "tolerance", "distance.tolerance", "weights",
+                               "BalanceMatrix", "balancevars", "nboots", "ks", "verbose", "paired", "loss.func"))
+
+        if(GenMatchCaliper.trigger) {
+          GENclusterExport(cl, c("caliperFlag", "CaliperVec", "Xorig", "restrict.trigger", "restrict"))
+        }
+        
+        GENclusterExport(cl, "genoudfunc")
+      }
     
     rr <- genoud(genoudfunc, nvars=nvars, starting.values=starting.values,
                  pop.size=pop.size, max.generations=max.generations,
@@ -626,20 +732,44 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                  MemoryMatrix=MemoryMatrix,
                  max=TRUE, gradient.check=FALSE, data.type.int=data.type.integer,
                  hessian=FALSE,
-                 BFGS=FALSE, project.path=project.path, print.level=print.level, ...)
+                 BFGS=FALSE, project.path=project.path, print.level=print.level,
+                 lexical=lexical,
+                 cluster=cl.genoud,
+                 balance=balance,
+                 ...)
 
-    wmatrix <- diag(rr$par)
-    if ( min(eigen(wmatrix, only.values=TRUE)$values) < tolerance )
-      wmatrix <- wmatrix + diag.nvars.tol
+    wmatrix <- diag(rr$par, nrow=nvars)
+    
+    if ( min(eigen(wmatrix, symmetric=TRUE, only.values=TRUE, EISPACK = TRUE)$values) < tolerance )
+      wmatrix <- wmatrix + diag(nvars)*tolerance
         
     ww <- chol(wmatrix)
+
+    if(!GenMatchCaliper.trigger)
+      {
+        mout <- FastMatchC(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
+                           cdd=distance.tolerance, ww=ww, Tr=s1.Tr, Xmod=s1.X,
+                           weights=weights)
+        rr2 <- list(value=rr$value, par=rr$par, Weight.matrix=wmatrix, matches=mout, ecaliper=NULL)
+      } else {
+        mout <- MatchLoopC(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
+                           cdd=distance.tolerance,
+                           caliperflag=caliperFlag,
+                           ww=ww, Tr=s1.Tr, Xmod=s1.X, weights=weights,
+                           CaliperVec=CaliperVec, Xorig=Xorig,
+                           restrict.trigger=restrict.trigger, restrict=restrict)
+
+        #no matches
+        if(mout[1,1]==0) {
+          warning("no valid matches found by GenMatch") 
+        }        
+        
+        rr2 <- list(value=rr$value, par=rr$par, Weight.matrix=wmatrix, matches=mout, ecaliper=CaliperVec)
+      }
+
+    if (clustertrigger==2)
+      stopCluster(cl)    
     
-    mout <- FastMatchC(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
-                       cdd=distance.tolerance, ww=ww, Tr=s1.Tr, Xmod=s1.X,
-                       weights=weights)
-
-
-    rr2 <- list(value=rr$value, par=rr$par, Weight.matrix=wmatrix, matches=mout, ecaliper=NULL)
     class(rr2) <- "GenMatch"
     return(rr2)
   } #end of GenMatch

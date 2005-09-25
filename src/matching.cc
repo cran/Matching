@@ -296,12 +296,13 @@ extern "C"
   SEXP MatchLoopC(SEXP I_N, SEXP I_xvars, SEXP I_All, SEXP I_M, SEXP I_cdd,
 		  SEXP I_caliper,
 		  SEXP I_ww, SEXP I_Tr, SEXP I_X, SEXP I_weight,
-		  SEXP I_CaliperVec, SEXP I_Xorig)
+		  SEXP I_CaliperVec, SEXP I_Xorig,
+		  SEXP I_restrict_trigger, SEXP I_restrict_nrow, SEXP I_restrict)
   {
     SEXP ret;
 
-    long N, xvars, All, M, caliper, sum_caliper_drops=0;
-    double cdd, diff;
+    long N, xvars, All, M, caliper, restrict_trigger, restrict_nrow, sum_caliper_drops=0;
+    double cdd, diff, foo_d;
 
     long i, j, k, r, c;
 
@@ -311,6 +312,8 @@ extern "C"
     M = asInteger(I_M);
     cdd = asReal(I_cdd);
     caliper = (long) asReal(I_caliper);
+    restrict_nrow = asInteger(I_restrict_nrow);
+    restrict_trigger = asInteger(I_restrict_trigger);
 
     //    struct timeval tv1, tv2;	// Required "timeval" structures (see man pg.)
     //    struct timezone tz1, tz2;	// Required "timezone" structures (see man pg.)
@@ -356,10 +359,13 @@ extern "C"
       }
 
     Matrix IMi;
-    Matrix Xorig = Matrix(N, xvars);
-    Matrix CaliperVec = Matrix(xvars, 1);
+    Matrix Xorig;
+    Matrix CaliperVec;
     if(caliper==1)
       {
+	Xorig = Matrix(N, xvars);
+	CaliperVec = Matrix(xvars, 1);
+
 	for (i=0; i<xvars; i++)
 	  {
 	    CaliperVec[i] = REAL(I_CaliperVec)[i];
@@ -377,6 +383,22 @@ extern "C"
 	      }
 	  }	
       } // end of caliper==1
+
+    Matrix restrict; 
+    if (restrict_trigger==1)
+      {
+	restrict = Matrix(restrict_nrow, 3);
+
+	k=0;
+	for(j=0;j<3; j++)
+	  {
+	    for(i=0;i<restrict_nrow; i++)
+	      {
+		restrict[M(i,j,3)] = REAL(I_restrict)[k];
+		k++;
+	      }
+	  }	
+      } /* if (restrict_trigger==1) */
 
     Matrix INN = seqa(1, 1, N);
     // TT is just equal to INN
@@ -441,6 +463,33 @@ extern "C"
 	    // Dist distance to observation to be matched
             // is N by 1 vector	    
 
+	    if (restrict_trigger==1)
+	      {
+		for(j=0; j<restrict_nrow; j++)
+		  {
+		    if ( ((long) restrict[M(j,0,3)])-1 ==i )
+		      {
+
+                        if (restrict[M(j,2,3)] < 0) {
+			  Dist[ ((long) restrict[M(j,1,3)])-1 ] = DOUBLE_XMAX;
+			}
+			else {
+			    Dist[ ((long) restrict[M(j,1,3)])-1 ] = restrict[M(j,2,3)];
+			}
+		      }
+		    else if ( ((long) restrict[M(j,1,3)])-1 ==i ) 
+		      {
+
+                        if (restrict[M(j,2,3)] < 0) {
+			  Dist[ ((long) restrict[M(j,0,3)])-1 ] = DOUBLE_XMAX;
+			}
+			else {
+                          Dist[ ((long) restrict[M(j,0,3)])-1 ] = restrict[M(j,2,3)];
+			}
+		      }
+		  }
+	      } /* if (restrict_trigger==1) */
+
             // set of potential matches (all observations with other treatment)
             // JSS, note:logical vector
 	    POTMAT = EqualityTestScalar(Tr, 1-TREATi);
@@ -479,7 +528,19 @@ extern "C"
 
             // selection of actual matches 
             // logical index
-	    ACTMAT = LessEqualTestScalar(Dist,  (Distmax+cdd));
+	    if (restrict_trigger==1)
+	      {
+		foo_d = min_scalar((Distmax+cdd), DOUBLE_XMAX-1);
+		ACTMAT = LessEqualTestScalar(Dist,  foo_d);
+
+		if ( ( (int) sumc(ACTMAT)[0]) < 1)
+		  continue;
+	      } 
+	    else 
+	      {
+		ACTMAT = LessEqualTestScalar(Dist,  (Distmax+cdd));
+	      } /* if (restrict_trigger==1) */
+
 	    ACTMAT = VectorAnd(POTMAT, ACTMAT);
 
 	    if (caliper==1)
