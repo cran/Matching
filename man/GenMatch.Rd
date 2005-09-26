@@ -8,11 +8,14 @@
   given.  This function finds the optimal weight each variable should be
   given by \code{\link{Match}} so as to achieve balance.  Balance is
   determined by a variety of univariate test, mainly paired t-tests for
-  dichotomous variables and an adjusted univariate Kolmogorov-Smirnov
-  (KS) test for multinomial and continuous variables.  The object
-  returned by this function can be supplied to the \code{Weight.matrix}
-  option of the \code{\link{Match}} function to obtain estimates.
-
+  dichotomous variables and univariate Kolmogorov-Smirnov (KS) test for
+  multinomial and continuous variables.  The loss criterion defining
+  optimal balance is determined by the \code{loss} option.  The object
+  returned by \code{GenMatch} can be supplied as the
+  \code{Weight.matrix} option of the \code{\link{Match}} function to
+  obtain estimates.  GenMatch, via the \code{cluster} option, supports
+  the use of multiple computers, CPUs or cores to perform parallel
+  computations.
 }
 \usage{
 GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
@@ -29,7 +32,9 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
          min.weight=0, max.weight=1000,
          Domains=NULL, print.level=2,
          project.path=NULL,
-         paired=TRUE, ...)
+         paired=TRUE, loss=1,
+         restrict=NULL,
+         cluster=FALSE, balance=TRUE, ...)
 }
 \arguments{
   \item{Tr}{ A vector indicating the observations which are
@@ -133,8 +138,9 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
     Kolmogorov-Smirnov (KS) test should be calculated.  If the ks option
     is set to true, the univariate KS test is calculated for all
     non-dichotomous variables.  The bootstrap KS test is consistent even
-    for non-continuous variables.  See \code{\link{ks.boot}} for more
-    details.}
+    for non-continuous variables.  If a given variable is dichotomous, a
+    t-test is used even if the KS test is requested.  See
+    \code{\link{ks.boot}} for more details.}
   \item{verbose}{If details should be printed for each fit evaluation
     done by the genetic algorithm.}  
   \item{tolerance}{ This is a scalar which is used to determine
@@ -183,14 +189,72 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
     project file. No project file is generated for
     \code{print.level=0}.}
   \item{paired}{A flag for if the paired \code{\link{t.test}} should be
-    used when determining balance.}  
-  \item{...}{Other options which are passed on to \code{\link[rgenoud]{genoud}}.}
-}
+    used when determining balance.}
+  \item{loss}{The loss function to be optimized.  The default value, \code{1},
+    implies "lexical" optimization: all of the balance statistics will
+    be sorted from the most discrepant to the least and weights will be
+    picked which minimize the maximum discrepancy.  If multiple sets of
+    weights result in the same maximum discrepancy, then the second
+    largest discrepancy is examined to choose the best weights.  The
+    processes continues iteratively until ties are broken.  \cr
 
-\details{
-  This function maximizes the smallest p-value that is observed in any
-  of the univariate tests of balance.  During optimization, the smallest
-  observed p-value is printed.  
+    If the value of \code{2} is used, then only the maximum discrepancy
+    is examined.  This was the default behavior prior to version 1.0.  The
+    user may also pass in any function she desires.  Note that the
+    option 1 corresponds to the \code{\link{sort}} function and option 2
+    to the \code{\link{min}} function.  Any user specified function
+    should expect a vector of balance statistics  ("p-values") and it
+    should return either a vector of values (in which case "lexical"
+    optimization will be done) or a scalar value (which will be
+    maximized). Some possible alternative functions are
+    \code{\link{mean}} or \code{\link{median}}.}
+  \item{restrict}{A matrix which restricts the possible matches.  This
+    matrix has one row for each restriction and three
+    columns.  The first two columns contain the two observation numbers
+    which are to be restricted (for example 4 and 20), and the third
+    column is the restriction imposed on the observation-pair.
+    Negative numbers in the third column imply that the two observations
+    cannot be matched under any circumstances, and positive numbers are
+    passed on as the distance between the two observations for the
+    matching algorithm.  The most commonly used positive restriction is
+    \code{0} which implies that the two observations will always
+    be matched.  \cr
+
+    Exclusion restriction are even more common.  For example, if we want
+    to exclude the observation pair 4 and 20 and
+    the pair 6 and 55 from being matched, the restrict matrix would be:
+    \code{restrict=rbind(c(4,20,-1),c(6,55,-1))}}
+  \item{cluster}{This can either be an object of the  'cluster' class
+    returned by one of the \code{\link[snow]{makeCluster}} commands in
+    the snow package or a vector of machine names so \code{GenMatch} can
+    setup the cluster automatically.  If it is the later, the vector should
+    look like: \cr
+    \code{c("localhost","musil","musil","deckard")}.\cr
+    This vector would create a cluster with four nodes: one on the
+    localhost another on "deckard" and two on the machine named
+    "musil".  Two nodes on a given machine make sense if the machine has two or more
+    chips/cores.  \code{GenMatch} will setup a SOCK cluster by a call to
+    \code{\link[snow]{makeSOCKcluster}}.  This will require the user
+    to type in her password for each node as the cluster is by default
+    created via \code{ssh}.  One can add on usernames to the machine
+    name if it differs from the current shell: "username@musil".  Other
+    cluster types, such as PVM and MPI,
+    which do not require passwords can be created by directly calling
+    \code{\link[snow]{makeCluster}}, and then passing the returned
+    cluster object to \code{GenMatch}. For an example of how to manually setup up
+    a cluster with a direct call to \code{\link[snow]{makeCluster}} see
+    \url{http://sekhon.polisci.berkeley.edu/matching/R/cluster_manual.R}.
+    For an example of how to get around a firewall by ssh tunneling see:
+    \url{http://sekhon.polisci.berkeley.edu/matching/R/cluster_manual_tunnel.R}.}
+  \item{balance}{This logical flag controls if load balancing is done
+    across the cluster.  Load balancing can result in better cluster
+    utilization; however, increased communication can reduce
+    performance.  This options is best used if each individual call to
+    \code{\link[Matching]{Match}} takes at least several minutes to
+    calculate or if the
+    nodes in the cluster vary significantly in their performance. If
+    cluster==FALSE, this option has no effect.}  
+  \item{...}{Other options which are passed on to \code{\link[rgenoud]{genoud}}.}
 }
 \value{
   \item{value}{The lowest p-value of the matched dataset.}
@@ -266,5 +330,13 @@ mb <- MatchBalance(treat~age +educ+black+ hisp+ married+ nodegr+ u74+ u75+
                    re75+ re74+ I(re74*re75),
                    match.out=mout, nboots=500, ks=TRUE, mv=FALSE)
 
+# For more examples see: http://sekhon.polisci.berkeley.edu/matching/R.
 }
 \keyword{nonparametric}
+
+%  LocalWords:  GenMatch Kolmogorov multinomial CPUs BalanceMatrix estimand ATT
+%  LocalWords:  ncol MemoryMatrix nboots ATC rgenoud genoud emph cr ecaliper UC
+%  LocalWords:  eqn tempdir rbind makeCluster localhost musil deckard usernames
+%  LocalWords:  makeSOCKcluster PVM MPI url dataset seealso MatchBalance cbind
+%  LocalWords:  balanceMV balanceUV GerberGreenImai lalonde hisp nodegr genout
+%  LocalWords:  BalanceMat mout mb mv

@@ -154,3 +154,8 @@ summary(ks)
 }
 \keyword{htest}
 
+
+%  LocalWords:  balanceMV Kolmogorov MatchBalance formul maxit nrow nboots nmc
+%  LocalWords:  Univariate regressors datasets glm logit emph covariates url UC
+%  LocalWords:  Abadie Edgeworth Verlag Conover Shao Dongsheng seealso GenMatch
+%  LocalWords:  balanceUV GerberGreenImai lalonde cbind hisp rr nodegr htest

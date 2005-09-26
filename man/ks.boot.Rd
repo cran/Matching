@@ -87,3 +87,7 @@ ks  <- ks.boot(lalonde$re75[rr$index.treated], lalonde$re75[rr$index.control], n
 summary(ks)
 }
 \keyword{htest}
+
+%  LocalWords:  Kolmogorov nboots ksboot pvalue UC url Abadie emph seealso psid
+%  LocalWords:  balanceUV GenMatch MatchBalance balanceMV GerberGreenImai Wahba
+%  LocalWords:  lalonde Dehejia Rajeev Sadek glm hisp nodegr estimand rr htest
