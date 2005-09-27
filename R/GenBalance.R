@@ -173,17 +173,18 @@ GenBalance <-
       output[is.na(output)] = 2
       warning("output has NaNs")
     }
-
+    
     if (verbose == TRUE)
       {
+        cat("\n")
         for (i in 1:nvars)
           {
-            cat("\n", i, " t-test p-value =", storage.t[i], "\n" )
-            cat("\n", i, " boot ks-test p-value =", storage.k[i], "\n" )
+            cat("\n", i, " t-test p-val  =", storage.t[i], "\n" )
+            if(ks)
+              cat(" ", i, "  ks-test p-val = ", storage.k[i], " \n",sep="")
           }
-        cat("\nreturn value:", output, "\n")
+        cat("\nsorted return vector:\n", sort(output), "\n")
         cat("number of return values:", length(output), "\n")
-
       }
 
     return(output)
