@@ -141,8 +141,9 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
     for non-continuous variables.  If a given variable is dichotomous, a
     t-test is used even if the KS test is requested.  See
     \code{\link{ks.boot}} for more details.}
-  \item{verbose}{If details should be printed for each fit evaluation
-    done by the genetic algorithm.}  
+  \item{verbose}{If details should be printed of each fit evaluation
+    done by the genetic algorithm.  Verbose is set to FALSE if the
+    \code{cluster} option is used.}
   \item{tolerance}{ This is a scalar which is used to determine
     numerical tolerances.  This option is used by numerical routines
     such as those used to determine if a matrix is singular.}
