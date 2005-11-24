@@ -2163,8 +2163,9 @@ get.ydata <- function(formul, datafr) {
 # bootstrap ks test implemented
 #
 
-ks.boot  <- function(Tr, Co, nboots=1000, verbose=0)
+ks.boot  <- function(Tr, Co, nboots=1000, alternative = c("two.sided", "less", "greater"), verbose=0)
   {
+    alternative <- match.arg(alternative)
     tol <- .Machine$double.eps*100
     Tr <- Tr[!is.na(Tr)]
     Co <- Co[!is.na(Co)]
@@ -2184,7 +2185,7 @@ ks.boot  <- function(Tr, Co, nboots=1000, verbose=0)
     if (nboots < 500)
       warning("For publication quality p-values it is recommended that 'nboots'\n be set equal to at least 500 (preferably 1000)") 
     
-    fs.ks  <- Mks.test(Tr, Co, MC=TRUE)    
+    fs.ks  <- Mks.test(Tr, Co, MC=TRUE, alternative=alternative)    
 
     for (bb in 1:nboots)
       {
@@ -2197,7 +2198,7 @@ ks.boot  <- function(Tr, Co, nboots=1000, verbose=0)
         X1tmp  <- w[sindx[1:cutp]]
         X2tmp  <- w[sindx[(cutp+1):obs]]
         
-        s.ks   <- Mks.test(X1tmp, X2tmp, exact=FALSE, MC=TRUE)$statistic
+        s.ks   <- Mks.test(X1tmp, X2tmp, exact=FALSE, MC=TRUE, alternative=alternative)$statistic
         
         if (s.ks >= (fs.ks$statistic - tol) )
           bbcount  <- bbcount + 1

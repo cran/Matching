@@ -9,7 +9,7 @@
   test.
 }
 \usage{
-ks.boot(Tr, Co, nboots=1000, verbose=0)
+ks.boot(Tr, Co, nboots=1000, alternative = c("two.sided", "less", "greater"), verbose=0)
 }
 \arguments{
   \item{Tr}{A vector containing the treatment observations.}
@@ -17,11 +17,14 @@ ks.boot(Tr, Co, nboots=1000, verbose=0)
   \item{nboots}{The number of bootstraps to be performed.  These are, in
     fact, really Monte Carlo simulations which are preformed in order to
     determine the proper p-value from the empiric.}
+  \item{alternative}{indicates the alternative hypothesis and must be one of
+    '"two.sided"' (default), '"less"', or '"greater"'.  You can
+    specify just the initial letter.  See \code{\link{ks.test}} for details.}
   \item{verbose}{If this is greater than 1, then the simulation count is
-  printed out while the simulations are being done.}
+    printed out while the simulations are being done.}
 }
 \value{
-  \item{ksboot.pvalue}{The bootstrap p-value of the Kolmogorov-Smirnov test
+  \item{ks.boot.pvalue}{The bootstrap p-value of the Kolmogorov-Smirnov test
     for the hypothesis that the probability densities for both the
     treated and control groups are the same.}
   \item{ks}{Return object from \code{\link{ks.test}}.}
