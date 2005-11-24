@@ -1,0 +1,37 @@
+CXXFLAGS=-O3 -ffast-math -funroll-loops -fexpensive-optimizations
+#gnumake
+#ifeq ($(CXX),g++)
+#CXXFLAGS = -O3 -ffast-math -funroll-loops -fexpensive-optimizations 
+#endif
+
+#bsdmake
+#.if $(CXX)==g++
+# CXXFLAGS = -O3 -ffast-math -funroll-loops -fexpensive-optimizations 
+#.endif
+
+SOURCES = matching.cc scythematrix.cc 
+
+HEADERS = matching.h scythematrix.h 
+
+OBJS = $(SOURCES:.cc=.o)
+
+PROGRAM = Matching${SHLIB_EXT}
+
+#$(PROGRAM):	$(OBJS) $(LIBS)
+#		$(SHLIB_CXXLD) $(DYLIB_LDFLAGS) $(OBJS) -o $(PROGRAM)
+#		@echo library $(PROGRAM) ready.
+
+ALL_CXXFLAGS = $(R_XTRA_CXXFLAGS) $(PKG_CXXFLAGS) $(CXXPICFLAGS) $(SHLIB_CXXFLAGS) $(CXXFLAGS)
+
+$(PROGRAM):	$(OBJS) 
+		$(SHLIB_CXXLD) $(SHLIB_CXXLDFLAGS) $(ALL_CXXFLAGS) $(OBJS) -o $(PROGRAM)
+		@echo library $(PROGRAM) ready.
+
+clean:
+	rm -f core*
+	rm -f *.o
+
+
+
+
+
