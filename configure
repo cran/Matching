@@ -11,7 +11,7 @@ CXX=`"${R_HOME}/bin/R" CMD config CXX`
 if [ $CXX = g++ ]; then
  CXXFLAGS="-O3 -ffast-math -funroll-loops -fexpensive-optimizations"
  echo "CXXFLAGS=$CXXFLAGS" > src/Makefile
- cat src/Makefile.in >> src/Makefile
+ cat src/makefile.in >> src/Makefile
 fi
 
 #NOTE: On g5 machines with OS X the following PKG_CXXFLAGS generates
