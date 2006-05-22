@@ -62,30 +62,45 @@ namespace SCYTHE {
 /********************     BASIC FUNCTIONS     *************************/
 /**********************************************************************/
     
-/*!
- * \brief CONSTRUCTOR:  Matrix  - Creates Matrix obj. with specificed 
- * rows and columns, sets each element = 0
- * \param rows An integer that reflects the number of rows.
- * \param cols An integer that reflects the numbef of columns.
- */
-    Matrix::Matrix (const int& rows, const int& cols)
-    {
-	if (rows < 1 || cols < 1) {
+  /*!
+  * \brief CONSTRUCTOR:  Matrix  - Creates Matrix obj. with specificed 
+   * rows and columns, sets each element = 0
+   * \param rows An integer that reflects the number of rows.
+   * \param cols An integer that reflects the numbef of columns.
+   */
+#ifdef __NATE__
+  Matrix::Matrix (const int& rows, const int& cols) {
+    if (rows < 1 || cols < 1) {
 	    cerr << "ERROR 0001: Improper row or column dimension in "
-		 << "Matrix constructor"
-		 << endl;
+      << "Matrix constructor"
+      << endl;
 	    exit (1);
-	}
-	rowsize = rows;    // assign Matrix rowsize
-	colsize = cols;    // assign Matrix colsize 
-	size = rows * cols;    // assign Matrix size
-	data = new double[size];
-	
-	for (int i = 0; i < size; ++i) {
-	    data[i] = 0.0;
-	}
     }
+    rowsize = rows;    // assign Matrix rowsize
+    colsize = cols;    // assign Matrix colsize 
+    size = rows * cols;    // assign Matrix size
+    data = new double[size];
+    memset(data, 0, size * sizeof(double));
+  }
+#else
+  Matrix::Matrix (const int& rows, const int& cols) {
+    if (rows < 1 || cols < 1) {
+	    cerr << "ERROR 0001: Improper row or column dimension in "
+           << "Matrix constructor"
+           << endl;
+	    exit (1);
+    }
+    rowsize = rows;    // assign Matrix rowsize
+    colsize = cols;    // assign Matrix colsize 
+    size = rows * cols;    // assign Matrix size
+    data = new double[size];
     
+    for (int i = 0; i < size; ++i) {
+	    data[i] = 0.0;
+    }
+  }
+#endif
+
 /*!
  * \brief CONSTRUCTOR:  Matrix - Creates Matrix object filled with data 
  * from array
@@ -145,8 +160,7 @@ namespace SCYTHE {
 	
 	delete[]data;
 	data = new double[size];
-	for (int i = 0; i < size; ++i)
-	    data[i] = B.data[i];
+  memcpy(data, B.data, size * sizeof(double));
 	
 	return *this;
     }
@@ -1077,6 +1091,20 @@ namespace SCYTHE {
  * This Matrix will be transposed.
  * \return A Matrix object, the transpose of the input Matrix object.
  */
+#ifdef __NATE__
+  Matrix t (const Matrix & old_matrix)
+{
+    int newrowsize = old_matrix.colsize;
+    int newcolsize = old_matrix.rowsize;
+    Matrix temp(newrowsize, newcolsize);
+    for (int i = 0; i < newcolsize; ++i) {
+	    for (int j = 0; j < newrowsize; ++j) {
+        temp.data[i + newcolsize * j] = old_matrix.data[j + newrowsize * i];
+	    }
+    }
+    return temp;
+}
+#else
     Matrix t (const Matrix & old_matrix)
     {
 	int newrowsize = old_matrix.colsize;
@@ -1091,6 +1119,7 @@ namespace SCYTHE {
 	delete[]newdata;
 	return temp;
     }
+#endif
     
 /*!
  * \brief Creates a Matrix of Ones
@@ -1125,6 +1154,18 @@ namespace SCYTHE {
  * \param cols a constant int reflecting the number of columns in the Matrix.
  * \return a new Matrix filled with 1's.
  */
+#ifdef __NATE__
+Matrix zeros (const int& rows, const int& cols)
+{
+	if (rows < 1 || cols < 1) {
+    cerr << "Error 0018: improper row or column dimension in ones()"
+    << endl;
+    exit (18);
+	}
+	Matrix temp(rows, cols); // ctor zeros data
+  return temp;
+} // end of zeros
+#else
     Matrix zeros (const int& rows, const int& cols)
     {
 	if (rows < 1 || cols < 1) {
@@ -1141,7 +1182,7 @@ namespace SCYTHE {
 	delete[]newdata;
 	return temp;
     } // end of zeros
-    
+#endif
     
     
 //  FUNCTION: Eye - creates an Identity Matrix of size k x k
@@ -2124,6 +2165,20 @@ namespace SCYTHE {
  * \param A a constant reference to a Matrix \a A.
  * \return the vector of sums for each corresponding column.
  */
+#ifdef __NATE__
+Matrix sumc (const Matrix & A)
+{
+	Matrix temp = zeros(1, A.colsize);
+	
+	for (int i = 0; i < A.rowsize; ++i) {
+    double *rowptr = A.data + (A.colsize * i);
+    for (int j = 0; j < A.colsize; ++j) {
+      temp.data[j] += rowptr[j];
+    }
+	}
+	return temp;
+}
+#else
     Matrix sumc (const Matrix & A)
     {
 	double *newdata = new double[A.colsize];
@@ -2140,6 +2195,7 @@ namespace SCYTHE {
 	delete[]newdata;
 	return temp;
     }
+#endif
     
 //! Calculate the product of each column of a Matrix
 /*!

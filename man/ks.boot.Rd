@@ -32,7 +32,7 @@ ks.boot(Tr, Co, nboots=1000, alternative = c("two.sided", "less", "greater"), ve
 }
 \author{
   Jasjeet S. Sekhon, UC Berkeley, \email{sekhon@berkeley.edu},
-  \url{http://sekhon.polisci.berkeley.edu/}.  
+  \url{http://sekhon.berkeley.edu/}.  
 }
 \references{
   Sekhon, Jasjeet S. 2004.  ``Balance Tests for Matching
@@ -41,7 +41,7 @@ ks.boot(Tr, Co, nboots=1000, alternative = c("two.sided", "less", "greater"), ve
   Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
   Estimating Causal Effects: A General Multivariate Matching Method for
   Achieving Balance in Observational Studies.''  Working Paper.
-  \url{http://sekhon.polisci.berkeley.edu/papers/GenMatch.pdf}
+  \url{http://sekhon.berkeley.edu/papers/GenMatch.pdf}
 
   Abadie, Alberto.  2002.  ``Bootstrap Tests for Distributional Treatment
   Effects in Instrumental Variable Models.'' \emph{Journal of the

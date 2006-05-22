@@ -53,14 +53,14 @@ balanceUV(Tr, Co, weights = rep(1, length(Co)), exact = FALSE, ks=FALSE,
 }
 \author{
   Jasjeet S. Sekhon, UC Berkeley, \email{sekhon@berkeley.edu},
-  \url{http://sekhon.polisci.berkeley.edu/}.  
+  \url{http://sekhon.berkeley.edu/}.  
 }
 \references{
   Hollander, Myles and Douglas A. Wolfe. 1973. \emph{Nonparametric
     statistical inference}. New York: John Wiley & Sons.
 
   Sekhon, Jasjeet S. 2004.  ``Balance Tests for Matching
-  Estimators.''  Working Paper. \url{http://sekhon.polisci.berkeley.edu/matching}
+  Estimators.''  Working Paper. \url{http://sekhon.berkeley.edu/matching}
   }
   \seealso{ Also see \code{\link{summary.balanceUV}},
     \code{\link{ks.boot}}, \code{\link{Match}}, \code{\link{GenMatch}},

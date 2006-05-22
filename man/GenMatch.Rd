@@ -244,9 +244,9 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
     \code{\link[snow]{makeCluster}}, and then passing the returned
     cluster object to \code{GenMatch}. For an example of how to manually setup up
     a cluster with a direct call to \code{\link[snow]{makeCluster}} see
-    \url{http://sekhon.polisci.berkeley.edu/matching/R/cluster_manual.R}.
+    \url{http://sekhon.berkeley.edu/matching/R/cluster_manual.R}.
     For an example of how to get around a firewall by ssh tunneling see:
-    \url{http://sekhon.polisci.berkeley.edu/matching/R/cluster_manual_tunnel.R}.}
+    \url{http://sekhon.berkeley.edu/matching/R/cluster_manual_tunnel.R}.}
   \item{balance}{This logical flag controls if load balancing is done
     across the cluster.  Load balancing can result in better cluster
     utilization; however, increased communication can reduce
@@ -278,16 +278,16 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
   Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
   Estimating Causal Effects: A General Multivariate Matching Method for
   Achieving Balance in Observational Studies.''  Working Paper.
-  \url{http://sekhon.polisci.berkeley.edu/papers/GenMatch.pdf}
+  \url{http://sekhon.berkeley.edu/papers/GenMatch.pdf}
 
   Sekhon, Jasjeet Singh and Walter R. Mebane, Jr. 1998.  ``Genetic
   Optimization Using Derivatives: Theory and Application to Nonlinear
   Models.'' \emph{Political Analysis}, 7: 187-210.
-  \url{http://sekhon.polisci.berkeley.edu/genoud/genoud.pdf} 
+  \url{http://sekhon.berkeley.edu/genoud/genoud.pdf} 
 }
 \author{
   Jasjeet S. Sekhon, UC Berkeley, \email{sekhon@berkeley.edu},
-  \url{http://sekhon.polisci.berkeley.edu/}.  
+  \url{http://sekhon.berkeley.edu/}.  
 }
 \seealso{ Also see \code{\link{Match}}, \code{\link{summary.Match}},
   \code{\link{MatchBalance}}, \code{\link[rgenoud]{genoud}},
@@ -331,7 +331,7 @@ mb <- MatchBalance(treat~age +educ+black+ hisp+ married+ nodegr+ u74+ u75+
                    re75+ re74+ I(re74*re75),
                    match.out=mout, nboots=500, ks=TRUE, mv=FALSE)
 
-# For more examples see: http://sekhon.polisci.berkeley.edu/matching/R.
+# For more examples see: http://sekhon.berkeley.edu/matching/R.
 }
 \keyword{nonparametric}
 
