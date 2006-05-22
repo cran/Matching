@@ -1,6 +1,6 @@
-# Jasjeet S. Sekhon <jasjeet_sekhon@harvard.edu>
-# HTTP://jsekhon.fas.harvard.edu
-# Harvard University
+# Jasjeet S. Sekhon <sekhon@berkeley.edu>
+# HTTP://sekhon.berkeley.edu/
+# UC Berkeley
 
 # Match(): function to estimate treatments using a matching estimator.
 # Currently only the ability to estimate average treatment effects
@@ -13,7 +13,8 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
                    BiasAdjust=FALSE,exact=NULL,caliper=NULL,
                    Weight=1,Weight.matrix=NULL, weights=rep(1,length(Y)),
                    Var.calc=0, sample=FALSE, tolerance=0.00001,
-                   distance.tolerance=0.00001, restrict=NULL, version="fast")
+                   distance.tolerance=0.00001, restrict=NULL,
+                   match.out=NULL, version="fast")
   {
 
     #we don't need to use a Y
@@ -88,6 +89,11 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
         warning("User set 'version' to an illegal value.  Resetting to the default which is 'fast'.")        
         version <- "fast"
       }
+
+    if (!is.null(match.out) & class(match.out) != "Match") {
+      warning("match.out object not of class 'Match'")
+      return(invisible(NULL))
+    }    
 
     ccc  <- tolerance
     cdd  <- distance.tolerance
@@ -217,11 +223,20 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
 #    if(version=="fast" & is.null(ecaliper) & sum(weights==1)==orig.nobs)
     if(version=="fast")
       {
-        ret <- RmatchLoop(Y=Y, Tr=Tr, X=X, Z=Z, V=V, All=estimand, M=M, BiasAdj=BiasAdj,
-                          Weight=Weight, Weight.matrix=Weight.matrix, Var.calc=Var.calc,
-                          weight=weights, SAMPLE=sample, ccc=ccc, cdd=cdd,
-                          ecaliper=ecaliper, exact=exact, caliper=caliper,
-                          restrict=restrict)
+        if(!is.null(match.out))
+          {
+            ret <- RmatchLoop(Y=Y, Tr=Tr, X=X, Z=Z, V=V, All=estimand, M=M, BiasAdj=BiasAdj,
+                              Weight=Weight, Weight.matrix=Weight.matrix, Var.calc=Var.calc,
+                              weight=weights, SAMPLE=sample, ccc=ccc, cdd=cdd,
+                              ecaliper=ecaliper, exact=exact, caliper=caliper,
+                              restrict=restrict, MatchLoopC.indx=match.out$MatchLoopC)
+          } else {
+            ret <- RmatchLoop(Y=Y, Tr=Tr, X=X, Z=Z, V=V, All=estimand, M=M, BiasAdj=BiasAdj,
+                              Weight=Weight, Weight.matrix=Weight.matrix, Var.calc=Var.calc,
+                              weight=weights, SAMPLE=sample, ccc=ccc, cdd=cdd,
+                              ecaliper=ecaliper, exact=exact, caliper=caliper,
+                              restrict=restrict)            
+          }
       } else {
         ret <- Rmatch(Y=Y, Tr=Tr, X=X, Z=Z, V=V, All=estimand, M=M, BiasAdj=BiasAdj,
                       Weight=Weight, Weight.matrix=Weight.matrix, Var.calc=Var.calc,
@@ -325,7 +340,8 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
                orig.treated.nobs=orig.treated.nobs,
                nobs=nobs, wnobs=wnobs,
                caliper=caliper, ecaliper=ecaliper, exact=exact,
-               ndrops=actual.drops, ndrops.matches=sum.caliper.drops)
+               ndrops=actual.drops, ndrops.matches=sum.caliper.drops,
+               MatchLoopC=ret$MatchLoopC)
 
     class(z)  <- "Match"    
     return(z)
@@ -2234,7 +2250,8 @@ summary.ks.boot <- function(object, ..., digits=5)
 
 
 RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.calc, weight,
-                       SAMPLE, ccc, cdd, ecaliper=NULL, exact=NULL, caliper=NULL, restrict=NULL)
+                       SAMPLE, ccc, cdd, ecaliper=NULL, exact=NULL, caliper=NULL, restrict=NULL,
+                       MatchLoopC.indx=NULL)
   {
     s1 <- MatchGenoudStage1caliper(Tr=Tr, X=X, All=All, M=M, weights=weight,
                                    exact=exact, caliper=caliper,
@@ -2382,14 +2399,19 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
         use.ecaliper <- s1$ecaliper
       }
 
+    if(is.null(MatchLoopC.indx))
+      {
     #indx:
     # 1] I (unadjusted); 2] IM (unadjusted); 3] weight; 4] I (adjusted); 5] IM (adjusted)
-    indx <- MatchLoopC(N=s1$N, xvars=Kx, All=s1$All, M=s1$M,
-                       cdd=cdd, caliperflag=caliperflag,
-                       ww=ww, Tr=s1$Tr, Xmod=s1$X,
-                       weights=weight,
-                       CaliperVec=use.ecaliper, Xorig=X.orig,
-                       restrict.trigger=restrict.trigger, restrict=restrict)
+        MatchLoopC.indx <- MatchLoopC(N=s1$N, xvars=Kx, All=s1$All, M=s1$M,
+                                      cdd=cdd, caliperflag=caliperflag,
+                                      ww=ww, Tr=s1$Tr, Xmod=s1$X,
+                                      weights=weight,
+                                      CaliperVec=use.ecaliper, Xorig=X.orig,
+                                      restrict.trigger=restrict.trigger, restrict=restrict)
+      } 
+    indx <- MatchLoopC.indx
+
 
     if(indx[1,1]==0)
       {
@@ -2805,7 +2827,8 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
 
     return(list(est=est, se=se, se.cond=se.cond, em=em, W=W,
                 sum.caliper.drops=sum.caliper.drops,
-                art.data=art.data, aug.data=aug.data))
+                art.data=art.data, aug.data=aug.data,
+                MatchLoopC=MatchLoopC.indx))
   }# end of RmatchLoop
 
 MatchLoopC <- function(N, xvars, All, M, cdd, caliperflag, ww, Tr, Xmod, weights, CaliperVec, Xorig,

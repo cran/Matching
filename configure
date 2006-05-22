@@ -6,14 +6,19 @@
 #Makevars.win should simply be used because we can assume that we are
 #using the mingw32 compiler
 
+# -fstrict-aliasing is added for OS X (already included in the Linux gcc -O2 option
+# does no harm on Linux
+
 CXX=`"${R_HOME}/bin/R" CMD config CXX`
 
-if [ $CXX = g++ ]; then
- CXXFLAGS="-O3 -ffast-math -funroll-loops -fexpensive-optimizations"
+echo $CXX | grep g++ > /dev/null 2>&1
+if [ "$?" -eq "0" ]; then
+ CXXFLAGS="-O3 -ffast-math -funroll-loops -fexpensive-optimizations -fstrict-aliasing"
  echo "CXXFLAGS=$CXXFLAGS" > src/Makefile
+ echo "PKG_CXXLDFLAGS=$PKG_CXXLDFLAGS" >> src/Makefile
  cat src/makefile.in >> src/Makefile
 fi
 
-#NOTE: On g5 machines with OS X the following PKG_CXXFLAGS generates
+#NOTE: On g5 machines with OS X the following CXXFLAGS generates
 #significantly faster code:
 #PKG_CXXFLAGS="-fast"

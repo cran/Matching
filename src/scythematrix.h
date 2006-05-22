@@ -65,15 +65,13 @@ namespace SCYTHE {
 
 class Matrix
 {
-
-protected:
+public:
   int rowsize;    // # of rows in Matrix
   int colsize;    // # of columns in Matrix
   int size;    	  // # of element in Matrix
-  double *data;   // array holding the elements of the Matrix
     		  // in row major order
 
-public:
+  double *data;   // array holding the elements of the Matrix
   // BASIC FUNCTIONS
 
 /**********************************************************************/
@@ -265,6 +263,20 @@ public:
 			 out[i] = data[i];
 		 }
 	 }
+   
+ /**********************************************************************/
+ //  FUNCTION: multiply each scalar element of the matrix
+ //  Input:  Matrix I
+ //  Return: void
+ //  Usage:  multi_scalar(Matrix &);
+ //  Errors:  
+ //  Dependencies:  none
+ 
+   void multi_scalar (Matrix &I) {
+     for (int i = 0; i < rowsize * colsize; ++i)
+       data[i] *= I.data[i];
+   }
+   
 /*******************   MORE ADVANCED FUNCTIONS  **********************/
 /**********************************************************************/
 

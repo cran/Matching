@@ -3,7 +3,7 @@
 \title{Multivariate and Propensity Score Matching Estimator for Causal Inference}
 \description{
 
-  This function preforms multivariate matching.  This function is
+  This function performs multivariate matching.  This function is
   intended to be used in conjunction with the \code{MatchBalance}
   function which checks if the results of this function have actually
   achieved balance on a set of covariates.  If one wants to do
@@ -21,7 +21,8 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
       BiasAdjust = FALSE, exact = NULL, caliper = NULL,
       Weight = 1, Weight.matrix = NULL, weights = rep(1, length(Y)),
       Var.calc = 0, sample = FALSE, tolerance = 1e-05,
-      distance.tolerance = 1e-05, restrict=NULL, version="fast")
+      distance.tolerance = 1e-05, restrict=NULL,
+      match.out = NULL, version="fast")
 }
 \arguments{
   \item{Y}{ A vector containing the outcome of interest.
@@ -137,7 +138,18 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     to exclude the observation pair 4 and 20 and
     the pair 6 and 55 from being matched, the restrict matrix would be:
     \code{restrict=rbind(c(4,20,-1),c(6,55,-1))}}
-    \item{version}{The version of the code to be used.  The "fast" C/C++
+  \item{match.out}{ The return object from a previous call to
+    \code{Match}.  If this object is provided, then \code{Match} will
+    use the matches found by the previous invocation of the function.
+    Hence, \code{Match} will run faster.  This is
+    useful when the treatment does not vary across calls to
+    \code{Match} and one wants to use the same set of matches as found
+    before.  This often occurs when one is trying to estimate the causal
+    effect of the same treatment (\code{Tr}) on different outcomes
+    (\code{Y}). Be careful when using this option to use the same
+    arguments as used for the previous invocation of \code{Match} unless
+    you know exactly what you are doing.}
+  \item{version}{The version of the code to be used.  The "fast" C/C++
     version of the code is used unless the "old" (stable) version is
     requested.}
 }
@@ -238,17 +250,17 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
   Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
   Estimating Causal Effects: A General Multivariate Matching Method for
   Achieving Balance in Observational Studies.''  Working Paper.
-  \url{http://sekhon.polisci.berkeley.edu/papers/GenMatch.pdf}
+  \url{http://sekhon.berkeley.edu/papers/GenMatch.pdf}
 
   Imbens, Guido. 2004. Matching Software for Matlab and
   Stata. \url{http://elsa.berkeley.edu/~imbens/estimators.shtml}
   
   Sekhon, Jasjeet S. 2004.  ``The Varying Role of Voter Information
   Across Democratic Societies.''  Working Paper.
-  \url{http://sekhon.polisci.berkeley.edu/papers/SekhonInformation.pdf}
+  \url{http://sekhon.berkeley.edu/papers/SekhonInformation.pdf}
 }
 \author{Jasjeet S. Sekhon, UC Berkeley, \email{sekhon@berkeley.edu},
-  \url{http://sekhon.polisci.berkeley.edu/}.
+  \url{http://sekhon.berkeley.edu/}.
 }
 \seealso{ Also see \code{\link{summary.Match}},
   \code{\link{GenMatch}},

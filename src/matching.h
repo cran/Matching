@@ -1,6 +1,9 @@
 #define M(ROW,COL,NCOLS) (((ROW)*(NCOLS))+(COL))
 #define TOL 0.0000000001
 
+/* Use CBLAS and Nate Optimizations */
+#define __NBLAS__
+
 // my function declarations
 double sum (const Matrix & A);
 double min_scalar (double a, double b);
