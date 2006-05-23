@@ -17,9 +17,6 @@ pscore.glm<-glm(PHN.C1 ~ PERSONS + VOTE96.1 + NEW + MAJORPTY + AGE +
 D<-GerberGreenImai$PHN.C1 #treatment phone calls
 Y<-GerberGreenImai$VOTED98 #outcome, turnout
 
-foo  <- GerberGreenImai
-Tr  <- D
-
 cat("\nTHIS MODEL FAILS TO BALANCE AGE\n")
 X  <- fitted(pscore.glm)
 
