@@ -1,6 +1,8 @@
-/* Edited by Jasjeet S. Sekhon <jasjeet_sekhon@harvard.edu> */
-/* HTTP://jsekhon.fas.harvard.edu/                          */
-/* Feb 14,  2005                                            */
+/* Edited by Jasjeet S. Sekhon <jasjeet_sekhon@berkeley.edu> */
+/* HTTP://sekhon.berkeley.edu                                */
+/* May 25, 2005                                              */
+/* __NATE__ additions by Nate Begeman (Apple)                */
+
 //
 // Memeber function definitions for the Scythe_Double_Matrix.h
 // header file.  These functions make up the Matrix class as used
@@ -68,7 +70,7 @@ namespace SCYTHE {
    * \param rows An integer that reflects the number of rows.
    * \param cols An integer that reflects the numbef of columns.
    */
-#ifdef __NATE__
+  // #ifdef __NATE__
   Matrix::Matrix (const int& rows, const int& cols) {
     if (rows < 1 || cols < 1) {
 	    cerr << "ERROR 0001: Improper row or column dimension in "
@@ -79,27 +81,11 @@ namespace SCYTHE {
     rowsize = rows;    // assign Matrix rowsize
     colsize = cols;    // assign Matrix colsize 
     size = rows * cols;    // assign Matrix size
-    data = new double[size];
+    //data = new double[size];
+    data = (double *) malloc(size * sizeof(double));
     memset(data, 0, size * sizeof(double));
   }
-#else
-  Matrix::Matrix (const int& rows, const int& cols) {
-    if (rows < 1 || cols < 1) {
-	    cerr << "ERROR 0001: Improper row or column dimension in "
-           << "Matrix constructor"
-           << endl;
-	    exit (1);
-    }
-    rowsize = rows;    // assign Matrix rowsize
-    colsize = cols;    // assign Matrix colsize 
-    size = rows * cols;    // assign Matrix size
-    data = new double[size];
-    
-    for (int i = 0; i < size; ++i) {
-	    data[i] = 0.0;
-    }
-  }
-#endif
+
 
 /*!
  * \brief CONSTRUCTOR:  Matrix - Creates Matrix object filled with data 
@@ -120,7 +106,8 @@ namespace SCYTHE {
 	rowsize = rows;    // assign Matrix rowsize
 	colsize = cols;    // assign Matrix colsize
 	size = rows * cols;    // assign Matrix size
-	data = new double[size];
+	// data = new double[size];
+	data = (double *) malloc(size * sizeof(double));
 	
 	for (int i = 0; i < size; ++i) {
 	    data[i] = inputarray[i];
@@ -137,7 +124,8 @@ namespace SCYTHE {
 	rowsize = old_Matrix.rowsize;  // assign Matrix rowsize
 	colsize = old_Matrix.colsize;  // assign Matrix colsize
 	size = old_Matrix.size;  // assign Matrix size
-	data = new double[size];
+	//data = new double[size];
+	data = (double *) malloc(size * sizeof(double));
 	
 	for (int i = 0; i < size; ++i) {
 	    data[i] = old_Matrix.data[i];
@@ -158,9 +146,11 @@ namespace SCYTHE {
 	colsize = B.colsize;
 	size = B.size;
 	
-	delete[]data;
-	data = new double[size];
-  memcpy(data, B.data, size * sizeof(double));
+	// delete[]data;
+	free(data);
+	//data = new double[size];
+	data = (double *) malloc(size * sizeof(double));
+	memcpy(data, B.data, size * sizeof(double));
 	
 	return *this;
     }
@@ -187,15 +177,13 @@ namespace SCYTHE {
 	
 	int newrowsize = 1;
 	int newcolsize = colsize;
-	double *newdata = new double[newcolsize];
+	Matrix newdata(newrowsize, newcolsize);
 	
 	for (int j = 0; j < newcolsize; ++j) {
-	    newdata[j] = data[j + i*colsize];
+	    newdata.data[j] = data[j + i*colsize];
 	}
 	
-	Matrix temp = Matrix (newdata, newrowsize, newcolsize);
-	delete[]newdata;
-	return temp;
+	return newdata;
 	
     }
     
@@ -220,15 +208,13 @@ namespace SCYTHE {
 	
 	int newrowsize = rowsize;
 	int newcolsize = 1;
-	double *newdata = new double[newrowsize];
+	Matrix newdata(newrowsize, newcolsize);
 	
 	for (int i = 0; i < newrowsize; ++i) {
-	    newdata[i] = data[j + i*colsize];
+	    newdata.data[i] = data[j + i*colsize];
 	}
 	
-	Matrix temp = Matrix (newdata, newrowsize, newcolsize);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     
@@ -260,7 +246,7 @@ namespace SCYTHE {
 	
 	int newrowsize = 1;
 	int newcolsize = J.size;
-	double *newdata = new double[newcolsize];
+	Matrix newdata(newrowsize, newcolsize);
 	
 	for (int j = 0; j < newcolsize; ++j) {
 	    int index = static_cast < int >(J.data[j]);
@@ -269,12 +255,10 @@ namespace SCYTHE {
 		exit (7);
 	    }
 	    index = index + i * colsize;
-	    newdata[j] = data[index];
+	    newdata.data[j] = data[index];
 	}
 	
-	Matrix temp = Matrix (newdata, newrowsize, newcolsize);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
 /*! 
@@ -302,7 +286,7 @@ namespace SCYTHE {
 	
 	int newrowsize = I.size;
 	int newcolsize = 1;
-	double *newdata = new double[newrowsize];
+	Matrix newdata(newrowsize, newcolsize);
 	
 	for (int i = 0; i < newrowsize; ++i) {
 	    int index = static_cast < int >(I.data[i]);
@@ -311,12 +295,10 @@ namespace SCYTHE {
 		exit (10);
 	    }
 	    index = j + index * colsize;
-	    newdata[i] = data[index];
+	    newdata.data[i] = data[index];
 	}
 	
-	Matrix temp = Matrix (newdata, newrowsize, newcolsize);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     
@@ -360,7 +342,8 @@ namespace SCYTHE {
 	
 	int place = 0;
 	int indexi, indexj;
-	double *newdata = new double[I.size * J.size];
+	Matrix newdata(I.size,  J.size);
+
 	for (int i = 0; i < I.size; i++) {
 	    for (int j = 0; j < J.size; j++) {
 		indexi = static_cast < int > (I.data[i]);
@@ -375,14 +358,12 @@ namespace SCYTHE {
 			 << endl;
 		    exit (17);
 		}
-		newdata[place] = data[indexi * colsize + indexj];
+		newdata.data[place] = data[indexi * colsize + indexj];
 		place++;
 	    }
 	}
 	
-	Matrix temp = Matrix (newdata, I.size, J.size);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     
@@ -431,186 +412,164 @@ namespace SCYTHE {
  * input doubles.
  */
     Matrix c (const double& a, const double& b){
-	double *newdata = new double[2];
-	newdata[0] = a;
-	newdata[1] = b;
+      Matrix newdata(2, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
 	
-	Matrix temp = Matrix (newdata, 2, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     Matrix c (const double& a, const double& b, const double& c){
-	double *newdata = new double[3];
-	newdata[0] = a;
-	newdata[1] = b;
-	newdata[2] = c;
+      Matrix newdata(3, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
+	newdata.data[2] = c;
 	
-	Matrix temp = Matrix (newdata, 3, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     Matrix c (const double& a, const double& b, const double& c, 
 	      const double& d){ 
-	double *newdata = new double[4];
-	newdata[0] = a;
-	newdata[1] = b;
-	newdata[2] = c;
-	newdata[3] = d;
+      Matrix newdata(4, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
+	newdata.data[2] = c;
+	newdata.data[3] = d;
 	
-	Matrix temp = Matrix (newdata, 4, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     Matrix c (const double& a, const double& b, const double& c, 
 	      const double& d, const double& e){ 
-	double *newdata = new double[5];
-	newdata[0] = a;
-	newdata[1] = b;
-	newdata[2] = c;
-	newdata[3] = d;
-	newdata[4] = e;
+      Matrix newdata(5, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
+	newdata.data[2] = c;
+	newdata.data[3] = d;
+	newdata.data[4] = e;
 	
-	Matrix temp = Matrix (newdata, 5, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     Matrix c (const double& a, const double& b, const double& c, 
 	      const double& d, const double& e, const double& f){ 
-	double *newdata = new double[6];
-	newdata[0] = a;
-	newdata[1] = b;
-	newdata[2] = c;
-	newdata[3] = d;
-	newdata[4] = e;
-	newdata[5] = f;
+      Matrix newdata(6, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
+	newdata.data[2] = c;
+	newdata.data[3] = d;
+	newdata.data[4] = e;
+	newdata.data[5] = f;
 	
-	Matrix temp = Matrix (newdata, 6, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     Matrix c (const double& a, const double& b, const double& c, 
 	      const double& d, const double& e, const double& f,
 	      const double& g){ 
-	double *newdata = new double[7];
-	newdata[0] = a;
-	newdata[1] = b;
-	newdata[2] = c;
-	newdata[3] = d;
-	newdata[4] = e;
-	newdata[5] = f;
-	newdata[6] = g;
+      Matrix newdata(7, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
+	newdata.data[2] = c;
+	newdata.data[3] = d;
+	newdata.data[4] = e;
+	newdata.data[5] = f;
+	newdata.data[6] = g;
 	
-	Matrix temp = Matrix (newdata, 7, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     Matrix c (const double& a, const double& b, const double& c, 
 	      const double& d, const double& e, const double& f,
 	      const double& g, const double& h){ 
-	double *newdata = new double[8];
-	newdata[0] = a;
-	newdata[1] = b;
-	newdata[2] = c;
-	newdata[3] = d;
-	newdata[4] = e;
-	newdata[5] = f;
-	newdata[6] = g;
-	newdata[7] = h;
+      Matrix newdata(8, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
+	newdata.data[2] = c;
+	newdata.data[3] = d;
+	newdata.data[4] = e;
+	newdata.data[5] = f;
+	newdata.data[6] = g;
+	newdata.data[7] = h;
 	
-	Matrix temp = Matrix (newdata, 8, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     Matrix c (const double& a, const double& b, const double& c, 
 	      const double& d, const double& e, const double& f,
 	      const double& g, const double& h, const double& i){ 
-	double *newdata = new double[9];
-	newdata[0] = a;
-	newdata[1] = b;
-	newdata[2] = c;
-	newdata[3] = d;
-	newdata[4] = e;
-	newdata[5] = f;
-	newdata[6] = g;
-	newdata[7] = h;
-	newdata[8] = i;
+      Matrix newdata(9, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
+	newdata.data[2] = c;
+	newdata.data[3] = d;
+	newdata.data[4] = e;
+	newdata.data[5] = f;
+	newdata.data[6] = g;
+	newdata.data[7] = h;
+	newdata.data[8] = i;
 	
-	Matrix temp = Matrix (newdata, 9, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     Matrix c (const double& a, const double& b, const double& c, 
 	      const double& d, const double& e, const double& f,
 	      const double& g, const double& h, const double& i,
 	      const double& j){ 
-	double *newdata = new double[10];
-	newdata[0] = a;
-	newdata[1] = b;
-	newdata[2] = c;
-	newdata[3] = d;
-	newdata[4] = e;
-	newdata[5] = f;
-	newdata[6] = g;
-	newdata[7] = h;
-	newdata[8] = i;
-	newdata[9] = j;
+      Matrix newdata(10, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
+	newdata.data[2] = c;
+	newdata.data[3] = d;
+	newdata.data[4] = e;
+	newdata.data[5] = f;
+	newdata.data[6] = g;
+	newdata.data[7] = h;
+	newdata.data[8] = i;
+	newdata.data[9] = j;
 	
-	Matrix temp = Matrix (newdata, 10, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     Matrix c (const double& a, const double& b, const double& c, 
 	      const double& d, const double& e, const double& f,
 	      const double& g, const double& h, const double& i,
 	      const double& j, const double& k){ 
-	double *newdata = new double[11];
-	newdata[0] = a;
-	newdata[1] = b;
-	newdata[2] = c;
-	newdata[3] = d;
-	newdata[4] = e;
-	newdata[5] = f;
-	newdata[6] = g;
-	newdata[7] = h;
-	newdata[8] = i;
-	newdata[9] = j;
-	newdata[10] = k;
+      Matrix newdata(11, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
+	newdata.data[2] = c;
+	newdata.data[3] = d;
+	newdata.data[4] = e;
+	newdata.data[5] = f;
+	newdata.data[6] = g;
+	newdata.data[7] = h;
+	newdata.data[8] = i;
+	newdata.data[9] = j;
+	newdata.data[10] = k;
 	
-	Matrix temp = Matrix (newdata, 11, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     Matrix c (const double& a, const double& b, const double& c, 
 	      const double& d, const double& e, const double& f,
 	      const double& g, const double& h, const double& i,
 	      const double& j, const double& k, const double& l){ 
-	double *newdata = new double[12];
-	newdata[0] = a;
-	newdata[1] = b;
-	newdata[2] = c;
-	newdata[3] = d;
-	newdata[4] = e;
-	newdata[5] = f;
-	newdata[6] = g;
-	newdata[7] = h;
-	newdata[8] = i;
-	newdata[9] = j;
-	newdata[10] = k;
-	newdata[11] = l;
+      Matrix newdata(12, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
+	newdata.data[2] = c;
+	newdata.data[3] = d;
+	newdata.data[4] = e;
+	newdata.data[5] = f;
+	newdata.data[6] = g;
+	newdata.data[7] = h;
+	newdata.data[8] = i;
+	newdata.data[9] = j;
+	newdata.data[10] = k;
+	newdata.data[11] = l;
 	
-	Matrix temp = Matrix (newdata, 12, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     Matrix c (const double& a, const double& b, const double& c, 
@@ -618,24 +577,22 @@ namespace SCYTHE {
 	      const double& g, const double& h, const double& i,
 	      const double& j, const double& k, const double& l,
 	      const double& m){ 
-	double *newdata = new double[13];
-	newdata[0] = a;
-	newdata[1] = b;
-	newdata[2] = c;
-	newdata[3] = d;
-	newdata[4] = e;
-	newdata[5] = f;
-	newdata[6] = g;
-	newdata[7] = h;
-	newdata[8] = i;
-	newdata[9] = j;
-	newdata[10] = k;
-	newdata[11] = l;
-	newdata[12] = m;
+      Matrix newdata(13, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
+	newdata.data[2] = c;
+	newdata.data[3] = d;
+	newdata.data[4] = e;
+	newdata.data[5] = f;
+	newdata.data[6] = g;
+	newdata.data[7] = h;
+	newdata.data[8] = i;
+	newdata.data[9] = j;
+	newdata.data[10] = k;
+	newdata.data[11] = l;
+	newdata.data[12] = m;
 	
-	Matrix temp = Matrix (newdata, 13, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     Matrix c (const double& a, const double& b, const double& c, 
@@ -643,25 +600,23 @@ namespace SCYTHE {
 	      const double& g, const double& h, const double& i,
 	      const double& j, const double& k, const double& l,
 	      const double& m, const double& n){ 
-	double *newdata = new double[14];
-	newdata[0] = a;
-	newdata[1] = b;
-	newdata[2] = c;
-	newdata[3] = d;
-	newdata[4] = e;
-	newdata[5] = f;
-	newdata[6] = g;
-	newdata[7] = h;
-	newdata[8] = i;
-	newdata[9] = j;
-	newdata[10] = k;
-	newdata[11] = l;
-	newdata[12] = m;
-	newdata[13] = n;
+      Matrix newdata(14, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
+	newdata.data[2] = c;
+	newdata.data[3] = d;
+	newdata.data[4] = e;
+	newdata.data[5] = f;
+	newdata.data[6] = g;
+	newdata.data[7] = h;
+	newdata.data[8] = i;
+	newdata.data[9] = j;
+	newdata.data[10] = k;
+	newdata.data[11] = l;
+	newdata.data[12] = m;
+	newdata.data[13] = n;
 	
-	Matrix temp = Matrix (newdata, 14, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     Matrix c (const double& a, const double& b, const double& c, 
@@ -669,26 +624,24 @@ namespace SCYTHE {
 	      const double& g, const double& h, const double& i,
 	      const double& j, const double& k, const double& l,
 	      const double& m, const double& n, const double& o){ 
-	double *newdata = new double[15];
-	newdata[0] = a;
-	newdata[1] = b;
-	newdata[2] = c;
-	newdata[3] = d;
-	newdata[4] = e;
-	newdata[5] = f;
-	newdata[6] = g;
-	newdata[7] = h;
-	newdata[8] = i;
-	newdata[9] = j;
-	newdata[10] = k;
-	newdata[11] = l;
-	newdata[12] = m;
-	newdata[13] = n;
-	newdata[14] = o;
+      Matrix newdata(15, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
+	newdata.data[2] = c;
+	newdata.data[3] = d;
+	newdata.data[4] = e;
+	newdata.data[5] = f;
+	newdata.data[6] = g;
+	newdata.data[7] = h;
+	newdata.data[8] = i;
+	newdata.data[9] = j;
+	newdata.data[10] = k;
+	newdata.data[11] = l;
+	newdata.data[12] = m;
+	newdata.data[13] = n;
+	newdata.data[14] = o;
 	
-	Matrix temp = Matrix (newdata, 15, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     Matrix c (const double& a, const double& b, const double& c, 
@@ -697,27 +650,25 @@ namespace SCYTHE {
 	      const double& j, const double& k, const double& l,
 	      const double& m, const double& n, const double& o,
 	      const double& p){ 
-	double *newdata = new double[16];
-	newdata[0] = a;
-	newdata[1] = b;
-	newdata[2] = c;
-	newdata[3] = d;
-	newdata[4] = e;
-	newdata[5] = f;
-	newdata[6] = g;
-	newdata[7] = h;
-	newdata[8] = i;
-	newdata[9] = j;
-	newdata[10] = k;
-	newdata[11] = l;
-	newdata[12] = m;
-	newdata[13] = n;
-	newdata[14] = o;
-	newdata[15] = p;
+      Matrix newdata(16, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
+	newdata.data[2] = c;
+	newdata.data[3] = d;
+	newdata.data[4] = e;
+	newdata.data[5] = f;
+	newdata.data[6] = g;
+	newdata.data[7] = h;
+	newdata.data[8] = i;
+	newdata.data[9] = j;
+	newdata.data[10] = k;
+	newdata.data[11] = l;
+	newdata.data[12] = m;
+	newdata.data[13] = n;
+	newdata.data[14] = o;
+	newdata.data[15] = p;
 	
-	Matrix temp = Matrix (newdata, 16, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     Matrix c (const double& a, const double& b, const double& c, 
@@ -726,28 +677,26 @@ namespace SCYTHE {
 	      const double& j, const double& k, const double& l,
 	      const double& m, const double& n, const double& o,
 	      const double& p, const double& q){ 
-	double *newdata = new double[17];
-	newdata[0] = a;
-	newdata[1] = b;
-	newdata[2] = c;
-	newdata[3] = d;
-	newdata[4] = e;
-	newdata[5] = f;
-	newdata[6] = g;
-	newdata[7] = h;
-	newdata[8] = i;
-	newdata[9] = j;
-	newdata[10] = k;
-	newdata[11] = l;
-	newdata[12] = m;
-	newdata[13] = n;
-	newdata[14] = o;
-	newdata[15] = p;
-	newdata[16] = q;
+      Matrix newdata(17, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
+	newdata.data[2] = c;
+	newdata.data[3] = d;
+	newdata.data[4] = e;
+	newdata.data[5] = f;
+	newdata.data[6] = g;
+	newdata.data[7] = h;
+	newdata.data[8] = i;
+	newdata.data[9] = j;
+	newdata.data[10] = k;
+	newdata.data[11] = l;
+	newdata.data[12] = m;
+	newdata.data[13] = n;
+	newdata.data[14] = o;
+	newdata.data[15] = p;
+	newdata.data[16] = q;
 	
-	Matrix temp = Matrix (newdata, 17, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     Matrix c (const double& a, const double& b, const double& c, 
@@ -756,29 +705,27 @@ namespace SCYTHE {
 	      const double& j, const double& k, const double& l,
 	      const double& m, const double& n, const double& o,
 	      const double& p, const double& q, const double& r){ 
-	double *newdata = new double[18];
-	newdata[0] = a;
-	newdata[1] = b;
-	newdata[2] = c;
-	newdata[3] = d;
-	newdata[4] = e;
-	newdata[5] = f;
-	newdata[6] = g;
-	newdata[7] = h;
-	newdata[8] = i;
-	newdata[9] = j;
-	newdata[10] = k;
-	newdata[11] = l;
-	newdata[12] = m;
-	newdata[13] = n;
-	newdata[14] = o;
-	newdata[15] = p;
-	newdata[16] = q;
-	newdata[17] = r;
+      Matrix newdata(18, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
+	newdata.data[2] = c;
+	newdata.data[3] = d;
+	newdata.data[4] = e;
+	newdata.data[5] = f;
+	newdata.data[6] = g;
+	newdata.data[7] = h;
+	newdata.data[8] = i;
+	newdata.data[9] = j;
+	newdata.data[10] = k;
+	newdata.data[11] = l;
+	newdata.data[12] = m;
+	newdata.data[13] = n;
+	newdata.data[14] = o;
+	newdata.data[15] = p;
+	newdata.data[16] = q;
+	newdata.data[17] = r;
 	
-	Matrix temp = Matrix (newdata, 18, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     Matrix c (const double& a, const double& b, const double& c, 
@@ -788,30 +735,28 @@ namespace SCYTHE {
 	      const double& m, const double& n, const double& o,
 	      const double& p, const double& q, const double& r,
 	      const double& s){ 
-	double *newdata = new double[19];
-	newdata[0] = a;
-	newdata[1] = b;
-	newdata[2] = c;
-	newdata[3] = d;
-	newdata[4] = e;
-	newdata[5] = f;
-	newdata[6] = g;
-	newdata[7] = h;
-	newdata[8] = i;
-	newdata[9] = j;
-	newdata[10] = k;
-	newdata[11] = l;
-	newdata[12] = m;
-	newdata[13] = n;
-	newdata[14] = o;
-	newdata[15] = p;
-	newdata[16] = q;
-	newdata[17] = r;
-	newdata[18] = s;
+      Matrix newdata(19, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
+	newdata.data[2] = c;
+	newdata.data[3] = d;
+	newdata.data[4] = e;
+	newdata.data[5] = f;
+	newdata.data[6] = g;
+	newdata.data[7] = h;
+	newdata.data[8] = i;
+	newdata.data[9] = j;
+	newdata.data[10] = k;
+	newdata.data[11] = l;
+	newdata.data[12] = m;
+	newdata.data[13] = n;
+	newdata.data[14] = o;
+	newdata.data[15] = p;
+	newdata.data[16] = q;
+	newdata.data[17] = r;
+	newdata.data[18] = s;
 	
-	Matrix temp = Matrix (newdata, 19, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     Matrix c (const double& a, const double& b, const double& c, 
@@ -821,31 +766,29 @@ namespace SCYTHE {
 	      const double& m, const double& n, const double& o,
 	      const double& p, const double& q, const double& r,
 	      const double& s, const double& t){ 
-	double *newdata = new double[20];
-	newdata[0] = a;
-	newdata[1] = b;
-	newdata[2] = c;
-	newdata[3] = d;
-	newdata[4] = e;
-	newdata[5] = f;
-	newdata[6] = g;
-	newdata[7] = h;
-	newdata[8] = i;
-	newdata[9] = j;
-	newdata[10] = k;
-	newdata[11] = l;
-	newdata[12] = m;
-	newdata[13] = n;
-	newdata[14] = o;
-	newdata[15] = p;
-	newdata[16] = q;
-	newdata[17] = r;
-	newdata[18] = s;
-	newdata[19] = t;
+      Matrix newdata(20, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
+	newdata.data[2] = c;
+	newdata.data[3] = d;
+	newdata.data[4] = e;
+	newdata.data[5] = f;
+	newdata.data[6] = g;
+	newdata.data[7] = h;
+	newdata.data[8] = i;
+	newdata.data[9] = j;
+	newdata.data[10] = k;
+	newdata.data[11] = l;
+	newdata.data[12] = m;
+	newdata.data[13] = n;
+	newdata.data[14] = o;
+	newdata.data[15] = p;
+	newdata.data[16] = q;
+	newdata.data[17] = r;
+	newdata.data[18] = s;
+	newdata.data[19] = t;
 	
-	Matrix temp = Matrix (newdata, 20, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     Matrix c (const double& a, const double& b, const double& c, 
@@ -855,32 +798,30 @@ namespace SCYTHE {
 	      const double& m, const double& n, const double& o,
 	      const double& p, const double& q, const double& r,
 	      const double& s, const double& t, const double& u){ 
-	double *newdata = new double[21];
-	newdata[0] = a;
-	newdata[1] = b;
-	newdata[2] = c;
-	newdata[3] = d;
-	newdata[4] = e;
-	newdata[5] = f;
-	newdata[6] = g;
-	newdata[7] = h;
-	newdata[8] = i;
-	newdata[9] = j;
-	newdata[10] = k;
-	newdata[11] = l;
-	newdata[12] = m;
-	newdata[13] = n;
-	newdata[14] = o;
-	newdata[15] = p;
-	newdata[16] = q;
-	newdata[17] = r;
-	newdata[18] = s;
-	newdata[19] = t;
-	newdata[20] = u;
+      Matrix newdata(21, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
+	newdata.data[2] = c;
+	newdata.data[3] = d;
+	newdata.data[4] = e;
+	newdata.data[5] = f;
+	newdata.data[6] = g;
+	newdata.data[7] = h;
+	newdata.data[8] = i;
+	newdata.data[9] = j;
+	newdata.data[10] = k;
+	newdata.data[11] = l;
+	newdata.data[12] = m;
+	newdata.data[13] = n;
+	newdata.data[14] = o;
+	newdata.data[15] = p;
+	newdata.data[16] = q;
+	newdata.data[17] = r;
+	newdata.data[18] = s;
+	newdata.data[19] = t;
+	newdata.data[20] = u;
 	
-	Matrix temp = Matrix (newdata, 21, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     Matrix c (const double& a, const double& b, const double& c, 
@@ -891,33 +832,31 @@ namespace SCYTHE {
 	      const double& p, const double& q, const double& r,
 	      const double& s, const double& t, const double& u,
 	      const double& v){ 
-	double *newdata = new double[22];
-	newdata[0] = a;
-	newdata[1] = b;
-	newdata[2] = c;
-	newdata[3] = d;
-	newdata[4] = e;
-	newdata[5] = f;
-	newdata[6] = g;
-	newdata[7] = h;
-	newdata[8] = i;
-	newdata[9] = j;
-	newdata[10] = k;
-	newdata[11] = l;
-	newdata[12] = m;
-	newdata[13] = n;
-	newdata[14] = o;
-	newdata[15] = p;
-	newdata[16] = q;
-	newdata[17] = r;
-	newdata[18] = s;
-	newdata[19] = t;
-	newdata[20] = u;
-	newdata[21] = v;
+      Matrix newdata(22, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
+	newdata.data[2] = c;
+	newdata.data[3] = d;
+	newdata.data[4] = e;
+	newdata.data[5] = f;
+	newdata.data[6] = g;
+	newdata.data[7] = h;
+	newdata.data[8] = i;
+	newdata.data[9] = j;
+	newdata.data[10] = k;
+	newdata.data[11] = l;
+	newdata.data[12] = m;
+	newdata.data[13] = n;
+	newdata.data[14] = o;
+	newdata.data[15] = p;
+	newdata.data[16] = q;
+	newdata.data[17] = r;
+	newdata.data[18] = s;
+	newdata.data[19] = t;
+	newdata.data[20] = u;
+	newdata.data[21] = v;
 	
-	Matrix temp = Matrix (newdata, 22, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     Matrix c (const double& a, const double& b, const double& c, 
@@ -928,34 +867,32 @@ namespace SCYTHE {
 	      const double& p, const double& q, const double& r,
 	      const double& s, const double& t, const double& u,
 	      const double& v, const double& w){ 
-	double *newdata = new double[23];
-	newdata[0] = a;
-	newdata[1] = b;
-	newdata[2] = c;
-	newdata[3] = d;
-	newdata[4] = e;
-	newdata[5] = f;
-	newdata[6] = g;
-	newdata[7] = h;
-	newdata[8] = i;
-	newdata[9] = j;
-	newdata[10] = k;
-	newdata[11] = l;
-	newdata[12] = m;
-	newdata[13] = n;
-	newdata[14] = o;
-	newdata[15] = p;
-	newdata[16] = q;
-	newdata[17] = r;
-	newdata[18] = s;
-	newdata[19] = t;
-	newdata[20] = u;
-	newdata[21] = v;
-	newdata[22] = w;
+      Matrix newdata(23, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
+	newdata.data[2] = c;
+	newdata.data[3] = d;
+	newdata.data[4] = e;
+	newdata.data[5] = f;
+	newdata.data[6] = g;
+	newdata.data[7] = h;
+	newdata.data[8] = i;
+	newdata.data[9] = j;
+	newdata.data[10] = k;
+	newdata.data[11] = l;
+	newdata.data[12] = m;
+	newdata.data[13] = n;
+	newdata.data[14] = o;
+	newdata.data[15] = p;
+	newdata.data[16] = q;
+	newdata.data[17] = r;
+	newdata.data[18] = s;
+	newdata.data[19] = t;
+	newdata.data[20] = u;
+	newdata.data[21] = v;
+	newdata.data[22] = w;
 	
-	Matrix temp = Matrix (newdata, 23, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     Matrix c (const double& a, const double& b, const double& c, 
@@ -966,35 +903,33 @@ namespace SCYTHE {
 	      const double& p, const double& q, const double& r,
 	      const double& s, const double& t, const double& u,
 	      const double& v, const double& w, const double& x){ 
-	double *newdata = new double[24];
-	newdata[0] = a;
-	newdata[1] = b;
-	newdata[2] = c;
-	newdata[3] = d;
-	newdata[4] = e;
-	newdata[5] = f;
-	newdata[6] = g;
-	newdata[7] = h;
-	newdata[8] = i;
-	newdata[9] = j;
-	newdata[10] = k;
-	newdata[11] = l;
-	newdata[12] = m;
-	newdata[13] = n;
-	newdata[14] = o;
-	newdata[15] = p;
-	newdata[16] = q;
-	newdata[17] = r;
-	newdata[18] = s;
-	newdata[19] = t;
-	newdata[20] = u;
-	newdata[21] = v;
-	newdata[22] = w;
-	newdata[23] = x;
+      Matrix newdata(24, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
+	newdata.data[2] = c;
+	newdata.data[3] = d;
+	newdata.data[4] = e;
+	newdata.data[5] = f;
+	newdata.data[6] = g;
+	newdata.data[7] = h;
+	newdata.data[8] = i;
+	newdata.data[9] = j;
+	newdata.data[10] = k;
+	newdata.data[11] = l;
+	newdata.data[12] = m;
+	newdata.data[13] = n;
+	newdata.data[14] = o;
+	newdata.data[15] = p;
+	newdata.data[16] = q;
+	newdata.data[17] = r;
+	newdata.data[18] = s;
+	newdata.data[19] = t;
+	newdata.data[20] = u;
+	newdata.data[21] = v;
+	newdata.data[22] = w;
+	newdata.data[23] = x;
 	
-	Matrix temp = Matrix (newdata, 24, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     Matrix c (const double& a, const double& b, const double& c, 
@@ -1006,36 +941,34 @@ namespace SCYTHE {
 	      const double& s, const double& t, const double& u,
 	      const double& v, const double& w, const double& x,
 	      const double& y){ 
-	double *newdata = new double[25];
-	newdata[0] = a;
-	newdata[1] = b;
-	newdata[2] = c;
-	newdata[3] = d;
-	newdata[4] = e;
-	newdata[5] = f;
-	newdata[6] = g;
-	newdata[7] = h;
-	newdata[8] = i;
-	newdata[9] = j;
-	newdata[10] = k;
-	newdata[11] = l;
-	newdata[12] = m;
-	newdata[13] = n;
-	newdata[14] = o;
-	newdata[15] = p;
-	newdata[16] = q;
-	newdata[17] = r;
-	newdata[18] = s;
-	newdata[19] = t;
-	newdata[20] = u;
-	newdata[21] = v;
-	newdata[22] = w;
-	newdata[23] = x;
-	newdata[24] = y;
+      Matrix newdata(25, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
+	newdata.data[2] = c;
+	newdata.data[3] = d;
+	newdata.data[4] = e;
+	newdata.data[5] = f;
+	newdata.data[6] = g;
+	newdata.data[7] = h;
+	newdata.data[8] = i;
+	newdata.data[9] = j;
+	newdata.data[10] = k;
+	newdata.data[11] = l;
+	newdata.data[12] = m;
+	newdata.data[13] = n;
+	newdata.data[14] = o;
+	newdata.data[15] = p;
+	newdata.data[16] = q;
+	newdata.data[17] = r;
+	newdata.data[18] = s;
+	newdata.data[19] = t;
+	newdata.data[20] = u;
+	newdata.data[21] = v;
+	newdata.data[22] = w;
+	newdata.data[23] = x;
+	newdata.data[24] = y;
 	
-	Matrix temp = Matrix (newdata, 25, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     Matrix c (const double& a, const double& b, const double& c, 
@@ -1047,37 +980,35 @@ namespace SCYTHE {
 	      const double& s, const double& t, const double& u,
 	      const double& v, const double& w, const double& x,
 	      const double& y, const double& z){ 
-	double *newdata = new double[26];
-	newdata[0] = a;
-	newdata[1] = b;
-	newdata[2] = c;
-	newdata[3] = d;
-	newdata[4] = e;
-	newdata[5] = f;
-	newdata[6] = g;
-	newdata[7] = h;
-	newdata[8] = i;
-	newdata[9] = j;
-	newdata[10] = k;
-	newdata[11] = l;
-	newdata[12] = m;
-	newdata[13] = n;
-	newdata[14] = o;
-	newdata[15] = p;
-	newdata[16] = q;
-	newdata[17] = r;
-	newdata[18] = s;
-	newdata[19] = t;
-	newdata[20] = u;
-	newdata[21] = v;
-	newdata[22] = w;
-	newdata[23] = x;
-	newdata[24] = y;
-	newdata[25] = z;
+      Matrix newdata(26, 1);
+	newdata.data[0] = a;
+	newdata.data[1] = b;
+	newdata.data[2] = c;
+	newdata.data[3] = d;
+	newdata.data[4] = e;
+	newdata.data[5] = f;
+	newdata.data[6] = g;
+	newdata.data[7] = h;
+	newdata.data[8] = i;
+	newdata.data[9] = j;
+	newdata.data[10] = k;
+	newdata.data[11] = l;
+	newdata.data[12] = m;
+	newdata.data[13] = n;
+	newdata.data[14] = o;
+	newdata.data[15] = p;
+	newdata.data[16] = q;
+	newdata.data[17] = r;
+	newdata.data[18] = s;
+	newdata.data[19] = t;
+	newdata.data[20] = u;
+	newdata.data[21] = v;
+	newdata.data[22] = w;
+	newdata.data[23] = x;
+	newdata.data[24] = y;
+	newdata.data[25] = z;
 	
-	Matrix temp = Matrix (newdata, 26, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     
@@ -1091,35 +1022,19 @@ namespace SCYTHE {
  * This Matrix will be transposed.
  * \return A Matrix object, the transpose of the input Matrix object.
  */
-#ifdef __NATE__
-  Matrix t (const Matrix & old_matrix)
+// #ifdef __NATE__
+Matrix t (const Matrix & old_matrix)
 {
-    int newrowsize = old_matrix.colsize;
-    int newcolsize = old_matrix.rowsize;
-    Matrix temp(newrowsize, newcolsize);
-    for (int i = 0; i < newcolsize; ++i) {
-	    for (int j = 0; j < newrowsize; ++j) {
-        temp.data[i + newcolsize * j] = old_matrix.data[j + newrowsize * i];
-	    }
+  int newrowsize = old_matrix.colsize;
+  int newcolsize = old_matrix.rowsize;
+  Matrix temp(newrowsize, newcolsize);
+  for (int i = 0; i < newcolsize; ++i) {
+    for (int j = 0; j < newrowsize; ++j) {
+      temp.data[i + newcolsize * j] = old_matrix.data[j + newrowsize * i];
     }
-    return temp;
+  }
+  return temp;
 }
-#else
-    Matrix t (const Matrix & old_matrix)
-    {
-	int newrowsize = old_matrix.colsize;
-	int newcolsize = old_matrix.rowsize;
-	double *newdata = new double[old_matrix.size];
-	for (int i = 0; i < newcolsize; ++i) {
-	    for (int j = 0; j < newrowsize; ++j) {
-		newdata[i + newcolsize * j] = old_matrix.data[j + newrowsize * i];
-	    }
-	}
-	Matrix temp = Matrix (newdata, newrowsize, newcolsize);
-	delete[]newdata;
-	return temp;
-    }
-#endif
     
 /*!
  * \brief Creates a Matrix of Ones
@@ -1136,14 +1051,12 @@ namespace SCYTHE {
 		 << endl;
 	    exit (18);
 	}
-	double *newdata = new double[rows * cols];
+	Matrix newdata(rows, cols);
 	int size = rows * cols;
 	for (int i = 0; i < size; ++i) {
-	    newdata[i] = 1.0;
+	    newdata.data[i] = 1.0;
 	}
-	Matrix temp = Matrix (newdata, rows, cols);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
 /*!
@@ -1154,36 +1067,17 @@ namespace SCYTHE {
  * \param cols a constant int reflecting the number of columns in the Matrix.
  * \return a new Matrix filled with 1's.
  */
-#ifdef __NATE__
+// #ifdef __NATE__
 Matrix zeros (const int& rows, const int& cols)
 {
-	if (rows < 1 || cols < 1) {
+  if (rows < 1 || cols < 1) {
     cerr << "Error 0018: improper row or column dimension in ones()"
-    << endl;
+	 << endl;
     exit (18);
-	}
-	Matrix temp(rows, cols); // ctor zeros data
+  }
+  Matrix temp(rows, cols); // ctor zeros data
   return temp;
 } // end of zeros
-#else
-    Matrix zeros (const int& rows, const int& cols)
-    {
-	if (rows < 1 || cols < 1) {
-	    cerr << "Error 0018: improper row or column dimension in ones()"
-		 << endl;
-	    exit (18);
-	}
-	double *newdata = new double[rows * cols];
-	int size = rows * cols;
-	for (int i = 0; i < size; ++i) {
-	    newdata[i] = 0.0;
-	}
-	Matrix temp = Matrix (newdata, rows, cols);
-	delete[]newdata;
-	return temp;
-    } // end of zeros
-#endif
-    
     
 //  FUNCTION: Eye - creates an Identity Matrix of size k x k
 /*! 
@@ -1196,7 +1090,7 @@ Matrix zeros (const int& rows, const int& cols)
  */
     Matrix eye (const int& k)
     {
-	double *newdata = new double[k * k];
+      Matrix newdata(k, k);
 	double hold;
 	for (int i = 0; i < k; ++i) {
 	    for (int j = 0; j < k; ++j) {
@@ -1204,12 +1098,10 @@ Matrix zeros (const int& rows, const int& cols)
 		    hold = 1.0;
 		else
 		    hold = 0.0;
-		newdata[k * i + j] = hold;
+		newdata.data[k * i + j] = hold;
 	    }
 	}
-	Matrix temp = Matrix (newdata, k, k);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
 /*! 
@@ -1225,15 +1117,13 @@ Matrix zeros (const int& rows, const int& cols)
  */
     Matrix seqa (const double& start, const double& incr, const int& size)
     {
-	double *newdata = new double[size];
+      Matrix newdata(size, 1);
 	double val = start;
 	for (int i = 0; i < size; ++i) {
-	    newdata[i] = val;
+	    newdata.data[i] = val;
 	    val += incr;
 	}
-	Matrix temp = Matrix (newdata, size, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     
@@ -1250,21 +1140,19 @@ Matrix zeros (const int& rows, const int& cols)
 	int i, j, h;
 	double v;
 	
-	double *newdata = new double[A.size];
+	Matrix newdata(A.rowsize, A.colsize);
 	for (i = 0; i<A.size; ++i)
-	    newdata[i] = A.data[i];
+	    newdata.data[i] = A.data[i];
 	for (h = 1; h <= A.size/9; h = 3*h+1);
 	for (; h > 0; h /= 3)
 	    for (i = h+1; i <= A.size; i += 1){
-		v = newdata[i-1]; 
+		v = newdata.data[i-1]; 
 		j = i;
-		while (j>h && newdata[j-h-1] > v)
-		{newdata[j-1] = newdata[j-h-1]; j -= h;}
-		newdata[j-1] = v;
+		while (j>h && newdata.data[j-h-1] > v)
+		{newdata.data[j-1] = newdata.data[j-h-1]; j -= h;}
+		newdata.data[j-1] = v;
 	    }
-	Matrix temp = Matrix (newdata, A.rowsize, A.colsize);
-	delete[]newdata;
-	return temp;     
+	return newdata;     
     }
     
     
@@ -1281,603 +1169,27 @@ Matrix zeros (const int& rows, const int& cols)
 	int i, j, h;
 	double v;
 	
-	double *newdata = new double[A.size];
+	Matrix newdata(A.rowsize, A.colsize);
 	for (i = 0; i<A.size; ++i)
-	    newdata[i] = A.data[i];
+	    newdata.data[i] = A.data[i];
 	
 	for (int colindex=0; colindex<A.colsize; ++colindex){
 	    
 	    for (h = 1; h <= A.rowsize/9; h = 3*h+1);
 	    for (; h > 0; h /= 3)
 		for (i = h+1; i <= A.rowsize; i += 1){
-		    v = newdata[(i-1)*A.colsize + colindex]; 
+		    v = newdata.data[(i-1)*A.colsize + colindex]; 
 		    j = i;
-		    while (j>h && newdata[(j-h-1)*A.colsize + colindex] > v){
-			newdata[(j-1)*A.colsize + colindex] = 
-			    newdata[(j-h-1)*A.colsize + colindex]; 
+		    while (j>h && newdata.data[(j-h-1)*A.colsize + colindex] > v){
+			newdata.data[(j-1)*A.colsize + colindex] = 
+			    newdata.data[(j-h-1)*A.colsize + colindex]; 
 			j -= h;
 		    }
-		    newdata[(j-1)*A.colsize + colindex] = v;
+		    newdata.data[(j-1)*A.colsize + colindex] = v;
 		}
 	    
 	}
-	Matrix temp = Matrix (newdata, A.rowsize, A.colsize);
-	delete[]newdata;
-	return temp;     
-    }
-    
-    
-/*! 
- * \brief Cholesky Decomposition
- *
- * Cholesky Decomposition of a Symmetric Positive Definite Matrix. 
- * Given an input Matrix \a A computes \a L where \a L*L' \a = \a A.  
- * This function returns the lower triangular matrix \a L.  
- * NOTE:  This function does not check for symmetry.
- * \param a A constant reference to a Matrix.
- * \return the new Cholesky Decomposition of the input Matrix 
- * (the lower triangular Matrix \a L).
- */
-    Matrix cholesky (const Matrix & A){
-	
-	if (A.rowsize == A.colsize){
-	    register double *newdata = new double[A.rowsize * A.colsize];
-	    for (int i = 0; i < A.rowsize; ++i){
-		for (int j = i; j < A.colsize; ++j){
-		    register double h = A.data[A.colsize * i + j];
-		    for (int k = 0; k <= i - 1; ++k){
-			h -= newdata[A.colsize * i + k] * newdata[A.colsize * j + k];
-		    }
-		    if (i == j){
-			if (h <= 0){
-			    cerr << "ERROR 0019: input Matrix not positive definite in SCYTHE::cholesky()\n"
-				 << "Cholesky decomposition failed. Exiting program. "
-				 << endl;
-			    exit (19);
-			}
-			newdata[A.colsize * i + i] = ::sqrt (h);
-		    } else {
-			newdata[A.colsize * j + i] = (1.0 / newdata[A.colsize * i + i])*h;
-			newdata[A.colsize * i + j] = 0.0;
-		    }
-		}
-	    }
-	    
-	    Matrix temp = Matrix (newdata, A.rowsize, A.colsize);
-	    delete[]newdata;
-	    return temp;
-	} else {
-	    cerr << "ERROR 0020: input Matrix not square in SCYTHE::cholesky() \n" 
-		 << "Cholesky decomposition failed. Exiting program. "
-		 << endl;
-	    exit (20);
-	}
-    }
-    
-/*! 
- * \brief Solves \a A \a x = \a b for x via back-substitution 
- * using Cholesky Decomposition
- *
- * Solves \a A \a x = \a b for x via back-substitution using 
- * Cholesky Decomposition.  \a A must be symmetric and positive definite.
- * \remarks The solution is trivial because of the following identity.
- * A*x = (M*M')*x = M*(M'*x) = b.
- * Function works by successively solving two triangular systems:
- * M*y = b for y
- * and then
- * M'*x = y for x.
- * \param A a constant reference to the Matrix \e A in the equality 
- * \a A \a x = \a b.
- * \param b a constant reference to the Matrix \e b in the equality
- * \a A \a x = \a b.
- * \return a new Matrix (vector) \a x from the equality
- * \a A \a x = \a b.
- */
-    Matrix chol_solve (const Matrix & A, const Matrix & b)
-    {
-	// NOTE: do not need to check for squareness of A or postive definiteness
-	// of A since this is already being done in the cholesky() call below.
-	
-	if ((b.colsize == 1) && (A.rowsize == b.rowsize) && 
-	    (A.rowsize == A.colsize)){
-	    
-	    register Matrix M = cholesky (A);
-	    register double holder;
-	    register double *y = new double[A.rowsize];
-	    register double *x = new double[A.rowsize];
-	    
-	    // solve M*y = b
-	    for (int i = 0; i < A.rowsize; ++i) {
-		holder = 0.0;
-		for (int j = 0; j < i; ++j) {
-		    holder += M.data[i * M.colsize + j] * y[j];
-		}
-		y[i] = (1.0 / M.data[i * M.colsize + i]) * (b.data[i] - holder);
-	    }
-	    
-	    // solve M'*x = y
-	    for (int i = A.rowsize - 1; i >= 0; --i) {
-		holder = 0.0;
-		for (int j = i + 1; j < A.rowsize; ++j) {
-		    holder += M.data[j * M.colsize + i] * x[j];
-		}
-		x[i] = (1.0 / M.data[i * M.colsize + i]) * (y[i] - holder);
-	    }    
-	    
-	    Matrix temp = Matrix (x, A.rowsize, 1);
-	    delete[]y;
-	    delete[]x;
-	    return temp;
-	} else {
-	    cerr <<"ERROR 0021: Inputs not proper dimension in SCYTHE::chol_solve()" 
-		 << endl;
-	    exit(21);
-	}
-    }
-    
-/*! 
- * \brief Solves \a A \a x = \a b for \a x via back-substitution 
- * using Cholesky Decomposition
- *
- * Solves \a A \a x = \a b for \a x via back-substitution using 
- * Cholesky Decomposition.  \a A must be symmetric and positive definite.
- * PLEASE NOTE:  THIS FUNCTION IS OVERLOADED.
- * \remarks The solution is trivial because of the following identity.
- * A*x = (M*M')*x = M*(M'*x) = b.
- * Function works by successively solving two triangular systems:
- * M*y = b for y
- * and then
- * M'*x = y for x.
- \param A a constant reference to the Matrix \a A in the equality
- * \a A \a x = \a b.
- \param b a constant reference to the Matrix \a b in the equality
- * \a A \a x = \a b.
- \param M a constant reference to the Matrix \a M.  See above remarks.
- \return a new Matrix (vector) \e x from the equality
- * \a A \a x = \a b.
- */
-    Matrix chol_solve (const Matrix & A, const Matrix & b, const Matrix & M)
-    {
-	if ((b.colsize == 1) && (A.rowsize == b.rowsize) && 
-	    (A.rowsize == M.rowsize) && (A.rowsize == A.colsize) &&
-	    (M.rowsize == M.colsize)){
-	    
-	    register double *y = new double[A.rowsize];
-	    register double *x = new double[A.rowsize];
-	    
-	    // solve M*y = b
-	    for (int i = 0; i < A.rowsize; ++i) {
-		double holder = 0.0;
-		for (int j = 0; j < i; ++j) {
-		    holder += M.data[i * M.colsize + j] * y[j];
-		}
-		y[i] = (1.0 / M.data[i * M.colsize + i]) * (b.data[i] - holder);
-	    }
-	    
-	    // solve M'*x = y
-	    for (int i = A.rowsize - 1; i >= 0; --i) {
-		double holder = 0.0;
-		for (int j = i + 1; j < A.rowsize; ++j) {
-		    holder += M.data[j * M.colsize + i] * x[j];
-		}
-		x[i] = (1.0 / M.data[i * M.colsize + i]) * (y[i] - holder);
-	    }
-	    
-	    Matrix temp = Matrix (x, A.rowsize, 1);
-	    delete[]y;
-	    delete[]x;
-	    return temp;
-	} else{
-	    cerr << "ERROR 0022: inputs not proper dimension in SCYTHE::chol_solve()" 
-		 << endl;
-	    exit(22);
-	}
-    }
-    
-    
-/*! 
- * \brief Calculates the inverse of a Symmetric Positive Definite Matrix 
- *
- * Calculates the inverse of a Symmetric Positive Definite Matrix.  
- * PLEASE NOTE:  THIS FUNCTION IS OVERLOADED.
- * \param A a constant reference to the Matrix to be inverted.
- * \return a new inverted Matrix.
- */
-    Matrix invpd (const Matrix & A)
-    {
-	// SYMMETRY OF A *IS NOT* CHECKED
-	register Matrix b = Matrix (A.rowsize, 1);  
-	register Matrix Ainv = Matrix(A.rowsize, A.colsize);
-	
-	// the following block is equivalent to:
-	// register Matrix M = cholesky(A);
-	if (A.rowsize != A.colsize){
-	    cerr << "ERROR 0023: Input Matrix not square in SCYTHE::invpd()\n"
-		 << "Cholesky decomposition failed. Exiting program. " 
-		 << endl;
-	    exit (23);
-	}    
-	register double *newdata = new double[A.rowsize * A.colsize];
-	
-	for (int i = 0; i < A.rowsize; ++i) {
-	    for (int j = i; j < A.colsize; ++j) {
-		register double holder = A.data[A.colsize * i + j];
-		for (int k = 0; k <= i - 1; ++k) {
-		    holder -= newdata[A.colsize * i + k] * newdata[A.colsize * j + k];
-		}
-		if (i == j) {
-		    if (holder <= 0) {
-			cerr << 
-			    "ERROR 0024: Input Matrix not positive definite in SCYTHE::invpd()\n"
-			     << "Cholesky decomposition failed. Exiting program. " 
-			     << endl;
-			exit (24);
-		    }
-		    newdata[A.colsize * i + i] = ::sqrt (holder);
-		} else{
-		    newdata[A.colsize * j + i] = (1.0 / newdata[A.colsize * i + i]) * holder;
-		    newdata[A.colsize * i + j] = 0.0;
-		}
-	    }
-	}    
-	register Matrix M = Matrix (newdata, A.rowsize, A.colsize);
-	delete [] newdata;
-	// end register Matrix M = cholesky(A); block 
-	
-	// following 2 lines are actually part of the 
-	// cholesky solve block below
-	register double *y = new double[A.rowsize];
-	register double *x = new double[A.rowsize];
-	
-	for (int j = 0; j < A.rowsize; ++j) {
-	    b.data[j] = 1.0;
-	    // The following block is equivalent to: 
-	    // Matrix hold = chol_solve (A, b, M);
-	    
-	    // solve M*y = b
-	    for (int i = 0; i < A.rowsize; ++i) {
-		double holder = 0.0;
-		for (int k = 0; k < i; ++k) {
-		    holder += M.data[i * M.colsize + k] * y[k];
-		}
-		y[i] = (1.0 / M.data[i * M.colsize + i]) * (b.data[i] - holder);
-	    }
-	    
-	    // solve M'*x = y 
-	    for (int i = A.rowsize - 1; i >= 0; --i) {
-		double holder = 0.0;
-		for (int k = i + 1; k < A.rowsize; ++k) {
-		    holder += M.data[k * M.colsize + i] * x[k];
-		}
-		x[i] = (1.0 / M.data[i * M.colsize + i]) * (y[i] - holder);
-	    }
-	    Matrix hold = Matrix (x, A.rowsize, 1);      
-	    // end Matrix hold = chol_solve(A, b, M); block
-	    
-	    b.data[j] = 0.0;
-	    for (int k=0; k<A.rowsize; ++k)
-		Ainv(k,j) = hold[k];
-	}
-	
-	delete[]y;
-	delete[]x;
-	
-	return Ainv;
-    }
-    
-/*!
- * \brief Calculates the inverse of a Symmetric Positive Definite Matrix 
- *
- * Calculates the inverse of a Symmetric Positive Definite Matrix.  
- * PLEASE NOTE:  THIS FUNCTION IS OVERLOADED.  
- * SYMMETRY OF \a A IS NOT CHECKED.
- * \param A a constant reference to the Matrix to be inverted.
- * \param M a constant reference to a Matrix from the Cholesky 
- * Decomposition of Matrix /a A.
- * \return a new inverted Matrix.
- */
-    Matrix invpd (const Matrix & A, const Matrix & M)
-    {
-	
-	register Matrix b = Matrix (A.rowsize, 1); 
-	register Matrix Ainv = Matrix(A.rowsize, A.rowsize);    
-	
-	// following 2 lines are actually part of the 
-	// cholesky solve block below
-	register double *y = new double[A.rowsize];
-	register double *x = new double[A.rowsize];
-	
-	for (int j = 0; j < A.rowsize; ++j) {
-	    b.data[j] = 1.0;
-	    
-	    // The following block is equivalent to: 
-	    // Matrix hold = chol_solve (A, b, M);
-	    
-	    // solve M*y = b
-	    for (int i = 0; i < A.rowsize; ++i) {
-		double holder = 0.0;
-		for (int k = 0; k < i; ++k) {
-		    holder += M.data[i * M.colsize + k] * y[k];
-		}
-		y[i] = (1.0 / M.data[i * M.colsize + i]) * (b.data[i] - holder);
-	    }
-	    
-	    // solve M'*x = y 
-	    for (int i = A.rowsize - 1; i >= 0; --i) {
-		double holder = 0.0;
-		for (int k = i + 1; k < A.rowsize; ++k) {
-		    holder += M.data[k * M.colsize + i] * x[k];
-		}
-		x[i] = (1.0 / M.data[i * M.colsize + i]) * (y[i] - holder);
-	    }
-	    Matrix hold = Matrix (x, A.rowsize, 1);      
-	    // end Matrix hold = chol_solve(A, b, M); block
-	    
-	    b.data[j] = 0.0;
-	    for (int k=0; k<A.rowsize; ++k)
-		Ainv(k,j) = hold[k];
-	}
-	
-	delete[]y;
-	delete[]x;
-	
-	return Ainv;
-    }
-    
-//  This code is based on  Algorithm 3.4.1 of Golub and Van Loan 
-//  3rd edition, 1996. Major difference is in how the output is 
-//  structured. 
-    
-/*! 
- * \brief Calculates the LU Decomposition of a square Matrix 
- *
- * Calculates the LU Decomposition of a square Matrix.
- * \remarks This function solves \a P\a A \a = \a L \a U
- * for \a L and \a U where \a P is a permutation Matrix and \a A 
- * is the input Matrix also returns the permutation vector as 
- * defined in Golub and Van Loan.
- * \param AA a constant reference to the Matrix \a A (see above).
- * \param L a reference to the Matrix \a L (see above).
- * \param U a reference to the Matrix \a U (see above).
- * \param perm_vec a references to the Matrix \a P (see above).
- * \return an integer ( 0 if successful, otherwise it returns 
- * an error number).
- */
-    int lu_decomp(const Matrix& AA, Matrix& L, Matrix& U, Matrix& perm_vec){
-	Matrix A = AA;
-	
-	if (A.rowsize != A.colsize) {
-	    cerr << "ERROR 0025: Matrix A not square in SCYTHE::lu_decomp()" 
-		 << endl;
-	    exit(25);
-	}
-	
-	if (A.rowsize == 1) {
-	    L = ones(1,1);
-	    U = AA;
-	    perm_vec = Matrix(1,1);
-	    return 0;
-	}
-	
-	L = U = Matrix(A.rowsize, A.rowsize);
-	perm_vec = Matrix(A.rowsize-1,1);
-	
-	for (int k=0; k<A.rowsize-1; ++k) {
-	    int pivot = k;
-	    // find pivot
-	    for (int i=k; i<A.rowsize; ++i){
-		if ( ::fabs(A(pivot,k)) < ::fabs(A(i,k)) ) {
-		    pivot = i; 
-		} 
-	    }
-	    
-	    if(A(pivot,k) == 0.0) {
-		cerr << "ERROR 0026: Matrix A is singular in SCYTHE::lu_decomp()" 
-		     << endl;
-		exit(26);
-	    }
-	    
-	    // permute 
-	    if (k != pivot){
-		for (int i=0; i<A.rowsize; ++i){
-		    double temp = A(pivot,i);
-		    A(pivot,i) = A(k,i);
-		    A(k,i) = temp;
-		}
-	    }
-	    perm_vec[k] = pivot;
-	    
-	    for (int i = k+1; i<A.rowsize; ++i){
-		A(i,k) = A(i,k)/A(k,k);
-		for (int j = k+1; j <A.rowsize; ++j){
-		    A(i,j) = A(i,j) - A(i,k)*A(k,j);
-		}
-	    }
-	}
-	
-	L = A; 
-	for (int i=0; i<A.rowsize; ++i){
-	    for (int j=i; j<A.rowsize; ++j){
-		U(i,j) = A(i,j);
-		L(i,j) = 0.0;
-		L(i,i) = 1.0;
-	    }
-	}
-	
-	return 0;
-    }
-    
-    
-    
-//  4/29/2001 (KQ)
-/*! 
- * \brief Solves \a A*x=b for \a x
- *
- * Solves \a A \a x \a = \a b for \a x via forward and 
- * back-substitution using the LU Decomposition of \a A.  
- * PLEASE NOTE: THIS FUNCTION IS OVERLOADED.
- * \param AA a constant reference to the Matrix \a A.
- * \param b a reference to the Matrix \a b.
- * \return a Matrix object \a x.
- */
-    Matrix lu_solve(const Matrix& AA, const Matrix& b){
-	if (b.colsize != 1){
-	    cerr << "Error 0027: Vector b not column vector in SCYTHE::lu_solve()" 
-		 << endl;
-	    exit(27);
-	}
-	if (AA.rowsize != AA.colsize){
-	    cerr << "Error 0028: Matrix A not square in SCYTHE::lu_solve()" 
-		 << endl;
-	    exit(28);
-	}
-	if (AA.rowsize != b.rowsize){
-	    cerr << "Error 0029: Matrix A and b not conformable in SCYTHE::lu_solve()" 
-		 << endl;
-	    exit(29);
-	}
-	
-	// step 1 compute the LU factorization 
-	// taken from lu_decomp()
-	Matrix A = AA;
-	Matrix L, U, perm_vec;
-	
-	if (A.rowsize == 1){
-	    L = ones(1,1);
-	    U = AA;
-	    perm_vec = Matrix(1,1);
-	} else {
-	    L = U = Matrix(A.rowsize, A.rowsize);
-	    perm_vec = Matrix(A.rowsize-1,1);
-	    
-	    for (int k=0; k<A.rowsize-1; ++k){
-		int pivot = k;
-		// find pivot
-		for (int i=k; i<A.rowsize; ++i){
-		    if ( ::fabs(A(pivot,k)) < ::fabs(A(i,k)) ) pivot = i;  
-		}
-		
-		if(A(pivot,k) == 0.0){
-		    cerr << "ERROR 0030: Matrix A is singular in SCYTHE::lu_solve()" 
-			 << endl;
-		    exit(30);
-		}
-		
-		// permute 
-		if (k != pivot){
-		    for (int i=0; i<A.rowsize; ++i){
-			double temp = A(pivot,i);
-			A(pivot,i) = A(k,i);
-			A(k,i) = temp;
-		    }
-		}
-		perm_vec[k] = pivot;
-		
-		for (int i = k+1; i<A.rowsize; ++i){
-		    A(i,k) = A(i,k)/A(k,k);
-		    for (int j = k+1; j <A.rowsize; ++j){
-			A(i,j) = A(i,j) - A(i,k)*A(k,j);
-		    }
-		}
-	    }
-	    
-	    L = A; 
-	    for (int i=0; i<A.rowsize; ++i){
-		for (int j=i; j<A.rowsize; ++j){
-		    U(i,j) = A(i,j);
-		    L(i,j) = 0.0;
-		    L(i,i) = 1.0;
-		}
-	    }
-	}
-	
-	// step 2 solve L*y = Pb via forward substitution
-	Matrix bb = row_interchange(b, perm_vec);
-	Matrix y = Matrix(A.rowsize,1);
-	for (int i=0; i<A.rowsize; ++i){
-	    double sum = 0.0;
-	    for (int j=0; j<i; ++j)
-		sum += L.data[j+A.colsize*i]*y.data[j];
-	    y.data[i] = (bb.data[i] - sum)/L.data[i+A.colsize*i];
-	}
-	
-	// step 3 solve U*x = y via backsubstitution
-	Matrix x = Matrix(A.rowsize,1);
-	for (int i=A.rowsize-1; i>=0; --i){
-	    double sum = 0.0;
-	    for (int j=i+1; j<A.rowsize; ++j)
-		sum += U.data[j+A.colsize*i] * x.data[j];
-	    x.data[i] = (y.data[i] - sum)/U.data[i+A.colsize*i];
-	}
-	
-	return x;
-    }
-    
-//  4/29/2001 (KQ)
-/*! 
- * \brief Solves \a A*x=b for \a x
- *
- * Solves \a A \a x \a = \a b for \a x via forward and 
- * back-substitution using the LU Decomposition of \a A.  
- * PLEASE NOTE: THIS FUNCTION IS OVERLOADED.
- * \param A a constant reference to the Matrix \a A.
- * \param b a constant reference to the Matrix \a b.
- * \param L a constant reference to the Matrix \a L used in the LU 
- * Decomposition.
- * \param b a constant reference to the Matrix \a U used in the LU 
- * Decomposition.
- * \param p a vector used in the LU Decomposition.
- * \return a Matrix object \a x.
- */
-    Matrix lu_solve(const Matrix& A, const Matrix& b, 
-		    const Matrix& L, const Matrix& U, const Matrix& p){
-	if (b.colsize != 1){
-	    cerr << "Error 0031: Vector b not column vector in SCYTHE::lu_solve()" 
-		 << endl;
-	    exit(31);
-	}
-	if (A.rowsize != A.colsize){
-	    cerr << "Error 0032: Matrix A not square in SCYTHE::lu_solve()" 
-		 << endl;
-	    exit(32);
-	}
-	if (A.rowsize != b.rowsize){
-	    cerr << "Error 0033: Matrices A and b not conformable in SCYTHE::lu_solve()" 
-		 << endl;
-	    exit(33);
-	}
-	if ((A.rowsize != L.rowsize) || (A.rowsize != U.rowsize) ||
-	    (A.colsize != L.colsize) || (A.colsize != U.colsize)){
-	    cerr << "Error 0034: Matrices A, L, and U not of same dimension in "
-		 << "SCYTHE::lu_solve()" << endl;
-	    exit(34);
-	}
-	if ( (p.rowsize +1) != A.rowsize){
-	    cerr << "ERROR 0035: Matrices A and p not of consistent sizes in "
-		 << "SCYTHE::lu_solve()"  << endl;
-	    exit(35);
-	}
-	
-	// step 1 solve L*y = Pb via forward substitution
-	Matrix bb = row_interchange(b, p);
-	Matrix y = Matrix(A.rowsize,1);
-	for (int i=0; i<A.rowsize; ++i){
-	    double sum = 0.0;
-	    for (int j=0; j<i; ++j)
-		sum += L.data[j+A.colsize*i]*y.data[j];
-	    y.data[i] = (bb.data[i] - sum)/L.data[i+A.colsize*i];
-	}
-	
-	// step 2 solve U*x = y via backsubstitution
-	Matrix x = Matrix(A.rowsize,1);
-	for (int i=A.rowsize-1; i>=0; --i){
-	    double sum = 0.0;
-	    for (int j=i+1; j<A.rowsize; ++j)
-		sum += U.data[j+A.colsize*i] * x.data[j];
-	    x.data[i] = (y.data[i] - sum)/U.data[i+A.colsize*i];
-	}
-	
-	return x;
+	return newdata;     
     }
     
     
@@ -2106,20 +1418,19 @@ Matrix zeros (const int& rows, const int& cols)
 	}
 	
 	int totalcols = A.colsize + B.colsize;
-	double *newdata = new double[A.rowsize * totalcols];
+	//double *newdata = new double[A.rowsize * totalcols];
+	Matrix newdata(A.rowsize, totalcols);
 	
 	for (int i = 0; i < A.rowsize; ++i) {
 	    for (int j = 0; j < A.colsize; ++j) {
-		newdata[i * totalcols + j] = A.data[i * A.colsize + j];
+		newdata.data[i * totalcols + j] = A.data[i * A.colsize + j];
 	    }
 	    for (int k = 0; k < B.colsize; ++k) {
-		newdata[i * totalcols + k + A.colsize] = B.data[i * B.colsize + k];
+		newdata.data[i * totalcols + k + A.colsize] = B.data[i * B.colsize + k];
 	    }
 	}
 	
-	Matrix temp = Matrix (newdata, A.rowsize, totalcols);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
 //! Row bind 2 matrices
@@ -2139,23 +1450,22 @@ Matrix zeros (const int& rows, const int& cols)
 	}
 	
 	int totalrows = A.rowsize + B.rowsize;
-	double *newdata = new double[totalrows * A.colsize];
+	//double *newdata = new double[totalrows * A.colsize];
+	Matrix newdata(totalrows, A.colsize);
 	
 	for (int i = 0; i < A.rowsize; ++i) {
 	    for (int j = 0; j < A.colsize; ++j)  {
-		newdata[i * A.colsize + j] = A.data[i * A.colsize + j];
+		newdata.data[i * A.colsize + j] = A.data[i * A.colsize + j];
 	    }
 	}
 	for (int k = 0; k < B.rowsize; ++k) {
 	    for (int j = 0; j < B.colsize; ++j) {
-		newdata[k * B.colsize + (A.rowsize * A.colsize) + j] =
+		newdata.data[k * B.colsize + (A.rowsize * A.colsize) + j] =
 		    B.data[k * B.colsize + j];
 	    }
 	}
 	
-	Matrix temp = Matrix (newdata, totalrows, A.colsize);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
 //! Calculate the sum of each column of a Matrix
@@ -2165,37 +1475,20 @@ Matrix zeros (const int& rows, const int& cols)
  * \param A a constant reference to a Matrix \a A.
  * \return the vector of sums for each corresponding column.
  */
-#ifdef __NATE__
+// #ifdef __NATE__
 Matrix sumc (const Matrix & A)
 {
-	Matrix temp = zeros(1, A.colsize);
-	
-	for (int i = 0; i < A.rowsize; ++i) {
+  Matrix temp = zeros(1, A.colsize);
+  
+  for (int i = 0; i < A.rowsize; ++i) {
     double *rowptr = A.data + (A.colsize * i);
     for (int j = 0; j < A.colsize; ++j) {
       temp.data[j] += rowptr[j];
     }
-	}
-	return temp;
+  }
+  return temp;
 }
-#else
-    Matrix sumc (const Matrix & A)
-    {
-	double *newdata = new double[A.colsize];
-	
-	for (int i = 0; i < A.colsize; ++i)
-	    newdata[i] = 0.0;
-	
-	for (int i = 0; i < A.rowsize; ++i) {
-	    for (int j = 0; j < A.colsize; ++j) {
-		newdata[j] += A.data[A.colsize * i + j];
-	    }
-	}
-	Matrix temp = Matrix (newdata, 1, A.colsize);
-	delete[]newdata;
-	return temp;
-    }
-#endif
+
     
 //! Calculate the product of each column of a Matrix
 /*!
@@ -2206,20 +1499,18 @@ Matrix sumc (const Matrix & A)
  */
     Matrix prodc (const Matrix & A)
     {
-	double *newdata = new double[A.colsize];
+      Matrix newdata(1, A.colsize);
 	
 	for (int i = 0; i < A.colsize; ++i)
-	    newdata[i] = 1.0;
+	    newdata.data[i] = 1.0;
 	
 	for (int i = 0; i < A.rowsize; ++i) {
 	    for (int j = 0; j < A.colsize; ++j) {
-		newdata[j] = newdata[j] * A.data[A.colsize * i + j];
+		newdata.data[j] = newdata.data[j] * A.data[A.colsize * i + j];
 	    }
 	}
 	
-	Matrix temp = Matrix (newdata, 1, A.colsize);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
 //! Calculate the mean of each column of a Matrix
@@ -2231,22 +1522,20 @@ Matrix sumc (const Matrix & A)
  */
     Matrix meanc (const Matrix & A)
     {
-	double *newdata = new double[A.colsize];
+      Matrix newdata(1, A.colsize);
 	for (int i = 0; i < A.colsize; ++i)
-	    newdata[i] = 0.0;
+	    newdata.data[i] = 0.0;
 	
 	for (int i = 0; i < A.rowsize; ++i) {
 	    for (int j = 0; j < A.colsize; ++j) {
-		newdata[j] += A.data[A.colsize * i + j];
+		newdata.data[j] += A.data[A.colsize * i + j];
 	    }
 	}
 	for (int i = 0; i < A.colsize; ++i) {
-	    newdata[i] = (1.0 / A.rowsize) * newdata[i];
+	    newdata.data[i] = (1.0 / A.rowsize) * newdata[i];
 	}
 	
-	Matrix temp = Matrix (newdata, 1, A.colsize);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
 //! Calculate the variances of each column of a Matrix
@@ -2259,20 +1548,18 @@ Matrix sumc (const Matrix & A)
     Matrix varc (const Matrix & A)
     {
 	Matrix mu = meanc (A);
-	double *newdata = new double[A.colsize];
+	Matrix newdata(1, A.colsize);
 	for (int i = 0; i < A.colsize; ++i)
-	    newdata[i] = 0.0;
+	    newdata.data[i] = 0.0;
 	
 	for (int i = 0; i < A.rowsize; ++i) {
 	    for (int j = 0; j < A.colsize; ++j) {
-		newdata[j] += ::pow (mu.data[j] - A.data[A.colsize * i + j], 2) *
+		newdata.data[j] += ::pow (mu.data[j] - A.data[A.colsize * i + j], 2) *
 		    (1.0 / (A.rowsize-1));
 	    }
 	}
 	
-	Matrix temp = Matrix (newdata, 1, A.colsize);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
 //! Calculate the standard deviation of each column of a Matrix
@@ -2285,23 +1572,21 @@ Matrix sumc (const Matrix & A)
     Matrix stdc (const Matrix & A)
     {
 	Matrix mu = meanc (A);
-	double *newdata = new double[A.colsize];
+	Matrix newdata(1, A.colsize);
 	for (int i = 0; i < A.colsize; ++i)
-	    newdata[i] = 0.0;
+	    newdata.data[i] = 0.0;
 	
 	for (int i = 0; i < A.rowsize; ++i) {
 	    for (int j = 0; j < A.colsize; ++j) {
-		newdata[j] += ::pow (mu.data[j] - A.data[A.colsize * i + j], 2) *
+		newdata.data[j] += ::pow (mu.data[j] - A.data[A.colsize * i + j], 2) *
 		    (1.0 / (A.rowsize-1));
 	    }
 	}
 	
 	for (int i = 0; i < A.colsize; ++i)
-	    newdata[i] = ::sqrt (newdata[i]);
+	    newdata.data[i] = ::sqrt (newdata[i]);
 	
-	Matrix temp = Matrix (newdata, 1, A.colsize);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
 //! Calculate the square root of each element of a Matrix
@@ -2312,14 +1597,12 @@ Matrix sumc (const Matrix & A)
  */
     Matrix sqrt (const Matrix & A)
     {
-	double *newdata = new double[A.size];
+      Matrix newdata(A.rowsize, A.colsize);
 	
 	for (int i = 0; i < A.size; ++i)
-	    newdata[i] = ::sqrt (A.data[i]);
+	    newdata.data[i] = ::sqrt (A.data[i]);
 	
-	Matrix temp = Matrix (newdata, A.rowsize, A.colsize);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
 //! Calculate the absolute value of each element of a Matrix
@@ -2330,14 +1613,12 @@ Matrix sumc (const Matrix & A)
  */
     Matrix fabs (const Matrix & A)
     {
-	double *newdata = new double[A.size];
+      Matrix newdata(A.rowsize, A.colsize);
 	
 	for (int i = 0; i < A.size; ++i)
-	    newdata[i] = ::fabs (A.data[i]);
+	    newdata.data[i] = ::fabs (A.data[i]);
 	
-	Matrix temp = Matrix (newdata, A.rowsize, A.colsize);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     
@@ -2348,14 +1629,12 @@ Matrix sumc (const Matrix & A)
  * \return the new Matrix of exponentials.
  */
     Matrix exp(const Matrix& A){
-	double *newdata = new double[A.size];
+      Matrix newdata(A.rowsize, A.colsize);
 	
 	for (int i = 0; i < A.size; ++i)
-	    newdata[i] = ::exp (A.data[i]);
+	    newdata.data[i] = ::exp (A.data[i]);
 	
-	Matrix temp = Matrix (newdata, A.rowsize, A.colsize);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
 //! Calculate the natural log of each individual Matrix element
@@ -2365,14 +1644,12 @@ Matrix sumc (const Matrix & A)
  * \return the new Matrix of natural logs.
  */
     Matrix log(const Matrix& A){
-	double *newdata = new double[A.size];
+      Matrix newdata(A.rowsize, A.colsize);
 	
 	for (int i = 0; i < A.size; ++i)
-	    newdata[i] = ::log (A.data[i]);
+	    newdata.data[i] = ::log (A.data[i]);
 	
-	Matrix temp = Matrix (newdata, A.rowsize, A.colsize);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
 //! Calculate the Base 10 Log of each Matrix element
@@ -2382,14 +1659,12 @@ Matrix sumc (const Matrix & A)
  * \return the new Matrix of Base 10 logs.
  */
     Matrix log10(const Matrix& A){
-	double *newdata = new double[A.size];
-	
+      Matrix newdata(A.rowsize, A.colsize);
+
 	for (int i = 0; i < A.size; ++i)
-	    newdata[i] = ::log10(A.data[i]);
+	    newdata.data[i] = ::log10(A.data[i]);
 	
-	Matrix temp = Matrix (newdata, A.rowsize, A.colsize);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
 //! Raises each Matrix element to a specified power
@@ -2399,14 +1674,12 @@ Matrix sumc (const Matrix & A)
  * \return the new modified Matrix.
  */
     Matrix pow(const Matrix& A, const double& e){
-	double *newdata = new double[A.size];
+      Matrix newdata(A.rowsize, A.colsize);
 	
 	for (int i = 0; i < A.size; ++i)
-	    newdata[i] = ::pow(A.data[i], e);
+	    newdata.data[i] = ::pow(A.data[i], e);
 	
-	Matrix temp = Matrix (newdata, A.rowsize, A.colsize);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     
@@ -2450,21 +1723,19 @@ Matrix sumc (const Matrix & A)
  */
     Matrix maxc (const Matrix & A)
     {
-	double *newdata = new double[A.colsize];
+      Matrix newdata(1, A.colsize);
 	
 	for (int i = 0; i < A.rowsize; ++i) {
 	    for (int j = 0; j < A.colsize; ++j) {
 		if (i == 0) {
-		    newdata[j] = A.data[A.colsize * i + j];
-		} else if (A.data[A.colsize * i + j] > newdata[j]) {
-		    newdata[j] = A.data[A.colsize * i + j];
+		    newdata.data[j] = A.data[A.colsize * i + j];
+		} else if (A.data[A.colsize * i + j] > newdata.data[j]) {
+		    newdata.data[j] = A.data[A.colsize * i + j];
 		}
 	    }
 	}
 	
-	Matrix temp = Matrix (newdata, 1, A.colsize);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
 //! Calculates the minimum of each Matrix column
@@ -2475,20 +1746,18 @@ Matrix sumc (const Matrix & A)
  */
     Matrix minc (const Matrix & A)
     {
-	double *newdata = new double[A.colsize];
+      Matrix newdata(1, A.colsize);
 	
 	for (int i = 0; i < A.rowsize; ++i) {
 	    for (int j = 0; j < A.colsize; ++j) {
 		if (i == 0) {
-		    newdata[j] = A.data[A.colsize * i + j];
-		} else if (A.data[A.colsize * i + j] < newdata[j]) {
-		    newdata[j] = A.data[A.colsize * i + j];
+		    newdata.data[j] = A.data[A.colsize * i + j];
+		} else if (A.data[A.colsize * i + j] < newdata.data[j]) {
+		    newdata.data[j] = A.data[A.colsize * i + j];
 		}
 	    }
 	}
-	Matrix temp = Matrix (newdata, 1, A.colsize);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     
@@ -2499,23 +1768,21 @@ Matrix sumc (const Matrix & A)
  * \return a Matrix (vector) of the index of each maximum element.
  */
     Matrix maxindc(const Matrix& A){
-	double *newdata = new double[A.colsize];
+      Matrix newdata(1, A.colsize);
 	Matrix maxvec = Matrix(1,A.colsize);
 	
 	for (int i = 0; i < A.rowsize; ++i){
 	    for (int j = 0; j < A.colsize; ++j){
 		if (i == 0){
 		    maxvec[j] = A.data[A.colsize * i + j]; 
-		    newdata[j] = 0;
+		    newdata.data[j] = 0;
 		} else if (A.data[A.colsize * i + j] > maxvec[j]){
 		    maxvec[j] = A.data[A.colsize * i + j];
-		    newdata[j] = i;
+		    newdata.data[j] = i;
 		}
 	    }
 	}
-	Matrix temp = Matrix (newdata, 1, A.colsize);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     
@@ -2526,23 +1793,21 @@ Matrix sumc (const Matrix & A)
  * \return a Matrix (vector) of the index of each minimum element.
  */
     Matrix minindc(const Matrix& A){
-	double *newdata = new double[A.colsize];
+        Matrix newdata(1, A.colsize);
 	Matrix minvec = Matrix(1,A.colsize);
 	
 	for (int i = 0; i < A.rowsize; ++i){
 	    for (int j = 0; j < A.colsize; ++j){
 		if (i == 0){
 		    minvec[j] = A.data[A.colsize * i + j]; 
-		    newdata[j] = 0;
+		    newdata.data[j] = 0;
 		} else if (A.data[A.colsize * i + j] < minvec[j]){
 		    minvec[j] = A.data[A.colsize * i + j];
-		    newdata[j] = i;
+		    newdata.data[j] = i;
 		}
 	    }
 	}
-	Matrix temp = Matrix (newdata, 1, A.colsize);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     
@@ -2559,15 +1824,13 @@ Matrix sumc (const Matrix & A)
 		 << endl;
 	    exit(43);
 	}
-	double *newdata = new double[A.rowsize];
+	Matrix newdata(A.rowsize, 1);
 	
 	for (int i=0; i<A.rowsize; ++i){
-	    newdata[i] = sumc(A << A.data[i])[0];    
+	    newdata.data[i] = sumc(A << A.data[i])[0];    
 	}
 	
-	Matrix temp = Matrix (newdata, A.rowsize, 1);
-	delete[] newdata;
-	return temp;
+	return newdata;
     }
     
     
@@ -2611,19 +1874,17 @@ Matrix sumc (const Matrix & A)
 	}
 	
 	// declare and form output Matrix
-	double *newdata = new double[A.colsize*N];
+	Matrix newdata(N, A.colsize);
 	int count = 0;
 	for (int i=0; i<A.rowsize; ++i){
 	    if (e.data[i] == 1){
 		for (int j=0; j<A.colsize; ++j){
-		    newdata[count] = A.data[A.colsize*i + j]; 
+		    newdata.data[count] = A.data[A.colsize*i + j]; 
 		    ++count;
 		}
 	    }
 	}
-	Matrix temp = Matrix(newdata, N, A.colsize);
-	delete[] newdata;
-	return temp;
+	return newdata;
     }
     
     
@@ -2634,7 +1895,8 @@ Matrix sumc (const Matrix & A)
  * \return a Matrix of all unique elements.
  */
     Matrix unique(const Matrix& A){
-	double *newdata = new double[A.size];
+      // double *newdata = new double[A.size];
+      double *newdata = (double *) malloc( (A.size)*sizeof(double));
 	
 	newdata[0] = A.data[0];
 	int count = 1;
@@ -2653,7 +1915,8 @@ Matrix sumc (const Matrix & A)
 	}
 	
 	Matrix temp = Matrix(newdata, count, 1);
-	delete[] newdata;
+	// delete[] newdata;
+	free(newdata);
 	return temp;
     }
     
@@ -2668,16 +1931,14 @@ Matrix sumc (const Matrix & A)
 	// first transposes the input Matrix's data 
 	int newrowsize = A.colsize;
 	int newcolsize = A.rowsize;
-	double *newdata = new double[A.size];
+	Matrix newdata(A.size, 1);
 	for (int i = 0; i < newcolsize; ++i) {
 	    for (int j = 0; j < newrowsize; ++j) {
-		newdata[i + newcolsize * j] = A.data[j + newrowsize * i];
+		newdata.data[i + newcolsize * j] = A.data[j + newrowsize * i];
 	    }
 	}
 	// then takes this transposed data and vecrs
-	Matrix temp = Matrix (newdata, A.size, 1);
-	delete[]newdata;
-	return temp;
+	return newdata;
     }
     
     
@@ -2714,18 +1975,16 @@ Matrix sumc (const Matrix & A)
 	}
 	
 	int newsize = static_cast<int>(0.5*(A.size - A.rowsize) + A.rowsize);
-	double* newdata = new double[newsize];
+	Matrix newdata(newsize, 1);
 	int count = 0;
 	for (int i=0; i<A.rowsize; ++i){
 	    for(int j=i; j<A.colsize; ++j){
-		newdata[count] = A.data[i*A.colsize + j];
+		newdata.data[count] = A.data[i*A.colsize + j];
 		++count;
 	    }
 	}
 	
-	Matrix temp = Matrix(newdata, newsize, 1);
-	delete [] newdata;
-	return temp;
+	return newdata;
     }
     
     
@@ -2744,17 +2003,15 @@ Matrix sumc (const Matrix & A)
 	    exit(49);
 	}
 	int newrowsize = static_cast<int>(newrowsize_d);
-	double* newdata = new double[newrowsize*newrowsize];
+	Matrix newdata(newrowsize, newrowsize);
 	int count = 0;
 	for (int i=0; i<newrowsize; ++i){
 	    for (int j=i; j<newrowsize; ++j){
-		newdata[i*newrowsize +j] = newdata[j*newrowsize + i] = A.data[count];
+		newdata.data[i*newrowsize +j] = newdata.data[j*newrowsize + i] = A.data[count];
 		++count;
 	    }
 	}
-	Matrix temp = Matrix(newdata, newrowsize, newrowsize);
-	delete [] newdata;
-	return temp;
+	return newdata;
     }
     
     
@@ -2770,13 +2027,11 @@ Matrix sumc (const Matrix & A)
 		 << endl;
 	    exit(50);
 	}
-	double* newdata = new double[A.rowsize];
+	Matrix newdata(A.rowsize, 1);
 	for (int i=0; i<A.rowsize; ++i){
-	    newdata[i] = A.data[i*A.colsize + i];
+	    newdata.data[i] = A.data[i*A.colsize + i];
 	}
-	Matrix temp = Matrix(newdata, A.rowsize, 1);
-	delete [] newdata;
-	return temp;
+	return newdata;
     }
     
     
@@ -2790,13 +2045,11 @@ Matrix sumc (const Matrix & A)
 	// Case 1: A is 1 x 1 and B is n x k
 	if (A.rowsize == 1 && A.colsize == 1) {
 	    if (B.rowsize == C.rowsize && B.colsize == C.colsize){
-		double *prod = new double[B.size];
+	      Matrix prod(B.rowsize, B.colsize);
 		for (int i = 0; i < B.size; ++i) {
-		    prod[i] = A.data[0] * B.data[i] + C.data[i];
+		    prod.data[i] = A.data[0] * B.data[i] + C.data[i];
 		}
-		Matrix temp = Matrix (prod, B.rowsize, B.colsize);
-		delete[]prod;
-		return temp;
+		return prod;
 	    } else {
 		cerr << "ERROR 0051: A*B and C not conformable in SCYTHE::gaxpy()" 
 		     << endl;
@@ -2805,13 +2058,11 @@ Matrix sumc (const Matrix & A)
 	} else if (B.rowsize == 1 && B.colsize == 1) {
 	    // Case 2: A is n x k and B is 1 x 1
 	    if (A.rowsize == C.rowsize && A.colsize == C.colsize){
-		double *prod = new double[A.size];
+	      Matrix prod(A.rowsize, A.colsize);
 		for (int i = 0; i < A.size; ++i) {
-		    prod[i] = A.data[i] * B.data[0] + C.data[i];
+		    prod.data[i] = A.data[i] * B.data[0] + C.data[i];
 		}
-		Matrix temp = Matrix (prod, A.rowsize, A.colsize);
-		delete[]prod;
-		return temp;
+		return prod;
 	    } else {
 		cerr << "ERROR 0052: A*B and C not conformable in SCYTHE::gaxpy()" 
 		     << endl;
@@ -2825,20 +2076,18 @@ Matrix sumc (const Matrix & A)
 	    exit (53);
 	} else if (A.rowsize == C.rowsize && B.colsize == C.colsize){
 	    // Case 4: A is n x k and B is k x j
-	    register double *newdata = new double[A.rowsize * B.colsize];
+	  register Matrix newdata(A.rowsize, B.colsize);
 	    for (int i = 0; i < A.rowsize; ++i){
 		for (int j = 0; j < B.colsize; ++j){
-		    newdata[i*B.colsize + j] = C.data[i*B.colsize + j];
+		    newdata.data[i*B.colsize + j] = C.data[i*B.colsize + j];
 		    for (int k = 0; k < B.rowsize; ++k){
-			newdata[i * B.colsize + j] += A.data[i * A.colsize + k] *
+			newdata.data[i * B.colsize + j] += A.data[i * A.colsize + k] *
 			    B.data[k * B.colsize + j];
 		    }
 		}
 	    }
 	    
-	    Matrix temp = Matrix (newdata, A.rowsize, B.colsize);
-	    delete[]newdata;
-	    return temp;
+	    return newdata;
 	} else {
 	    cerr << "ERROR 0054: A*B and C not conformable in SCYTHE::gaxpy()" 
 		 << endl;
@@ -2855,36 +2104,34 @@ Matrix sumc (const Matrix & A)
  */
 // original
     Matrix crossprod(const Matrix& A){
-	register double *newdata = new double[A.colsize * A.colsize];
-	
+      register Matrix newdata(A.colsize, A.colsize);
+
 	for (int i = 0; i < A.colsize; ++i){
 	    for (int j = i; j < A.colsize; ++j){
-		newdata[i*A.colsize + j] = 0.0;
+		newdata.data[i*A.colsize + j] = 0.0;
 		for (int k = 0; k < A.rowsize; ++k){
-		    newdata[i * A.colsize + j] += A.data[k * A.colsize + i] *
+		    newdata.data[i * A.colsize + j] += A.data[k * A.colsize + i] *
 			A.data[k * A.colsize + j];
-		    newdata[j*A.colsize + i] = newdata[i*A.colsize + j];
+		    newdata.data[j*A.colsize + i] = newdata.data[i*A.colsize + j];
 		}
 	    }
 	}
 	
-	Matrix temp = Matrix (newdata, A.colsize, A.colsize);
-	delete [] newdata;
-	return temp;
+	return newdata;
     }
     
     // better loop ordering
     Matrix crossprod2(const Matrix& A){
-	register double *newdata = new double[A.colsize * A.colsize];
+      register Matrix newdata(A.colsize, A.colsize);
 	const int nr = A.rowsize;
 	const int nc = A.colsize;
 	
 	for (int k = 0; k < nr; ++k){
 	    for (int i = 0; i < nc; ++i){
 		for (int j = i; j < nc; ++j){
-		    newdata[i * nc + j] += A.data[k * nc + i] *
+		    newdata.data[i * nc + j] += A.data[k * nc + i] *
 			A.data[k * nc + j];
-		    newdata[j*nc + i] = newdata[i*nc + j];
+		    newdata.data[j*nc + i] = newdata[i*nc + j];
 		}
 	    }
 	}
@@ -2902,9 +2149,8 @@ Matrix sumc (const Matrix & A)
 	  }
 	*/
 	
-	Matrix temp = Matrix (newdata, A.colsize, A.colsize);
-	delete [] newdata;
-	return temp;
+	return newdata;
+
     }
     
     
@@ -2922,22 +2168,18 @@ Matrix sumc (const Matrix & A)
     {
 	if (A.rowsize == 1 && A.colsize == 1) {
 	    // Case 1: A is 1 x 1 and B is n x k
-	    double *sum = new double[B.size];
+	  Matrix sum(B.rowsize, B.colsize);
 	    for (int i = 0; i < B.size; ++i) {
-		sum[i] = A.data[0] + B.data[i];
+		sum.data[i] = A.data[0] + B.data[i];
 	    }
-	    Matrix temp = Matrix (sum, B.rowsize, B.colsize);
-	    delete[]sum;
-	    return temp;
+	    return sum;
 	} else if (B.rowsize == 1 && B.colsize == 1) {
 	    // Case 2: A is n x k and B is 1 x 1
-	    double *sum = new double[A.size];
+	  Matrix sum(A.rowsize, A.colsize);
 	    for (int i = 0; i < A.size; ++i) {
-		sum[i] = A.data[i] + B.data[0];
+		sum.data[i] = A.data[i] + B.data[0];
 	    }
-	    Matrix temp = Matrix (sum, A.rowsize, A.colsize);
-	    delete[]sum;
-	    return temp;
+	    return sum;
 	} else if (A.rowsize != B.rowsize || A.colsize != B.colsize) {
 	    // Case 3: A is n x k and B is m x j (n != m or k != m)
 	    cerr << "ERROR 0055: Matrices not conformable for addition \n"
@@ -2946,13 +2188,11 @@ Matrix sumc (const Matrix & A)
 	    exit (1);
 	} else {
 	    // Case 4: A is n x k and B is also n x k
-	    double *sum = new double[A.size];
+  	  Matrix sum(A.rowsize, A.colsize);
 	    for (int i = 0; i < A.size; ++i) {
-		sum[i] = A.data[i] + B.data[i];
+		sum.data[i] = A.data[i] + B.data[i];
 	    }
-	    Matrix temp = Matrix (sum, A.rowsize, A.colsize);
-	    delete[]sum;
-	    return temp;
+	    return sum;
 	}
     }
     
@@ -2964,13 +2204,11 @@ Matrix sumc (const Matrix & A)
 */
     Matrix operator + (const Matrix & A, const double &b)
     {
-	double *sum = new double[A.size];
+      Matrix sum(A.rowsize, A.colsize);
 	for (int i = 0; i < A.size; ++i) {
-	    sum[i] = A.data[i] + b;
+	    sum.data[i] = A.data[i] + b;
 	}
-	Matrix temp = Matrix (sum, A.rowsize, A.colsize);
-	delete[]sum;
-	return temp;
+	return sum;
     }
     
 //  OPERATOR: Addition
@@ -2981,13 +2219,11 @@ Matrix sumc (const Matrix & A)
 */
     Matrix operator + (const double &a, const Matrix & B)
     {
-	double *sum = new double[B.size];
+      Matrix sum(B.rowsize, B.colsize);
 	for (int i = 0; i < B.size; ++i) {
-	    sum[i] = a + B.data[i];
+	    sum.data[i] = a + B.data[i];
 	}
-	Matrix temp = Matrix (sum, B.rowsize, B.colsize);
-	delete[]sum;
-	return temp;
+	return sum;
     }
     
 // SUBTRACTION OPERATORS IN ALL THEIR MANY FLAVORS
@@ -3002,22 +2238,18 @@ Matrix sumc (const Matrix & A)
     {
 	// Case 1: A is 1 x 1 and B is n x k
 	if (A.rowsize == 1 && A.colsize == 1) {
-	    double *sum = new double[B.size];
+	  Matrix sum(B.rowsize, B.colsize);
 	    for (int i = 0; i < B.size; ++i) {
-		sum[i] = A.data[0] - B.data[i];
+		sum.data[i] = A.data[0] - B.data[i];
 	    }
-	    Matrix temp = Matrix (sum, B.rowsize, B.colsize);
-	    delete[]sum;
-	    return temp;
+	    return sum;
 	} else if (B.rowsize == 1 && B.colsize == 1) {
 	    // Case 2: A is n x k and B is 1 x 1
-	    double *sum = new double[A.size];
+	  Matrix sum(A.rowsize, A.colsize);
 	    for (int i = 0; i < A.size; ++i) {
-		sum[i] = A.data[i] - B.data[0];
+		sum.data[i] = A.data[i] - B.data[0];
 	    }
-	    Matrix temp = Matrix (sum, A.rowsize, A.colsize);
-	    delete[]sum;
-	    return temp;
+	    return sum;
 	} else if (A.rowsize != B.rowsize || A.colsize != B.colsize) {
 	    // Case 3: A is n x k and B is m x j (n != m or k != m)
 	    cerr << "ERROR 0056: Matrices not conformable for subtraction\n"
@@ -3026,13 +2258,11 @@ Matrix sumc (const Matrix & A)
 	    exit (56);
 	} else {
 	    // Case 4: A is n x k and B is also n x k
-	    double *sum = new double[A.size];
+ 	  Matrix sum(A.rowsize, A.colsize);
 	    for (int i = 0; i < A.size; ++i) {
-		sum[i] = A.data[i] - B.data[i];
+		sum.data[i] = A.data[i] - B.data[i];
 	    }
-	    Matrix temp = Matrix (sum, A.rowsize, A.colsize);
-	    delete[]sum;
-	    return temp;;
+	    return sum;
 	}
     }
     
@@ -3044,13 +2274,11 @@ Matrix sumc (const Matrix & A)
 */
     Matrix operator - (const Matrix & A, const double &b)
     {
-	double *sum = new double[A.size];
+        Matrix sum(A.rowsize, A.colsize);
 	for (int i = 0; i < A.size; ++i) {
-	    sum[i] = A.data[i] - b;
+	    sum.data[i] = A.data[i] - b;
 	}
-	Matrix temp = Matrix (sum, A.rowsize, A.colsize);
-	delete[]sum;
-	return temp;
+	return sum;
     }
     
 //  OPERATOR: Subtraction
@@ -3061,13 +2289,11 @@ Matrix sumc (const Matrix & A)
 */
     Matrix operator - (const double &a, const Matrix & B)
     {
-	double *sum = new double[B.size];
+      Matrix sum(B.rowsize, B.colsize);
 	for (int i = 0; i < B.size; ++i) {
-	    sum[i] = a - B.data[i];
+	    sum.data[i] = a - B.data[i];
 	}
-	Matrix temp = Matrix (sum, B.rowsize, B.colsize);
-	delete[]sum;
-	return temp;
+	return sum;
     }
     
 // MULTIPLICATION OPERATORS IN ALL THEIR MANY FLAVORS
@@ -3082,22 +2308,18 @@ Matrix sumc (const Matrix & A)
     {
 	// Case 1: A is 1 x 1 and B is n x k
 	if (A.rowsize == 1 && A.colsize == 1) {
-	    double *prod = new double[B.size];
+	  Matrix prod(B.rowsize, B.colsize);
 	    for (int i = 0; i < B.size; ++i) {
-		prod[i] = A.data[0] * B.data[i];
+		prod.data[i] = A.data[0] * B.data[i];
 	    }
-	    Matrix temp = Matrix (prod, B.rowsize, B.colsize);
-	    delete[]prod;
-	    return temp;
+	    return prod;
 	} else if (B.rowsize == 1 && B.colsize == 1) {
 	    // Case 2: A is n x k and B is 1 x 1
-	    double *prod = new double[A.size];
+	  Matrix prod(A.rowsize, A.colsize);
 	    for (int i = 0; i < A.size; ++i) {
-		prod[i] = A.data[i] * B.data[0];
+		prod.data[i] = A.data[i] * B.data[0];
 	    }
-	    Matrix temp = Matrix (prod, A.rowsize, A.colsize);
-	    delete[]prod;
-	    return temp;
+	    return prod;
 	} else if (A.colsize != B.rowsize) {
 	    // Case 3: A is n x k and B is m x j (m !=j)
 	    cerr << "ERROR 0057: Matrices not conformable for multiplication\n"
@@ -3106,20 +2328,18 @@ Matrix sumc (const Matrix & A)
 	    exit (57);
 	} else {
 	    // Case 4: A is n x k and B is k x j
-	    register double *newdata = new double[A.rowsize * B.colsize];
+	  register Matrix newdata(A.rowsize, B.colsize);
 	    for (int i = 0; i < A.rowsize; ++i) {
 		for (int j = 0; j < B.colsize; ++j) {
-		    newdata[i*B.colsize + j] = 0.0;
+		    newdata.data[i*B.colsize + j] = 0.0;
 		    for (int k = 0; k < B.rowsize; ++k) {
-			newdata[i * B.colsize + j] += A.data[i * A.colsize + k] *
+			newdata.data[i * B.colsize + j] += A.data[i * A.colsize + k] *
 			    B.data[k * B.colsize + j];
 		    }
 		}
 	    }
 	    
-	    Matrix temp = Matrix (newdata, A.rowsize, B.colsize);
-	    delete[]newdata;
-	    return temp;
+	    return newdata;
 	}
     }
     
@@ -3131,13 +2351,11 @@ Matrix sumc (const Matrix & A)
 */
     Matrix operator *(const Matrix & A, const double &b)
     {
-	double *prod = new double[A.size];
+      Matrix prod(A.rowsize, A.colsize);
 	for (int i = 0; i < A.size; ++i) {
-	    prod[i] = A.data[i] * b;
+	    prod.data[i] = A.data[i] * b;
 	}
-	Matrix temp = Matrix (prod, A.rowsize, A.colsize);
-	delete[]prod;
-	return temp;
+	return prod;
     }
     
 //  OPERATOR: Multiplication
@@ -3148,13 +2366,11 @@ Matrix sumc (const Matrix & A)
 */
     Matrix operator *(const double &a, const Matrix & B)
     {
-	double *prod = new double[B.size];
+      Matrix prod(B.rowsize, B.colsize);
 	for (int i = 0; i < B.size; ++i) {
-	    prod[i] = a * B.data[i];
+	    prod.data[i] = a * B.data[i];
 	}
-	Matrix temp = Matrix (prod, B.rowsize, B.colsize);
-	delete[]prod;
-	return temp;
+	return prod;
     }
     
 // ELEMENT BY ELEMENT DIVISION
@@ -3168,22 +2384,18 @@ Matrix sumc (const Matrix & A)
     {
 	// Case 1: A is 1 x 1 and B is n x k
 	if (A.rowsize == 1 && A.colsize == 1) {
-	    double *quot = new double[B.size];
+ 	  Matrix quot(B.rowsize, B.colsize);
 	    for (int i = 0; i < B.size; ++i) {
-		quot[i] = A.data[0] / B.data[i];
+		quot.data[i] = A.data[0] / B.data[i];
 	    }
-	    Matrix temp = Matrix (quot, B.rowsize, B.colsize);
-	    delete[]quot;
-	    return temp;
+	    return quot;
 	} else if (B.rowsize == 1 && B.colsize == 1) {
 	    // Case 2: A is n x k and B is 1 x 1
-	    double *quot = new double[A.size];
+  	  Matrix quot(A.rowsize, A.colsize);
 	    for (int i = 0; i < A.size; ++i) {
-		quot[i] = A.data[i] / B.data[0];
+		quot.data[i] = A.data[i] / B.data[0];
 	    }
-	    Matrix temp = Matrix (quot, A.rowsize, A.colsize);
-	    delete[]quot;
-	    return temp;
+	    return quot;
 	} else if (A.rowsize != B.rowsize || A.colsize != B.colsize) {
 	    // Case 3: A is n x k and B is m x j (n != m or k != m)
 	    cerr << "ERROR 0058: Matrices not conformable for division\n" 
@@ -3192,13 +2404,11 @@ Matrix sumc (const Matrix & A)
 	    exit (58);
 	} else {
 	    // Case 4: A is n x k and B is also n x k
-	    double *quot = new double[A.size];
+	  Matrix quot(A.rowsize, A.colsize);
 	    for (int i = 0; i < A.size; ++i) {
-		quot[i] = A.data[i] / B.data[i];
+		quot.data[i] = A.data[i] / B.data[i];
 	    }
-	    Matrix temp = Matrix (quot, A.rowsize, A.colsize);
-	    delete[]quot;
-	    return temp;;
+	    return quot;
 	}
     }
     
@@ -3211,13 +2421,11 @@ Matrix sumc (const Matrix & A)
     Matrix operator / (const Matrix & A, const double &b)
     {
 	
-	double *quot = new double[A.size];
+      Matrix quot(A.rowsize, A.colsize);
 	for (int i = 0; i < A.size; ++i) {
-	    quot[i] = A.data[i] / b;
+	    quot.data[i] = A.data[i] / b;
 	}
-	Matrix temp = Matrix (quot, A.rowsize, A.colsize);
-	delete[]quot;
-	return temp;
+	return quot;
     }
     
 //  OPERATOR: Division
@@ -3229,13 +2437,11 @@ Matrix sumc (const Matrix & A)
     Matrix operator / (const double &a, const Matrix & B)
     {
 	
-	double *quot = new double[B.size];
+      Matrix quot(B.rowsize, B.colsize);
 	for (int i = 0; i < B.size; ++i) {
-	    quot[i] = a / B.data[i];
+	    quot.data[i] = a / B.data[i];
 	}
-	Matrix temp = Matrix (quot, B.rowsize, B.colsize);
-	delete[]quot;
-	return temp;
+	return quot;
     }
     
     
@@ -3247,21 +2453,19 @@ Matrix sumc (const Matrix & A)
  * \return the result of the Kronecker Multiplication of the 2 Matrices.
  */
     Matrix operator % (const Matrix& A, const Matrix& B){
-	double* newdata = new double[A.size * B.size];
+      Matrix newdata(A.rowsize*B.rowsize, A.colsize*B.colsize);
 	int count = 0;
 	for (int i=0; i<A.rowsize; ++i){
 	    for (int j=0; j<B.rowsize; ++j){
 		for (int k=0; k<A.colsize; ++k){
 		    for (int m=0; m<B.colsize; ++m){
-			newdata[count] = A.data[i*A.colsize + k] * B.data[j*B.colsize + m];
+			newdata.data[count] = A.data[i*A.colsize + k] * B.data[j*B.colsize + m];
 			++count;
 		    }
 		}
 	    }
 	}
-	Matrix temp = Matrix (newdata, A.rowsize*B.rowsize, A.colsize*B.colsize);
-	delete[] newdata;
-	return temp;
+	return newdata;
     }
     
     
@@ -3308,47 +2512,39 @@ Matrix sumc (const Matrix & A)
 	}
 	
 	if (A.rowsize == B.rowsize && A.colsize == B.colsize){
-	    double *newdata = new double[A.size];
+	  Matrix newdata(A.rowsize, A.colsize);
 	    for (int i = 0; i<A.size; ++i){
-		newdata[i] = A.data[i] > B.data[i];
+		newdata.data[i] = A.data[i] > B.data[i];
 	    }
-	    Matrix temp = Matrix(newdata, A.rowsize, A.colsize);
-	    delete[]  newdata;
-	    return temp;
+	    return newdata;
 	}
 	
 	if (A.rowsize == B.rowsize && B.colsize == 1){
-	    double *newdata = new double[A.size];
+    	    Matrix newdata(A.rowsize, A.colsize);
 	    for (int i=0; i<A.rowsize; ++i){
 		for (int j=0; j<A.colsize; ++j){
-		    newdata[i*A.colsize + j] = A.data[i*A.colsize + j] > B.data[i];
+		    newdata.data[i*A.colsize + j] = A.data[i*A.colsize + j] > B.data[i];
 		}
 	    }
-	    Matrix temp = Matrix(newdata, A.rowsize, A.colsize);
-	    delete[] newdata;
-	    return temp;
+	    return newdata;
 	}
 	
 	if (A.colsize == B.colsize && B.rowsize == 1){
-	    double *newdata = new double[A.size];
+    	    Matrix newdata(A.rowsize, A.colsize);
 	    for (int i=0; i<A.rowsize; ++i){
 		for (int j=0; j<A.colsize; ++j){
-		    newdata[i*A.colsize + j] = A.data[i*A.colsize + j] > B.data[j];
+		    newdata.data[i*A.colsize + j] = A.data[i*A.colsize + j] > B.data[j];
 		}
 	    }
-	    Matrix temp = Matrix(newdata, A.rowsize, A.colsize);
-	    delete[] newdata;
-	    return temp;
+	    return newdata;
 	}
 	
 	if (B.size == 1){
-	    double *newdata = new double[A.size];
+   	    Matrix newdata(A.rowsize, A.colsize);
 	    for (int i=0; i<A.size; ++i){
-		newdata[i] = A.data[i] > B.data[0];
+		newdata.data[i] = A.data[i] > B.data[0];
 	    }
-	    Matrix temp = Matrix(newdata, A.rowsize, A.colsize);
-	    delete[] newdata;
-	    return temp;  
+	    return newdata;  
 	} else {
 	    cerr << "ERROR 0060: Matrices not conformable for >> operator\n"
 		 << "exiting program due to error" 
@@ -3362,13 +2558,11 @@ Matrix sumc (const Matrix & A)
   \overload Matrix operator >> (const Matrix& A, const double& b)
 */
     Matrix operator >> (const Matrix& A, const double& b){
-	double *newdata = new double[A.size];
+	Matrix newdata(A.rowsize, A.colsize);
 	for (int i=0; i<A.size; ++i){
-	    newdata[i] = A.data[i] > b;
+	    newdata.data[i] = A.data[i] > b;
 	}
-	Matrix temp = Matrix(newdata, A.rowsize, A.colsize);
-	delete[] newdata;
-	return temp;
+	return newdata;
     }
     
 //!  OPERATOR: Element-by-scalar Less Than
@@ -3388,47 +2582,39 @@ Matrix sumc (const Matrix & A)
 	}
 	
 	if (A.rowsize == B.rowsize && A.colsize == B.colsize){
-	    double *newdata = new double[A.size];
+  	  Matrix newdata(A.rowsize, A.colsize);
 	    for (int i = 0; i<A.size; ++i){
-		newdata[i] = A.data[i] < B.data[i];
+		newdata.data[i] = A.data[i] < B.data[i];
 	    }
-	    Matrix temp = Matrix(newdata, A.rowsize, A.colsize);
-	    delete[]  newdata;
-	    return temp;
+	    return newdata;
 	}
 	
 	if (A.rowsize == B.rowsize && B.colsize == 1){
-	    double *newdata = new double[A.size];
+	  Matrix newdata(A.rowsize, A.colsize);
 	    for (int i=0; i<A.rowsize; ++i){
 		for (int j=0; j<A.colsize; ++j){
-		    newdata[i*A.colsize + j] = A.data[i*A.colsize + j] < B.data[i];
+		    newdata.data[i*A.colsize + j] = A.data[i*A.colsize + j] < B.data[i];
 		}
 	    }
-	    Matrix temp = Matrix(newdata, A.rowsize, A.colsize);
-	    delete[] newdata;
-	    return temp;
+	    return newdata;
 	}
 	
 	if (A.colsize == B.colsize && B.rowsize == 1){
-	    double *newdata = new double[A.size];
+	  Matrix newdata(A.rowsize, A.colsize);
 	    for (int i=0; i<A.rowsize; ++i){
 		for (int j=0; j<A.colsize; ++j){
-		    newdata[i*A.colsize + j] = A.data[i*A.colsize + j] < B.data[j];
+		    newdata.data[i*A.colsize + j] = A.data[i*A.colsize + j] < B.data[j];
 		}
 	    }
-	    Matrix temp = Matrix(newdata, A.rowsize, A.colsize);
-	    delete[] newdata;
-	    return temp;
+	    return newdata;
 	}
 	
 	if (B.size == 1){
-	    double *newdata = new double[A.size];
+	  Matrix newdata(A.rowsize, A.colsize);
 	    for (int i=0; i<A.size; ++i){
-		newdata[i] = A.data[i] < B.data[0];
+		newdata.data[i] = A.data[i] < B.data[0];
 	    }
-	    Matrix temp = Matrix(newdata, A.rowsize, A.colsize);
-	    delete[] newdata;
-	    return temp;  
+	    return newdata;  
 	}
 	
 	else {
@@ -3445,13 +2631,11 @@ Matrix sumc (const Matrix & A)
 */
     Matrix operator << (const Matrix& A, const double& b)
     {
-	double *newdata = new double[A.size];
+        Matrix newdata(A.rowsize, A.colsize);
 	for (int i=0; i<A.size; ++i){
-	    newdata[i] = A.data[i] < b;
+	    newdata.data[i] = A.data[i] < b;
 	}
-	Matrix temp = Matrix(newdata, A.rowsize, A.colsize);
-	delete[] newdata;
-	return temp;
+	return newdata;
     }
     
     
@@ -3472,47 +2656,39 @@ Matrix sumc (const Matrix & A)
 	}
 	
 	if (A.rowsize == B.rowsize && A.colsize == B.colsize){
-	    double *newdata = new double[A.size];
+	  Matrix newdata(A.rowsize, A.colsize);
 	    for (int i = 0; i<A.size; ++i){
-		newdata[i] = A.data[i] == B.data[i];
+		newdata.data[i] = A.data[i] == B.data[i];
 	    }
-	    Matrix temp = Matrix(newdata, A.rowsize, A.colsize);
-	    delete[]  newdata;
-	    return temp;
+	    return newdata;
 	}
 	
 	if (A.rowsize == B.rowsize && B.colsize == 1){
-	    double *newdata = new double[A.size];
+	  Matrix newdata(A.rowsize, A.colsize);
 	    for (int i=0; i<A.rowsize; ++i){
 		for (int j=0; j<A.colsize; ++j){
-		    newdata[i*A.colsize + j] = A.data[i*A.colsize + j] == B.data[i];
+		    newdata.data[i*A.colsize + j] = A.data[i*A.colsize + j] == B.data[i];
 		}
 	    }
-	    Matrix temp = Matrix(newdata, A.rowsize, A.colsize);
-	    delete[] newdata;
-	    return temp;
+	    return newdata;
 	}
 	
 	if (A.colsize == B.colsize && B.rowsize == 1){
-	    double *newdata = new double[A.size];
+	  Matrix newdata(A.rowsize, A.colsize);
 	    for (int i=0; i<A.rowsize; ++i){
 		for (int j=0; j<A.colsize; ++j){
-		    newdata[i*A.colsize + j] = A.data[i*A.colsize + j] == B.data[j];
+		    newdata.data[i*A.colsize + j] = A.data[i*A.colsize + j] == B.data[j];
 		}
 	    }
-	    Matrix temp = Matrix(newdata, A.rowsize, A.colsize);
-	    delete[] newdata;
-	    return temp;
+	    return newdata;
 	}
 	
 	if (B.size == 1){
-	    double *newdata = new double[A.size];
+	  Matrix newdata(A.rowsize, A.colsize);
 	    for (int i=0; i<A.size; ++i){
-		newdata[i] = A.data[i] == B.data[0];
+		newdata.data[i] = A.data[i] == B.data[0];
 	    }
-	    Matrix temp = Matrix(newdata, A.rowsize, A.colsize);
-	    delete[] newdata;
-	    return temp;  
+	    return newdata;  
 	}
 	
 	else {
@@ -3530,13 +2706,11 @@ Matrix sumc (const Matrix & A)
 */
     Matrix operator ^= (const Matrix& A, const double& b)
     {
-	double *newdata = new double[A.size];
+      Matrix newdata(A.rowsize, A.colsize);
 	for (int i=0; i<A.size; ++i){
-	    newdata[i] = A.data[i] == b;
+	    newdata.data[i] = A.data[i] == b;
 	}
-	Matrix temp = Matrix(newdata, A.rowsize, A.colsize);
-	delete[] newdata;
-	return temp;
+	return newdata;
     }
     
     

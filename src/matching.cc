@@ -19,14 +19,20 @@ using namespace std;
 #include <math.h>
 #include <R.h>
 
+#if defined(__darwin__) || defined(__APPLE__)
+#include <vecLib/cblas.h>
+#else
+#define INTERNAL_CBLAS
 #include <R_ext/Applic.h>
-
+#endif
 
 #include "matching.h"
 
 extern "C"
 {
 #include <Rdefines.h>
+
+#ifdef INTERNAL_CBLAS
 #include "cblas.h"
 
   void cblas_dgemm(const enum CBLAS_ORDER Order, const enum CBLAS_TRANSPOSE TransA,
@@ -34,6 +40,7 @@ extern "C"
 		   const int K, const double alpha, const double  *A,
 		   const int lda, const double  *B, const int ldb,
 		   const double beta, double  *C, const int ldc);
+#endif
 
   
   SEXP FastMatchC(SEXP I_N, SEXP I_xvars, SEXP I_All, SEXP I_M, SEXP I_cdd,

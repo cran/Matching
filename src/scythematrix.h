@@ -1,6 +1,9 @@
-/* Edited by Jasjeet S. Sekhon <jasjeet_sekhon@harvard.edu> */
-/* HTTP://jsekhon.fas.harvard.edu/                          */
-/* Feb 14, 2005                                             */
+/* Edited by Jasjeet S. Sekhon <jasjeet_sekhon@berkeley.edu> */
+/* HTTP://sekhon.berkeley.edu                                */
+/* May 25, 2005                                              */
+/* __NATE__ additions by Nate Begeman (Apple)                */
+
+
 //
 // This library is the class definition of the Matrix class, part of
 // the SCYTHE project.
@@ -49,7 +52,7 @@
 #include <iomanip>
 #include <fstream>
 #include <sstream>
-#include <new>
+ /* #include <new> we've moved to malloc */
 #include <numeric>
 #include <string>
 #include <climits>
@@ -86,7 +89,8 @@ public:
 			rowsize = 1;
 			colsize = 1;
 			size = 1;
-			data = new double[1];
+			//data = new double[1];
+			data = (double *) malloc(1*sizeof(double));
 			data[0] = 0.0;
 		}
 
@@ -243,7 +247,8 @@ public:
 //  Dependencies:  none
 
    inline ~Matrix (void) {
-     delete[] data;
+     //delete[] data;
+     free(data);
      data = NULL;
    }
 
