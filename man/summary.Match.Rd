@@ -22,7 +22,7 @@
 }
 \seealso{ Also see \code{\link{Match}}, \code{\link{GenMatch}},
   \code{\link{MatchBalance}}, \code{\link{balanceMV}},
-  \code{\link{balanceUV}}, \code{\link{ks.boot}},
+  \code{\link{balanceUV}}, \code{\link{qqstats}}, \code{\link{ks.boot}},
   \code{\link{GerberGreenImai}}, \code{\link{lalonde}}
 }
 \keyword{htest}

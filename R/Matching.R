@@ -1172,6 +1172,9 @@ balanceUV  <- function(Tr, Co, weights=rep(1,length(Co)), exact=FALSE, ks=FALSE,
         var.Co  <- sum( ( (Co - mean.Co)^2 )*weights.Co)/(obs.Co-1)
         var.ratio  <- var.Tr/var.Co
 
+        qqsummary <- qqstats(x=Tr, y=Co, standardize=TRUE)
+        qqsummary.raw <- qqstats(x=Tr, y=Co, standardize=FALSE)
+
         tt  <- Mt.test.unpaired(Tr, Co,
                                 weights.Tr=weights.Tr,
                                 weights.Co=weights.Co)
@@ -1187,6 +1190,9 @@ balanceUV  <- function(Tr, Co, weights=rep(1,length(Co)), exact=FALSE, ks=FALSE,
         var.Co  <- sum( ( (Co - mean.Co)^2 )*weights)/sum(weights);
         var.ratio  <- var.Tr/var.Co
 
+        qqsummary <- qqstats(x=Tr, y=Co, standardize=TRUE)
+        qqsummary.raw <- qqstats(x=Tr, y=Co, standardize=FALSE)
+
         if(paired)
           {
             tt  <- Mt.test(Tr, Co, weights)
@@ -1201,7 +1207,9 @@ balanceUV  <- function(Tr, Co, weights=rep(1,length(Co)), exact=FALSE, ks=FALSE,
     ret  <- list(sdiff=sbalance,mean.Tr=mean.Tr,mean.Co=mean.Co,
                  var.Tr=var.Tr,var.Co=var.Co, p.value=tt$p.value,
                  var.ratio=var.ratio,
-                 ks=ks.out, tt=tt)
+                 ks=ks.out, tt=tt,
+                 qqsummary=qqsummary,
+                 qqsummary.raw=qqsummary.raw)
 
     class(ret) <-  "balanceUV"
     return(ret)
@@ -1216,7 +1224,16 @@ summary.balanceUV  <- function(object, ..., digits=5)
     }
 
     cat("mean treatment........", format(object$mean.Tr, digits=digits),"\n")
-    cat("mean control..........", format(object$mean.Co, digits=digits),"\n")
+    cat("mean control..........", format(object$mean.Co, digits=digits),"\n\n")
+
+    cat("mean std eQQ diff.....", format(object$qqsummary$meandiff, digits=digits),"\n")
+    cat("med  std eQQ diff.....", format(object$qqsummary$mediandiff, digits=digits),"\n")
+    cat("max  std eQQ diff ....", format(object$qqsummary$maxdiff, digits=digits),"\n\n")
+
+    cat("mean raw eQQ diff.....", format(object$qqsummary.raw$meandiff, digits=digits),"\n")
+    cat("med  raw eQQ diff.....", format(object$qqsummary.raw$mediandiff, digits=digits),"\n")
+    cat("max  raw eQQ diff.....", format(object$qqsummary.raw$maxdiff, digits=digits),"\n\n")
+    
 #       cat("sdiff.................", format(object$sdiff, digits=digits),"\n")            
     cat("var ratio (Tr/Co).....", format(object$var.ratio, digits=digits),"\n")
     cat("T-test p-value........", format.pval(object$tt$p.value,digits=digits), "\n")            
@@ -1231,6 +1248,76 @@ summary.balanceUV  <- function(object, ..., digits=5)
       }
     cat("\n")        
   } #end of summary.balanceUV
+
+
+#print Before and After balanceUV together
+PrintBalanceUV  <- function(BeforeBalance, AfterBalance, ..., digits=5)
+  {
+
+    if (class(BeforeBalance) != "balanceUV") {
+      warning("BeforeBalance not of class 'balanceUV'")
+      return(NULL)
+    }
+
+    if (class(AfterBalance) != "balanceUV") {
+      warning("AfterBalance not of class 'balanceUV'")
+      return(NULL)
+    }
+
+    space.size <- digits*2
+#    space <- rep(" ",space.size)
+
+    cat("                      ", "Before Matching", "\t \t After Matching\n")
+    cat("mean treatment........", format(BeforeBalance$mean.Tr, digits=digits, width=space.size), "\t \t",
+        format(AfterBalance$mean.Tr, digits=digits, width=space.size), 
+        "\n")
+    cat("mean control..........", format(BeforeBalance$mean.Co, digits=digits, width=space.size), "\t \t",
+        format(AfterBalance$mean.Co, digits=digits, width=space.size),
+        "\n\n")
+    
+    cat("mean std eQQ diff.....", format(BeforeBalance$qqsummary$meandiff, digits=digits, width=space.size), "\t \t",
+        format(AfterBalance$qqsummary$meandiff, digits=digits, width=space.size),
+        "\n")
+    cat("med  std eQQ diff.....", format(BeforeBalance$qqsummary$mediandiff, digits=digits, width=space.size), "\t \t",
+        format(AfterBalance$qqsummary$mediandiff, digits=digits, width=space.size),
+        "\n")
+    cat("max  std eQQ diff ....", format(BeforeBalance$qqsummary$maxdiff, digits=digits, width=space.size), "\t \t",
+        format(AfterBalance$qqsummary$maxdiff, digits=digits, width=space.size),
+        "\n\n")
+    
+    cat("mean raw eQQ diff.....", format(BeforeBalance$qqsummary.raw$meandiff, digits=digits, width=space.size), "\t \t",
+        format(AfterBalance$qqsummary.raw$meandiff, digits=digits, width=space.size),
+        "\n")
+    cat("med  raw eQQ diff.....", format(BeforeBalance$qqsummary.raw$mediandiff, digits=digits, width=space.size), "\t \t",
+        format(AfterBalance$qqsummary.raw$mediandiff, digits=digits, width=space.size),
+        "\n")
+    cat("max  raw eQQ diff.....", format(BeforeBalance$qqsummary.raw$maxdiff, digits=digits, width=space.size), "\t \t",
+        format(AfterBalance$qqsummary.raw$maxdiff, digits=digits, width=space.size),
+        "\n\n")
+    
+    cat("var ratio (Tr/Co).....", format(BeforeBalance$var.ratio, digits=digits, width=space.size), "\t \t",
+        format(AfterBalance$var.ratio, digits=digits, width=space.size),
+        "\n")
+    cat("T-test p-value........", format(format.pval(BeforeBalance$tt$p.value,digits=digits), justify="right", width=space.size), "\t \t",
+        format(format.pval(AfterBalance$tt$p.value,digits=digits), justify="right", width=space.size),
+        "\n")            
+    if (!is.null(BeforeBalance$ks))
+      {
+        if(!is.na(BeforeBalance$ks$ks.boot.pvalue))
+          {
+            cat("KS Bootstrap p-value..", format(format.pval(BeforeBalance$ks$ks.boot.pvalue, digits=digits),  justify="right",width=space.size), "\t \t",
+                format(format.pval(AfterBalance$ks$ks.boot.pvalue, digits=digits),  justify="right", width=space.size),
+                "\n")
+          }
+        cat("KS Naive p-value......", format(format.pval(BeforeBalance$ks$ks$p.value, digits=digits),  justify="right",width=space.size), "\t \t",
+            format(format.pval(AfterBalance$ks$ks$p.value, digits=digits),  justify="right",width=space.size),
+            "\n")                        
+        cat("KS Statistic..........", format(BeforeBalance$ks$ks$statistic, digits=digits, width=space.size), "\t \t",
+            format(AfterBalance$ks$ks$statistic, digits=digits, width=space.size),
+            "\n")
+      }
+    cat("\n")        
+  } #end of PrintBalanceUV
 
 
 #removed as of 0.99-7 (codetools)
@@ -1320,56 +1407,64 @@ ks<-function(x,y,w=F,sig=T){
 #
 #  Missing values are automatically removed
 #
-x<-x[!is.na(x)]
-y<-y[!is.na(y)]
-w<-as.logical(w)
-sig<-as.logical(sig)
-tie<-logical(1)
-tie<-F
-siglevel<-NA
-z<-sort(c(x,y))  # Pool and sort the observations
-for (i in 2:length(z))if(z[i-1]==z[i])tie<-T #check for ties
-v<-1   # Initializes v
-for (i in 1:length(z))v[i]<-abs(ecdf(x,z[i])-ecdf(y,z[i]))
-ks<-max(v)
-crit<-1.36*sqrt((length(x)+length(y))/(length(x)*length(y))) # Approximate
-#                                                       .05 critical value
-if(!w && sig && !tie)siglevel<-kssig(length(x),length(y),ks)
-if(!w && sig && tie)siglevel<-kstiesig(x,y,ks)
-if(w){
-crit<-(max(length(x),length(y))-5)*.48/95+2.58+abs(length(x)-length(y))*.44/95
-if(length(x)>100 || length(y)>100){
-print("When either sample size is greater than 100,")
-print("the approximate critical value can be inaccurate.")
-print("It is recommended that the exact significance level be computed.")
-}
-for (i in 1:length(z)){
-temp<-(length(x)*ecdf(x,z[i])+length(y)*ecdf(y,z[i]))/length(z)
-temp<-temp*(1.-temp)
-v[i]<-v[i]/sqrt(temp)
-}
-v<-v[!is.na(v)]
-ks<-max(v)*sqrt(length(x)*length(y)/length(z))
-if(sig)siglevel<-kswsig(length(x),length(y),ks)
-if(tie && sig){
-print("Ties were detected. The reported significance level")
-print("of the weighted Kolmogorov-Smirnov test statistic is not exact.")
-}}
-#round off siglevel in a nicer way
-if(is.real(ks) & is.real(crit) & !is.na(ks) & !is.na(crit))
-  {
-    if (is.na(siglevel) & ks < crit)
-      {
-        siglevel  <- 0.99999837212332
-      }
-    if (is.real(siglevel) & !is.na(siglevel))
-      {
-        if (siglevel < 0)
-          siglevel  <- 0
-      }
-  }
 
-list(test=ks,critval=crit,pval=siglevel)
+  ecdf<-function(x,val){
+  #  compute empirical cdf for data in x evaluated at val
+  #  That is, estimate P(X <= val) 
+  #
+    ecdf<-length(x[x<=val])/length(x)
+    ecdf
+  }#end ecdf
+  
+  x<-x[!is.na(x)]
+  y<-y[!is.na(y)]
+  w<-as.logical(w)
+  sig<-as.logical(sig)
+  tie<-logical(1)
+  tie<-F
+  siglevel<-NA
+  z<-sort(c(x,y))  # Pool and sort the observations
+  for (i in 2:length(z))if(z[i-1]==z[i])tie<-T #check for ties
+  v<-1   # Initializes v
+  for (i in 1:length(z))v[i]<-abs(ecdf(x,z[i])-ecdf(y,z[i]))
+  ks<-max(v)
+  crit<-1.36*sqrt((length(x)+length(y))/(length(x)*length(y))) # Approximate
+#                                                       .05 critical value
+  if(!w && sig && !tie)siglevel<-kssig(length(x),length(y),ks)
+  if(!w && sig && tie)siglevel<-kstiesig(x,y,ks)
+  if(w){
+    crit<-(max(length(x),length(y))-5)*.48/95+2.58+abs(length(x)-length(y))*.44/95
+    if(length(x)>100 || length(y)>100){
+      print("When either sample size is greater than 100,")
+      print("the approximate critical value can be inaccurate.")
+      print("It is recommended that the exact significance level be computed.")
+    }
+    for (i in 1:length(z)){
+      temp<-(length(x)*ecdf(x,z[i])+length(y)*ecdf(y,z[i]))/length(z)
+      temp<-temp*(1.-temp)
+      v[i]<-v[i]/sqrt(temp)
+    }
+    v<-v[!is.na(v)]
+    ks<-max(v)*sqrt(length(x)*length(y)/length(z))
+    if(sig)siglevel<-kswsig(length(x),length(y),ks)
+    if(tie && sig){
+      print("Ties were detected. The reported significance level")
+      print("of the weighted Kolmogorov-Smirnov test statistic is not exact.")
+    }}
+                                        #round off siglevel in a nicer way
+  if(is.real(ks) & is.real(crit) & !is.na(ks) & !is.na(crit))
+    {
+      if (is.na(siglevel) & ks < crit)
+        {
+          siglevel  <- 0.99999837212332
+        }
+      if (is.real(siglevel) & !is.na(siglevel))
+        {
+          if (siglevel < 0)
+            siglevel  <- 0
+        }
+    }
+  list(test=ks,critval=crit,pval=siglevel)
 }
 
 
@@ -1424,13 +1519,7 @@ kstiesig<-1.-umat[m+1,n+1]/exp(term)
 kstiesig
 }
 
-ecdf<-function(x,val){
-#  compute empirical cdf for data in x evaluated at val
-#  That is, estimate P(X <= val)
-#
-ecdf<-length(x[x<=val])/length(x)
-ecdf
-}
+
 
 kswsig<-function(m,n,val){
 #
@@ -1594,7 +1683,7 @@ Mt.test.unpaired  <- function(Tr, Co,
   } #end of Mt.test.unpaired
 
 MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE, 
-                         nboots=1000, nmc=nboots, 
+                         nboots=500, nmc=nboots, 
                          maxit=1000, weights=rep(1,nrow(data)),
                          digits=5, verbose=1, paired=TRUE, ...)
   {
@@ -1678,53 +1767,58 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
             if (ks & !is.dummy)
               ks.do  <- TRUE
 
-            cat("before matching:\n")
-            foo  <-  balanceUV(xdata[,i][Tr==1], xdata[,i][Tr==0], nboots=0,
+            BeforeBalance  <-  balanceUV(xdata[,i][Tr==1], xdata[,i][Tr==0], nboots=0,
                                weights.Tr=weights[Tr==1], weights.Co=weights[Tr==0],
                                match=FALSE)
             if (ks.do)
               {
-              foo$ks <- list()
+              BeforeBalance$ks <- list()
               if (nboots > 0)
                 {
-                  foo$ks$ks.boot.pvalue <- ks.bm$ks.boot.pval[count]
+                  BeforeBalance$ks$ks.boot.pvalue <- ks.bm$ks.boot.pval[count]
                 } else {
-                  foo$ks$ks.boot.pvalue <- NA
+                  BeforeBalance$ks$ks.boot.pvalue <- NA
                 }
-              foo$ks$ks <- list()
-              foo$ks$ks$p.value <- ks.bm$ks.naive.pval[count]
-              foo$ks$ks$statistic <- ks.bm$ks.stat[count]
+              BeforeBalance$ks$ks <- list()
+              BeforeBalance$ks$ks$p.value <- ks.bm$ks.naive.pval[count]
+              BeforeBalance$ks$ks$statistic <- ks.bm$ks.stat[count]
             } else {
-              foo$ks <- NULL
+              BeforeBalance$ks <- NULL
             }
-            summary(foo, digits=digits)
+#            summary(BeforeBalance, digits=digits)
             
             if (!is.null(match.out))
               {
-                cat("after  matching:\n")
-                foo  <- balanceUV(xdata[,i][match.out$index.treated],
+#                cat("after  matching:\n")
+                AfterBalance  <- balanceUV(xdata[,i][match.out$index.treated],
                                   xdata[,i][match.out$index.control],
                                   weights=match.out$weights, nboots=0,
                                   paired=paired, match=TRUE)
 
                 if (ks.do)
                   {                
-                    foo$ks <- list()
+                    AfterBalance$ks <- list()
                     if (nboots > 0)
                       {
-                        foo$ks$ks.boot.pvalue <- ks.am$ks.boot.pval[count]
+                        AfterBalance$ks$ks.boot.pvalue <- ks.am$ks.boot.pval[count]
                       } else {
-                        foo$ks$ks.boot.pvalue <- NA
+                        AfterBalance$ks$ks.boot.pvalue <- NA
                       }                    
-                    foo$ks$ks <- list()
-                    foo$ks$ks$p.value <- ks.am$ks.naive.pval[count]
-                    foo$ks$ks$statistic <- ks.am$ks.stat[count]
+                    AfterBalance$ks$ks <- list()
+                    AfterBalance$ks$ks$p.value <- ks.am$ks.naive.pval[count]
+                    AfterBalance$ks$ks$statistic <- ks.am$ks.stat[count]
                   } else {
-                    foo$ks <- NULL
+                    AfterBalance$ks <- NULL
                   }
-                summary(foo, digits=digits)                
-              }
-          }
+#                summary(AfterBalance, digits=digits)
+                PrintBalanceUV(BeforeBalance, AfterBalance, digits=digits)
+                foo <- AfterBalance
+              } else {
+                cat("before matching:\n")
+                summary(BeforeBalance, digits=digits)
+                foo <- BeforeBalance
+              } #end of if match.out
+          } #end of for
         
         if (mv)  {
           cat("...estimating Kolmogorov-Smirnov tests...\n")
@@ -1754,16 +1848,18 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
             if (ks & !is.dummy)
               ks.do  <- TRUE
 
-            foo  <-  balanceUV(xdata[,i][Tr==1], xdata[,i][Tr==0], nboots=0,
-                               weights.Tr=weights[Tr==1], weights.Co=weights[Tr==0],
-                               match=FALSE)
-            
             if (!is.null(match.out))
               {
-                foo  <- balanceUV(xdata[,i][match.out$index.treated],
-                                  xdata[,i][match.out$index.control],
-                                  weights=match.out$weights, nboots=0,
-                                  paired=paired, match=TRUE)
+                AfterBalance  <- balanceUV(xdata[,i][match.out$index.treated],
+                                           xdata[,i][match.out$index.control],
+                                           weights=match.out$weights, nboots=0,
+                                           paired=paired, match=TRUE)
+                foo <- AfterBalance
+              } else {
+                BeforeBalance  <-  balanceUV(xdata[,i][Tr==1], xdata[,i][Tr==0], nboots=0,
+                                            weights.Tr=weights[Tr==1], weights.Co=weights[Tr==0],
+                                            match=FALSE)
+                foo <- BeforeBalance
               }
           }
         
@@ -2843,5 +2939,19 @@ MatchLoopC <- function(N, xvars, All, M, cdd, caliperflag, ww, Tr, Xmod, weights
     return(ret)
   } #end of MatchLoopC
 
+
+
+.onAttach <- function( ... )
+{
+  MatchLib <- dirname(system.file(package = "Matching"))
+  version <- packageDescription("Matching", lib = MatchLib)$Version
+  BuildDate <- packageDescription("Matching", lib = MatchLib)$Date
+  cat(paste("## \n##  Matching (Version ", version, ", Build Date: ", BuildDate, ")\n", sep = "")) 
+  cat("##  Please see http://sekhon.berkeley.edu/matching for documentation, \n",
+      "##  examples and supporting articles.  Please cite software as:\n",
+      "##   Jasjeet S. Sekhon. 2006.``Matching: Algorithms and Software for Multivariate\n",
+      "##   and Propensity Score Matching with Balance Optimization via Genetic Search.''\n##\n",
+      sep="")
+}
 
 

@@ -160,6 +160,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                      pop.size = 50, max.generations=100,
                      wait.generations=4, hard.generation.limit=FALSE,
                      starting.values=rep(1,ncol(X)),
+                     fit.func="pvals",
                      data.type.integer=TRUE,
                      MemoryMatrix=TRUE,
                      exact=NULL, caliper=NULL, 
@@ -316,6 +317,20 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         lexical=1
       } else {
         stop("unknown loss function")
+      }
+
+    #set lexical for fit.func
+    if (is.function(fit.func))
+      {
+        lexical = 1
+      } else if (fit.func=="qqmean.max" | fit.func=="qqmedian.max" | fit.func=="qqmax.max")   {
+        lexical=ncol(BalanceMatrix)
+      } else  if (!fit.func=="pvals") {
+        lexical = 0
+      } else if (fit.func!="qqmean.mean" & fit.func!="qqmean.max" &
+                 fit.func!="qqmedian.median" & fit.func!="qqmedian.max"
+                 & fit.func!="pvals") {
+        stop("invalid 'fit.func' argument")
       }
 
     #check the restrict matrix input
@@ -656,11 +671,72 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
             return(output)
           } #end of GenBalance.internal
 
-        a <- GenBalance.internal(rr=rr, X=BalanceMatrix, nvars=balancevars, nboots=nboots,
-                                 ks=ks, verbose=verbose, paired=paired)
-        a <- loss.func(a)
+        GenBalanceQQ.internal <- function(rr, X, summarystat="mean", summaryfunc="mean")
+          {
+            index.treated <- rr[,1]
+            index.control <- rr[,2]
+    
+            nvars <- ncol(X)
+            qqsummary   <- c(rep(NA,nvars))
+            
+            for (i in 1:nvars)
+              {    
+                
+                qqfoo <- qqstats(X[,i][index.treated], X[,i][index.control], standardize=TRUE)
+                
+                if (summarystat=="median")
+                  {
+                    qqsummary[i] <- qqfoo$mediandiff
+                  } else if (summarystat=="max")  {
+                    qqsummary[i] <- qqfoo$maxdiff    
+                  } else {
+                    qqsummary[i] <- qqfoo$meandiff
+                  }
+                
+              } #end of for loop
+            
+            
+            if (summaryfunc=="median")
+              {
+                return(median(qqsummary))
+              } else if (summaryfunc=="max")  {
+                return(sort(qqsummary, decreasing=TRUE))
+              } else if (summaryfunc=="sort")  {
+                return(sort(qqsummary, decreasing=TRUE))
+              } else {
+                return(mean(qqsummary))
+              }    
+          } #end of GenBalanceQQ.internal
 
-        return(a)
+
+        if (is.function(fit.func)) {
+          a <- fit.funct(rr, BalanceMatrix)
+          return(a)
+        } else if (fit.func=="pvals")
+          {
+            a <- GenBalance.internal(rr=rr, X=BalanceMatrix, nvars=balancevars, nboots=nboots,
+                                     ks=ks, verbose=verbose, paired=paired)
+            a <- loss.func(a)
+            return(a)
+          } else if (fit.func=="qqmean.mean") {
+            a <- GenBalanceQQ.internal(rr=rr, X=BalanceMatrix, summarystat="mean", summaryfunc="mean")
+            return(a)
+          } else if (fit.func=="qqmean.max") {
+            a <- GenBalanceQQ.internal(rr=rr, X=BalanceMatrix, summarystat="mean", summaryfunc="max")
+            return(a)
+          } else if (fit.func=="qqmax.mean") {
+            a <- GenBalanceQQ.internal(rr=rr, X=BalanceMatrix, summarystat="max", summaryfunc="mean")
+            return(a)            
+          } else if (fit.func=="qqmax.max") {
+            a <- GenBalanceQQ.internal(rr=rr, X=BalanceMatrix, summarystat="max", summaryfunc="max")
+            return(a)                        
+          } else if (fit.func=="qqmedian.median") {
+            a <- GenBalanceQQ.internal(rr=rr, X=BalanceMatrix, summarystat="median", summaryfunc="median")
+            return(a)
+          } else if (fit.func=="qqmedian.max") {
+            a <- GenBalanceQQ.internal(rr=rr, X=BalanceMatrix, summarystat="median", summaryfunc="max")
+            return(a)
+          } 
       } #end genoudfunc
 
     #cluster info
@@ -717,7 +793,8 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         clusterEvalQ(cl, library("Matching"))
         GENclusterExport(cl, c("s1.N", "s1.All", "s1.M", "s1.Tr", "s1.X", "nvars",
                                "tolerance", "distance.tolerance", "weights",
-                               "BalanceMatrix", "balancevars", "nboots", "ks", "verbose", "paired", "loss.func"))
+                               "BalanceMatrix", "balancevars", "nboots", "ks", "verbose", "paired", "loss.func",
+                               "fit.func"))
 
         if(GenMatchCaliper.trigger) {
           GENclusterExport(cl, c("caliperFlag", "CaliperVec", "Xorig", "restrict.trigger", "restrict"))
@@ -725,13 +802,19 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         
         GENclusterExport(cl, "genoudfunc")
       }
+
+    if (fit.func=="pvals") {
+      do.max=TRUE
+    } else {
+      do.max=FALSE
+    }
     
     rr <- genoud(genoudfunc, nvars=nvars, starting.values=starting.values,
                  pop.size=pop.size, max.generations=max.generations,
                  wait.generations=wait.generations, hard.generation.limit=hard.generation.limit,
                  Domains=Domains,
                  MemoryMatrix=MemoryMatrix,
-                 max=TRUE, gradient.check=FALSE, data.type.int=data.type.integer,
+                 max=do.max, gradient.check=FALSE, data.type.int=data.type.integer,
                  hessian=FALSE,
                  BFGS=FALSE, project.path=project.path, print.level=print.level,
                  lexical=lexical,

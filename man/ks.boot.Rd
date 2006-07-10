@@ -35,8 +35,13 @@ ks.boot(Tr, Co, nboots=1000, alternative = c("two.sided", "less", "greater"), ve
   \url{http://sekhon.berkeley.edu/}.  
 }
 \references{
-  Sekhon, Jasjeet S. 2004.  ``Balance Tests for Matching
-  Estimators.''  Working Paper.
+  Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias
+  Reduction in Matching Methods for Causal Inference.''
+  \url{http://sekhon.berkeley.edu/matching/}
+  
+  Sekhon, Jasjeet S. 2006.  ``Matching: Algorithms and Software for
+  Multivariate and Propensity Score Matching with Balance Optimization
+  via Genetic Search.'' \url{http://sekhon.berkeley.edu/matching/}    
 
   Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
   Estimating Causal Effects: A General Multivariate Matching Method for
@@ -48,10 +53,9 @@ ks.boot(Tr, Co, nboots=1000, alternative = c("two.sided", "less", "greater"), ve
   American Statistical Association}, 97:457 (March) 284-292.
   }
   \seealso{ Also see \code{\link{summary.ks.boot}},
-    \code{\link{balanceUV}}, \code{\link{Match}},
-    \code{\link{GenMatch}},
-    \code{\link{MatchBalance}},
-    \code{\link{balanceMV}}, \code{\link{GerberGreenImai}}, \code{\link{lalonde}} }
+    \code{\link{qqstats}}, \code{\link{balanceUV}}, \code{\link{Match}},
+    \code{\link{GenMatch}}, \code{\link{MatchBalance}}, \code{\link{balanceMV}},
+    \code{\link{GerberGreenImai}}, \code{\link{lalonde}} }
 \examples{
 #
 # Replication of Dehejia and Wahba psid3 model

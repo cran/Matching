@@ -2,21 +2,25 @@
 
 #Setup optimization flags.  This significantly improves performance.
 
+# Version 2.1-2+ We now use makevars on OS X all platforms instead of
+# the makefile because of build issues on OS X.  This requires moving
+# files around because we do not want our cblas wrappers compiled on
+# OS X, but we need to assume them for all other platforms.
+
 #On Windows this script does *not* need to be run.  On Windows,
 #Makevars.win should simply be used because we can assume that we are
 #using the mingw32 compiler
 
-# -fstrict-aliasing is added for OS X (already included in the Linux gcc -O2 option
+# -fstrict-aliasing -freorder-blocks -fsched-interblock is added for OS X (already included in the Linux gcc -O2 option
 # does no harm on Linux
 
 CXX=`"${R_HOME}/bin/R" CMD config CXX`
 
 echo $CXX | grep g++ > /dev/null 2>&1
 if [ "$?" -eq "0" ]; then
- CXXFLAGS="-O3 -ffast-math -funroll-loops -fexpensive-optimizations -fstrict-aliasing"
- echo "CXXFLAGS=$CXXFLAGS" > src/Makefile
- echo "PKG_CXXLDFLAGS=$PKG_CXXLDFLAGS" >> src/Makefile
- cat src/makefile.in >> src/Makefile
+ CXXFLAGS="-O3 -finline-functions -funswitch-loops -fgcse-after-reload -ffast-math -funroll-loops -fexpensive-optimizations -fstrict-aliasing -freorder-blocks -fsched-interblock"
+ echo "PKG_CXXFLAGS=$CXXFLAGS" > src/Makevars
+ echo "PKG_CFLAGS=$CXXFLAGS" >> src/Makevars
 
 # are we on osx?
 # if so, don't compile our own cblas headers
@@ -24,11 +28,9 @@ if [ "$?" -eq "0" ]; then
 UNAME=`uname -a`
 echo $UNAME | grep Darwin > /dev/null 2>&1
 if [ "$?" -eq "0" ]; then
- CXXFLAGS="-O3 -ffast-math -funroll-loops -fexpensive-optimizations -fstrict-aliasing"
- echo "CXXFLAGS=$CXXFLAGS" > src/Makefile
- echo "PKG_CXXLDFLAGS=$PKG_CXXLDFLAGS" >> src/Makefile
- cat src/makefile.osx.in >> src/Makefile
- cp inst/malloc.c src/malloc.c
+ cp inst/extras/malloc.c src/malloc.c
+ mv src/cblas_dgemm.c inst/extras
+ mv src/cblas.h inst/extras
 fi
 
 fi

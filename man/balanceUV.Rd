@@ -2,7 +2,7 @@
 \alias{balanceUV}
 \title{Univariate Balance Tests}
 \description{
-  This function provides a number of univariate balance tests.
+  This function provides a number of univariate balance metrics.
   Generally, users should call \code{\link{MatchBalance}} and not this function
   directly.
 }
@@ -49,20 +49,30 @@ balanceUV(Tr, Co, weights = rep(1, length(Co)), exact = FALSE, ks=FALSE,
   \item{p.value}{The p-value from the two-sided weighted \code{\link{t.test}}.}
   \item{var.ratio}{var.Tr/var.Co.}
   \item{ks}{The object returned by \code{\link{ks.boot}}.}
-  \item{tt}{The object returned by two-sided weighted \code{\link{t.test}}.}
+  \item{tt}{The object returned by two-sided weighted
+    \code{\link{t.test}}.}
+  \item{qqsummary}{The return object from a call to
+    \code{\link{qqstats}} with standardization.}
+  \item{qqsummary.raw}{The return object from a call to
+    \code{\link{qqstats}} without standardization.}
 }
 \author{
   Jasjeet S. Sekhon, UC Berkeley, \email{sekhon@berkeley.edu},
   \url{http://sekhon.berkeley.edu/}.  
 }
 \references{
+  Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias
+  Reduction in Matching Methods for Causal Inference.''
+  \url{http://sekhon.berkeley.edu/matching/}
+
+  Sekhon, Jasjeet S. 2006.  ``Matching: Algorithms and Software for
+  Multivariate and Propensity Score Matching with Balance Optimization
+  via Genetic Search.'' \url{http://sekhon.berkeley.edu/matching/}    
+  
   Hollander, Myles and Douglas A. Wolfe. 1973. \emph{Nonparametric
     statistical inference}. New York: John Wiley & Sons.
-
-  Sekhon, Jasjeet S. 2004.  ``Balance Tests for Matching
-  Estimators.''  Working Paper. \url{http://sekhon.berkeley.edu/matching}
   }
-  \seealso{ Also see \code{\link{summary.balanceUV}},
+  \seealso{ Also see \code{\link{summary.balanceUV}}, \code{\link{qqstats}}
     \code{\link{ks.boot}}, \code{\link{Match}}, \code{\link{GenMatch}},
     \code{\link{MatchBalance}},
     \code{\link{balanceMV}}, \code{\link{GerberGreenImai}}, \code{\link{lalonde}} }
@@ -78,4 +88,4 @@ summary(foo)
 
 %  LocalWords:  balanceUV Univariate MatchBalance nboots Wilcoxon wilcox sdiff
 %  LocalWords:  Kolmogorov tt UC url emph seealso GenMatch balanceMV lalonde
-%  LocalWords:  GerberGreenImai univar
+%  LocalWords:  GerberGreenImai univar qqstats

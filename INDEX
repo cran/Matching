@@ -7,6 +7,7 @@ lalonde                 Lalonde Dataset
 Match                   Multivariate and Propensity Score Matching
                         Estimator for Causal Inference
 MatchBalance            Tests for Univariate and Multivariate Balance
+qqstats                 QQ Summary Statistics
 summary.balanceMV       Summarizing output from balanceMV
 summary.balanceUV       Summarizing output from balanceUV
 summary.ks.boot         Summarizing output from ks.boot
