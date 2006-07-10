@@ -254,10 +254,10 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
 
   Imbens, Guido. 2004. Matching Software for Matlab and
   Stata. \url{http://elsa.berkeley.edu/~imbens/estimators.shtml}
-  
-  Sekhon, Jasjeet S. 2004.  ``The Varying Role of Voter Information
-  Across Democratic Societies.''  Working Paper.
-  \url{http://sekhon.berkeley.edu/papers/SekhonInformation.pdf}
+
+  Sekhon, Jasjeet S. 2006.  ``Matching: Algorithms and Software for
+  Multivariate and Propensity Score Matching with Balance Optimization
+  via Genetic Search.'' \url{http://sekhon.berkeley.edu/matching/}  
 }
 \author{Jasjeet S. Sekhon, UC Berkeley, \email{sekhon@berkeley.edu},
   \url{http://sekhon.berkeley.edu/}.
@@ -265,7 +265,8 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
 \seealso{ Also see \code{\link{summary.Match}},
   \code{\link{GenMatch}},
   \code{\link{MatchBalance}},
-  \code{\link{balanceMV}}, \code{\link{balanceUV}}, \code{\link{ks.boot}},
+  \code{\link{balanceMV}}, \code{\link{balanceUV}},
+  \code{\link{qqstats}}, \code{\link{ks.boot}},
   \code{\link{GerberGreenImai}}, \code{\link{lalonde}}
 } 
 \examples{

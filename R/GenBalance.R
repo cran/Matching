@@ -66,6 +66,76 @@ ks.fast <- function(x, y, n.x, n.y, n)
     return( max(abs(z)) )
   } #ks.fast
 
+qqstats <- function (x, y, standardize = TRUE, summary.func=NULL)
+{
+  if (standardize) {
+    vals <- sort(unique(c(x, y)))
+    x <- ecdf(x)
+    sx <- x(vals)
+    y <- ecdf(y)
+    sy <- y(vals)
+  }  else {
+    sx <- sort(x)
+    sy <- sort(y)
+    lenx <- length(sx)
+    leny <- length(sy)
+    
+    if (leny < lenx) 
+      sx <- approx(1:lenx, sx, n = leny, method = "constant")$y
+    if (leny > lenx) 
+      sy <- approx(1:leny, sy, n = lenx, method = "constant")$y
+  }
+  diffxy <- abs(sx-sy)
+  meandiff <- mean(diffxy)
+  maxdiff <- max(diffxy)  
+  mediandiff <- median(diffxy)
+  if(!is.null(summary.func))
+    {
+      summarydiff <- summary.func(diffxy)
+      
+      return(list(meandiff=meandiff, mediandiff=mediandiff, maxdiff=maxdiff,
+                  summarydiff=summarydiff, summary.func=summary.func))      
+    } else {
+      return(list(meandiff=meandiff, mediandiff=mediandiff, maxdiff=maxdiff))
+    }
+}#qqstats
+
+GenBalanceQQ <- function(rr, X, summarystat="mean", summaryfunc="mean")
+  {
+    index.treated <- rr[,1]
+    index.control <- rr[,2]
+    
+    nvars <- ncol(X)
+    qqsummary   <- c(rep(NA,nvars))
+    
+    for (i in 1:nvars)
+      {    
+        
+        qqfoo <- qqstats(X[,i][index.treated], X[,i][index.control], standardize=TRUE)
+        
+        if (summarystat=="median")
+          {
+            qqsummary[i] <- qqfoo$mediandiff
+          } else if (summarystat=="max") {
+            qqsummary[i] <- qqfoo$maxdiff    
+          } else {
+            qqsummary[i] <- qqfoo$meandiff
+          }
+        
+      } #end of for loop
+    
+    
+    if (summaryfunc=="median")
+      {
+        return(median(qqsummary))
+      } else if (summaryfunc=="max")  {
+        return(sort(qqsummary, decreasing=TRUE))
+      } else if (summaryfunc=="sort")  {
+        return(sort(qqsummary, decreasing=TRUE))
+      } else {
+        return(mean(qqsummary))
+      }    
+  } #end of GenBalanceQQ
 
 GenBalance <-
   function(rr, X, nvars=ncol(X), nboots = 0, ks=TRUE, verbose = FALSE, paired=TRUE)

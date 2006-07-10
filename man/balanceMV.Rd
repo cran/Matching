@@ -97,9 +97,13 @@ balanceMV(formul, data = NULL, match.out=NULL, maxit = 1000,
   logit model.
 }
 \references{
-  Sekhon, Jasjeet S. 2004.  ``Balance Tests for Matching
-  Estimators.''  Working
-  Paper. \url{http://sekhon.berkeley.edu/matching}
+  Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias
+  Reduction in Matching Methods for Causal Inference.''
+  \url{http://sekhon.berkeley.edu/matching/}
+
+  Sekhon, Jasjeet S. 2006.  ``Matching: Algorithms and Software for
+  Multivariate and Propensity Score Matching with Balance Optimization
+  via Genetic Search.'' \url{http://sekhon.berkeley.edu/matching/}    
 
   Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
   Estimating Causal Effects: A General Multivariate Matching Method for
@@ -128,7 +132,7 @@ balanceMV(formul, data = NULL, match.out=NULL, maxit = 1000,
   \url{http://sekhon.berkeley.edu/}.
 }
 \seealso{ Also see \code{\link{summary.balanceMV}},
-  \code{\link{MatchBalance}}, \code{\link{balanceUV}},
+  \code{\link{MatchBalance}}, \code{\link{balanceUV}}, \code{\link{qqstats}}, 
   \code{\link{ks.boot}}, \code{\link{Match}}, \code{\link{GenMatch}},
   \code{\link{GerberGreenImai}}, \code{\link{lalonde}} }
 \examples{

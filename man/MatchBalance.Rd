@@ -2,8 +2,8 @@
 \alias{MatchBalance}
 \title{Tests for Univariate and Multivariate Balance}
 \description{
-  This function provides a variety of univariate and multivariate tests
-  to determine if balance exists.  The function does no matching.
+  This function provides a variety of univariate and multivariate
+  metrics to determine if balance exists.  The function does no matching.
   Matching is performed by the \code{\link{Match}} function.
   \code{MatchBalance} is used to determine if \code{\link{Match}} was
   successful in achieving balance.  Multivariate balance is determined
@@ -14,7 +14,7 @@
 }
 \usage{
 MatchBalance(formul, data = NULL, match.out = NULL, ks = TRUE, mv = FALSE,
-             nboots=1000, nmc=nboots,  maxit = 1000,
+             nboots=500, nmc=nboots,  maxit = 1000,
              weights=rep(1,nrow(data)), digits=5, verbose=1,
              paired=TRUE, ...)
 }
@@ -82,14 +82,22 @@ MatchBalance(formul, data = NULL, match.out = NULL, ks = TRUE, mv = FALSE,
   variables in \code{formul} are printed if \code{verbose > 1}.}
 }
 \details{
-  The function can be used to determine if matching was successful in
-  achieving balance.  Two univariate tests are provided: the t-test and
-  the bootstrap Kolmogorov-Smirnov (KS) test. The bootstrap KS test is
-  highly recommended (see the \code{ks} and \code{nboots} options)
-  because the bootstrap KS is consistent even for non-continuous
-  covariates, and it is more powerful than the t-test.  Before matching
-  the two sample t-test is used, and after matching the paired t-test
-  is used.
+  This function can be used to determine if matching was successful in
+  achieving balance.  Difference of means between treatment and control
+  groups are provided as well as a variety of summary statistics for the
+  empirical QQ (eQQ) plot between the two groups.  The first set of eQQ
+  results are the standardized mean, median and maximum differences.
+  The second set of eQQ results are summaries of the raw differences.\cr
+
+  Two univariate tests are also provided: the t-test and the bootstrap
+  Kolmogorov-Smirnov (KS) test. These tests should not be treated as
+  hypothesis tests in the usual fashion because there is not threshold
+  below which imbalance is not a problem and because of a variety of
+  other issue---see citations.  The bootstrap KS test is highly
+  recommended (see the \code{ks} and \code{nboots} options) because the
+  bootstrap KS is consistent even for non-continuous covariates, and it
+  is more powerful than the t-test.  Before matching the two sample
+  t-test is used, and after matching the paired t-test is used.\cr
 
   Two multivariate tests are provided.  The KS and Chi-Square null
   deviance tests.  The KS test is to be preferred over the Chi-Square
@@ -106,10 +114,15 @@ MatchBalance(formul, data = NULL, match.out = NULL, ks = TRUE, mv = FALSE,
   being compared, and the bootstrap is needed because parameters are
   being estimated in the logit model.
   }
-\references{
-  Sekhon, Jasjeet S. 2004.  ``Balance Tests for Matching Estimators.''
-  Working Paper. \url{http://sekhon.berkeley.edu/matching}
+  \references{
+  Sekhon, Jasjeet S. 2006.  ``Matching: Algorithms and Software for
+  Multivariate and Propensity Score Matching with Balance Optimization
+  via Genetic Search.'' \url{http://sekhon.berkeley.edu/matching/}    
 
+  Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias
+  Reduction in Matching Methods for Causal Inference.''
+  \url{http://sekhon.berkeley.edu/matching/}
+    
   Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
   Estimating Causal Effects: A General Multivariate Matching Method for
   Achieving Balance in Observational Studies.''  Working Paper.
@@ -138,7 +151,7 @@ MatchBalance(formul, data = NULL, match.out = NULL, ks = TRUE, mv = FALSE,
 }
 \seealso{
   Also see \code{\link{Match}}, \code{\link{GenMatch}}, \code{\link{balanceMV}},
-  \code{\link{balanceUV}}, \code{\link{ks.boot}}, 
+  \code{\link{balanceUV}}, \code{\link{qqstats}}, \code{\link{ks.boot}}, 
   \code{\link{GerberGreenImai}}, \code{\link{lalonde}}
 }
 \examples{
@@ -189,4 +202,4 @@ mb  <- MatchBalance(treat~age + I(age^2) + educ + I(educ^2) + black +
 %  LocalWords:  datasets Kolmogorov balanceMV balanceUV logit url Abadie emph
 %  LocalWords:  Edgeworth Verlag Conover Shao Dongsheng UC seealso GenMatch rr
 %  LocalWords:  GerberGreenImai lalonde Dehejia Wahba psid Rajeev Sadek hisp mb
-%  LocalWords:  nodegr estimand htest
+%  LocalWords:  nodegr estimand htest QQ eQQ cr

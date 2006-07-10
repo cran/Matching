@@ -21,7 +21,7 @@
 \seealso{
   Also see \code{\link{balanceUV}}, \code{\link{balanceMV}},
   \code{\link{Match}}, \code{\link{GenMatch}},
-  \code{\link{MatchBalance}}, \code{\link{ks.boot}},
+  \code{\link{MatchBalance}}, \code{\link{qqstats}}, \code{\link{ks.boot}},
   \code{\link{GerberGreenImai}},
   \code{\link{lalonde}}
 }

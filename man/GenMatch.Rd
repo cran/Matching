@@ -23,6 +23,7 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
          pop.size = 50, max.generations=100,
          wait.generations=4, hard.generation.limit=FALSE,
          starting.values=rep(1,ncol(X)),
+         fit.func="pvals",
          data.type.integer=TRUE,
          MemoryMatrix=TRUE,
          exact=NULL, caliper=NULL, 
@@ -86,6 +87,38 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
     \code{\link[rgenoud]{genoud}} will randomly create the other individuals.  These values
     correspond to the diagonal of the \code{Weight.matrix} as described
     in detail in the \code{\link{Match}} function.}
+  \item{fit.func}{The balance metric GenMatch should optimize.  The user
+    may choose from the following or provide one:\cr
+  \code{pvals}: maximize the p.values uses from a variety of hypothesis
+  tests.\cr
+  \code{qqmean.mean}: calculate the mean standardized difference in the QQ
+  plot for each variable.  Minimize the mean of these differences across
+  variables.\cr
+  \code{qqmean.max}:  calculate the mean standardized difference in the QQ
+  plot for each variable.  Minimize the maximum of these differences across
+  variables.  This uses lexical optimization.  See the \code{lexical}
+  option.\cr
+  \code{qqmedian.mean}: calculate the median standardized difference in the QQ
+  plot for each variable.  Minimize the median of these differences across
+  variables.\cr
+  \code{qqmedian.max}:  calculate the median standardized difference in the QQ
+  plot for each variable.  Minimize the maximum of these differences across
+  variables.  This uses lexical optimization.  See the \code{lexical}
+  option.\cr
+  \code{qqmax.mean}: calculate the maximum standardized difference in the QQ
+  plot for each variable.  Minimize the mean of these differences across
+  variables.\cr
+  \code{qqmax.max}:  calculate the maximum standardized difference in the QQ
+  plot for each variable.  Minimize the maximum of these differences across
+  variables.  This uses lexical optimization.  See the \code{lexical}
+  option.\cr
+  The user may provide their own \code{fit.func}.  This function needs
+  to return a fit function and assume that this value will be
+  minimized.  This function should expect two arguments.  The first
+  being the \code{matches} object returned by \code{GenMatch}---see
+  below.  And the second being a matrix which contains the variables to
+  be balanced---i.e., the \code{BalanceMatrix} the user provided to
+  \code{GenMatch}.}
   \item{data.type.integer}{
       By default only integer weights are considered.  If this option is
       set to \code{false}, search will be done over floating point
@@ -275,6 +308,14 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
     covariates in \code{X}.}
 }
 \references{
+  Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias
+  Reduction in Matching Methods for Causal Inference.''
+  \url{http://sekhon.berkeley.edu/matching/}
+
+  Sekhon, Jasjeet S. 2006.  ``Matching: Algorithms and Software for
+  Multivariate and Propensity Score Matching with Balance Optimization
+  via Genetic Search.'' \url{http://sekhon.berkeley.edu/matching/}    
+  
   Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
   Estimating Causal Effects: A General Multivariate Matching Method for
   Achieving Balance in Observational Studies.''  Working Paper.
@@ -291,9 +332,8 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
 }
 \seealso{ Also see \code{\link{Match}}, \code{\link{summary.Match}},
   \code{\link{MatchBalance}}, \code{\link[rgenoud]{genoud}},
-  \code{\link{balanceMV}},
-  \code{\link{balanceUV}}, \code{\link{ks.boot}},
-  \code{\link{GerberGreenImai}}, \code{\link{lalonde}}
+  \code{\link{balanceMV}}, \code{\link{balanceUV}}, \code{\link{qqstats}},
+  \code{\link{ks.boot}}, \code{\link{GerberGreenImai}}, \code{\link{lalonde}}
 } 
 \examples{
 set.seed(38913)
@@ -340,4 +380,4 @@ mb <- MatchBalance(treat~age +educ+black+ hisp+ married+ nodegr+ u74+ u75+
 %  LocalWords:  eqn tempdir rbind makeCluster localhost musil deckard usernames
 %  LocalWords:  makeSOCKcluster PVM MPI url dataset seealso MatchBalance cbind
 %  LocalWords:  balanceMV balanceUV GerberGreenImai lalonde hisp nodegr genout
-%  LocalWords:  BalanceMat mout mb mv
+%  LocalWords:  BalanceMat mout mb mv pvals qqmean QQ qqmedian qqmax

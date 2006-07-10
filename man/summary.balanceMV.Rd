@@ -21,8 +21,8 @@
 \seealso{
   Also see \code{\link{balanceMV}}, \code{\link{balanceUV}},
   \code{\link{summary.balanceUV}}, \code{\link{Match}}, \code{\link{GenMatch}},
-  \code{\link{MatchBalance}}, \code{\link{ks.boot}}, \code{\link{GerberGreenImai}},
-  \code{\link{lalonde}}
+  \code{\link{MatchBalance}}, \code{\link{qqstats}},
+  \code{\link{ks.boot}}, \code{\link{GerberGreenImai}}, \code{\link{lalonde}}
 }
 \keyword{htest}
 
