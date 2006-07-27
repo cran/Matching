@@ -98,8 +98,8 @@ balanceMV(formul, data = NULL, match.out=NULL, maxit = 1000,
 }
 \references{
   Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias
-  Reduction in Matching Methods for Causal Inference.''
-  \url{http://sekhon.berkeley.edu/matching/}
+  Reduction in Matching Methods for Causal Inference.''  Working Paper.
+  \url{http://sekhon.berkeley.edu/papers/SekhonBalanceMetrics.pdf}
 
   Sekhon, Jasjeet S. 2006.  ``Matching: Algorithms and Software for
   Multivariate and Propensity Score Matching with Balance Optimization

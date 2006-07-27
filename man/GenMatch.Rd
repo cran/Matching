@@ -19,7 +19,7 @@
 }
 \usage{
 GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
-         weights=rep(1,length(Tr)),
+         weights=NULL,
          pop.size = 50, max.generations=100,
          wait.generations=4, hard.generation.limit=FALSE,
          starting.values=rep(1,ncol(X)),
@@ -57,7 +57,8 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
   \item{M}{ A scalar for the number of matches which should be
     found (with replacement). The default is one-to-one matching. }
   \item{weights}{ A vector the same length as \code{Y} which
-    provides observations specific weights.}
+    provides observations specific weights.  If none are provides, equal
+    weights of 1 for each observations are assumed.}
   \item{pop.size}{Population Size.  This is the number of individuals
     \code{\link[rgenoud]{genoud}} uses to solve the optimization problem.  See
     \code{\link[rgenoud]{genoud}} for more details.}
@@ -309,8 +310,8 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
 }
 \references{
   Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias
-  Reduction in Matching Methods for Causal Inference.''
-  \url{http://sekhon.berkeley.edu/matching/}
+  Reduction in Matching Methods for Causal Inference.''  Working Paper.
+  \url{http://sekhon.berkeley.edu/papers/SekhonBalanceMetrics.pdf}
 
   Sekhon, Jasjeet S. 2006.  ``Matching: Algorithms and Software for
   Multivariate and Propensity Score Matching with Balance Optimization

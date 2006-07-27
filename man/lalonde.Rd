@@ -38,7 +38,7 @@
   Evaluation of Training Programs.'' \emph{Journal of the American Statistical
   Association} 94 (448): 1053-1062.
 
-  Lalonde, Robert. 1986.  ``Evaluating the Econometric Evaluations of
+  LaLonde, Robert. 1986.  ``Evaluating the Econometric Evaluations of
   Training Programs.''  \emph{American Economic Review} 76:604-620.
 } 
   \seealso{ Also see \code{\link{Match}}, \code{\link{GenMatch}},

@@ -42,7 +42,545 @@ extern "C"
 		   const double beta, double  *C, const int ldc);
 #endif
 
+/*---------------------------------------------------------------------------
+   Function :   kth_smallest()
+   In       :   array of elements, # of elements in the array, rank k
+   Out      :   one element
+   Job      :   find the kth smallest element in the array
+   Notice   :   use the median() macro defined below to get the median. 
+
+                Reference:
+
+                http://www.eso.org/~ndevilla/median/
+
+                  Author: Wirth, Niklaus 
+                   Title: Algorithms + data structures = programs 
+               Publisher: Englewood Cliffs: Prentice-Hall, 1976 
+    Physical description: 366 p. 
+                  Series: Prentice-Hall Series in Automatic Computation 
+
+ ---------------------------------------------------------------------------*/
+
+
+  double kth_smallest(double *a, long n, long k)
+  {
+    long i,j,l,m ;
+    double x, tmp;
+    
+    l=0 ; m=n-1 ;
+    while (l<m) {
+      x=a[k] ;
+      i=l ;
+      j=m ;
+      do {
+	while (a[i]<x) i++ ;
+	while (x<a[j]) j-- ;
+	if (i<=j) {
+	  tmp=a[i];
+	  a[i]=a[j];
+	  a[j]=tmp;
+	      i++ ; j-- ;
+	}
+      } while (i<=j) ;
+      if (j<k) l=i ;
+      if (k<i) m=j ;
+    }
+    return a[k] ;
+  } // end of kth_smallest
   
+  //Est Func
+  SEXP EstFuncC (SEXP I_N, SEXP I_All, SEXP I_length, SEXP I_Y, SEXP I_Tr, SEXP I_weight, SEXP I_indx)
+	      
+  {
+    SEXP ret;
+    
+    long N, All, i, l, j, k, SumFoo, length;
+    double SumFooWeight, SumIndx3;
+    long ic=3;
+
+    N = asInteger(I_N);
+    All = asInteger(I_All);
+    length = asInteger(I_length);
+
+    // In vars
+    Matrix Tr = Matrix(N, 1);
+    Matrix weight = Matrix(N, 1);
+    Matrix indx = Matrix(length, ic);
+    Matrix Y = Matrix(N, 1);
+    
+    // Extra vars
+    Matrix Kcount = Matrix(N, 1);
+    Matrix KKcount = Matrix(N, 1);
+    Matrix YCAUS = Matrix(N, 1);
+    Matrix foo = Matrix(N,1);
+    Matrix WFW = Matrix(N,1);
+    Matrix WWFW = Matrix(N, 1);
+
+    k=0;
+    //rows and colums are fliped!! j,i != i,j
+    for(j=0;j<ic; j++)
+      {
+	for(i=0;i<length; i++)
+	  {
+	    indx[M(i,j,ic)] = REAL(I_indx)[k];
+	    
+	    // count from offest 0 instead of R's offset 1
+	    if(j<2)
+	      {
+		indx[M(i,j,ic)] = indx[M(i,j,ic)] - 1;	
+	      }
+	    k++;
+	  }
+      }
+    
+    for(i=0;i<N; i++)
+      {
+	Y[i] = REAL(I_Y)[i];
+	Tr[i] = REAL(I_Tr)[i];
+	weight[i] = REAL(I_weight)[i];
+      }
+    
+    
+    //Master Loop
+    for (i=0; i<N; i++)
+      {
+	if ( ((int) Tr[i]==1 & All!=1) | All==1)
+	  {
+	    
+	    SumFooWeight = 0;
+	    SumFoo = 0;
+	    SumIndx3 = 0;
+	    for (l=0; l<length; l++)
+	      {
+		if((int) indx[M(l,0,ic)]==i)
+		  {
+		    SumFoo++;
+		    
+		    k = (int) indx[M(l,1,ic)];
+		    
+		    foo[k] = 1.0;
+		    
+		    SumIndx3 = SumIndx3 + indx[M(l,2,ic)];
+		    SumFooWeight = SumFooWeight + weight[k];
+		  } // end of if
+	      }//end l for
+	  } //Tr[i]
+	
+	if (SumFoo > 0)
+	  {
+	    for (l=0; l<length; l++)
+	      {
+		
+		if((int) indx[M(l,0,ic)]==i)
+		  {
+         	    k = (int) indx[M(l,1,ic)];
+		    
+		    WFW[k]  = weight[k]*foo[k]/SumFooWeight;
+		    WWFW[k] = weight[k]*WFW[k]/SumFooWeight;
+		    
+		    Kcount[k] = Kcount[k] + weight[i] * WFW[k];
+		    
+		    KKcount[k] = KKcount[k] + weight[i]*WWFW[k];
+		    
+		    //if ( ((int) Tr[i]==1 & All!=1) | All==1)
+		      YCAUS[i] = Y[k]*indx[M(l,2,ic)]/SumIndx3 + YCAUS[i];
+		  } // endof if
+	      } // l for loop
+		
+		if ((int) Tr[i]==1)
+		  {
+		    YCAUS[i] = Y[i] - YCAUS[i];
+		  } 
+		else 
+		  {
+		    YCAUS[i] = YCAUS[i] - Y[i];
+		  }
+	      } //if SumFoo
+      }// end of master N loop
+
+	    
+    PROTECT(ret=allocMatrix(REALSXP, N, 3));
+    
+    // stack up cbind(YCAUS, Kcount, KKcount)
+    k = 0;
+    for( i = 0; i < N; i++ )
+      {
+	REAL(ret)[k] = YCAUS[i];
+	k++;
+      }
+    for( i = 0; i < N; i++ )
+      {
+	REAL(ret)[k] = Kcount[i];
+	k++;
+      }
+    for( i = 0; i < N; i++ )
+      {
+	REAL(ret)[k] = KKcount[i];
+	k++;
+      }
+    UNPROTECT(1);
+    return(ret); 
+  } //end of EstFuncC
+
+  SEXP FasterMatchC(SEXP I_N, SEXP I_xvars, SEXP I_All, SEXP I_M, SEXP I_cdd,
+		    SEXP I_ww, SEXP I_Tr, SEXP I_X)
+  {
+    SEXP ret;
+    
+    long N, xvars, All, M; 
+    double cdd, Distmax;
+    
+    long i, j, k, r, c;
+    
+    N = asInteger(I_N);
+    xvars = asInteger(I_xvars);
+    All = asInteger(I_All);
+    M = asInteger(I_M);
+    cdd = asReal(I_cdd);
+    
+    //    struct timeval tv1, tv2;	// Required "timeval" structures (see man pg.)
+    //    struct timezone tz1, tz2;	// Required "timezone" structures (see man pg.)
+    //    long tret = gettimeofday(&tv1,&tz1);
+    
+    Matrix ww = Matrix(xvars, xvars);
+
+    Matrix Tr = Matrix(N, 1);
+    Matrix X = Matrix(N, xvars);
+    
+    k=0;
+    //rows and colums are fliped!! j,i != i,j
+    for(j=0;j<xvars; j++)
+    {
+      for(i=0;i<xvars; i++)
+      {
+        //ww(i,j) = REAL(I_ww)[k];
+        ww[M(i,j,xvars)] = REAL(I_ww)[k];
+        k++;
+      }
+    }
+    
+    for(i=0;i<N; i++)
+    {
+      Tr[i] = REAL(I_Tr)[i];
+    }
+    
+    //rows and colums are fliped!! j,i != i,j
+    k=0;
+    for(j=0;j<xvars; j++)
+    {
+      for(i=0;i<N; i++)
+      {
+        //X(i,j) = REAL(I_X)[k];
+        X[M(i,j,xvars)] = REAL(I_X)[k];
+        k++;
+      }
+    }
+    
+    Matrix INN = seqa(1, 1, N);
+    // TT is just equal to INN
+
+#ifdef __NBLAS__
+    Matrix DX(N, xvars), ZX(N, xvars), Dist(N, xvars);
+#else
+    Matrix index_onesN = ones(N, 1);
+    Matrix xx;
+    Matrix DX, Dist;
+#endif
+
+    Matrix foo1;
+    Matrix foo2;
+
+    /* set misc */
+    int TREATi = 0, ACTMATsum = 0;
+    
+    Matrix DistPot, tt, ACTDIST, Wi, xmat, I, IM, W;
+    Matrix ACTMAT, POTMAT;
+
+    // Temporary size for these matrices to avoid rbind
+    int NM = N*M*100;
+    Matrix tI  = Matrix(NM,1);
+    Matrix tIM = Matrix(NM,1);
+    Matrix tW  = Matrix(NM,1);
+    
+    //    tret = gettimeofday(&tv2,&tz2);
+    //    long secs = tv2.tv_sec - tv1.tv_sec;
+    //    long msecs = tv2.tv_usec - tv1.tv_usec;
+    //    double actual = ((double) secs*1000000+ (double) msecs)/1000000;
+    //    printf("actual: %lf, secs: %d, msecs: %d\n", actual, secs, msecs);
+    
+    //These are larger than needed; it is just easier this way
+    int *order_DistPot = (int *) malloc(N*sizeof(int));  
+    //double *S = (double *) malloc(N*sizeof(double));  
+    
+    // struct timeval tv1, tv2;	// Required "timeval" structures (see man pg.)
+    // struct timezone tz1, tz2;	// Required "timezone" structures (see man pg.)
+    // long tret = gettimeofday(&tv1,&tz1);
+    
+    int MatchCount=0;
+    int MCindx=0;
+    int first=1;
+    int firstNM=1;
+    for(i=0; i < N; i++)
+    {
+      // treatment indicator for observation to be matched        
+      TREATi = (int) Tr[i];
+      
+      // proceed with all observations if All==1
+      // but only with treated observations if All=0        
+      if ( (TREATi==1 & All!=1) | All==1 )
+      {
+#ifdef __NBLAS__
+        // this loop is equivalent to the matrix X less the matrix A, which is
+        // the product of N rows by 1 column of 1.0 and row R of X.
+        double *dest = ZX.data;
+        double *src  = X.data;
+        double *row  = X.data + (i * xvars);
+        for (int jj = 0; jj < N; ++jj) {
+          for (int kk = 0; kk < xvars; ++kk, ++dest, ++src) {
+            *dest = *src - row[kk];
+          }
+        }
+        
+        if (xvars>1)
+	  {
+	    //JSS
+	    // do the second multiplication with dgemm, multiplying the matrix
+	    // above, D, by the transpose of matrix W.
+
+	    cblas_dgemm(CblasRowMajor,// column major
+			CblasNoTrans, // A not transposed
+			CblasTrans,   // B transposed
+			xvars,        // M
+			N,            // N
+			xvars,        // K
+			1.0,          // alpha, (alpha * A * B)
+			ww.data,      // A
+			xvars,        // leading dimension for A
+			ZX.data,      // B
+			xvars,        // leading dimension for B
+			0.0,          // beta, (beta * C)
+			DX.data,      // C
+			N);           // leading dimension for C
+
+          DX.multi_scalar(DX);
+          std::swap(DX.colsize, DX.rowsize);
+          
+          Dist = sumc(DX);
+
+          std::swap(Dist.colsize, Dist.rowsize); // transpose 1 x N -> N x 1
+          std::swap(DX.colsize, DX.rowsize);
+        } else {
+          // do the second multiplication with dgemm, multiplying the matrix
+          // above, D, by the transpose of matrix W.
+          cblas_dgemm(CblasRowMajor, // column major
+                      CblasNoTrans, // A not transposed
+                      CblasTrans,   // B transposed
+                      N,            // M
+                      xvars,        // N
+                      xvars,        // K
+                      1.0,          // alpha, (alpha * A * B)
+                      ZX.data,      // A
+                      xvars,        // leading dimension for A
+                      ww.data,      // B
+                      xvars,        // leading dimension for B
+                      0.0,          // beta, (beta * C)
+                      DX.data,      // C
+                      xvars);       // leading dimension for C
+          
+          DX.multi_scalar(DX);
+          Dist = DX;
+        } // end of xvars
+#else
+        // covariate value for observation to be matched                        
+        xx = X(i,_);
+        
+        DX = (X - (index_onesN * xx)) * t(ww);
+        
+        if (xvars>1)
+        {
+          //JSS
+          foo1 = t(multi_scalar(DX, DX));
+          Dist = t(sumc(foo1));
+          
+	      } 
+        else 
+	      {
+          Dist = multi_scalar(DX, DX);
+	      } // end of xvars
+#endif /* end __NBLAS__ */
+        
+        // Dist distance to observation to be matched
+        // is N by 1 vector	    
+        
+        // set of potential matches (all observations with other treatment)
+        // JSS, note:logical vector
+        POTMAT = EqualityTestScalar(Tr, 1-TREATi);
+        
+	// X's for potential matches
+	DistPot = selif(Dist, POTMAT);
+	//DistPot_size is a constant!! Fix it
+	long DistPot_size = size(DistPot);
+	
+	//rsort_with_index(DistPot.data, order_DistPot, DistPot_size);
+	//R_rsort(DistPot.data, DistPot_size);
+	//rPsort(DistPot.data, DistPot_size, M);
+	
+	Distmax = kth_smallest(DistPot.data, DistPot_size, (M-1));        
+        
+        // selection of actual matches 
+        // logical index
+        ACTMAT = LessEqualTestScalar(Dist,  (Distmax+cdd));
+        ACTMAT = VectorAnd(POTMAT, ACTMAT);
+        
+        // distance to actual matches            
+        ACTDIST = selif(Dist, ACTMAT);
+        
+	// counts how many times each observation is matched.
+	double Mi = sum(ACTMAT);
+	ACTMATsum = (int) sumc(ACTMAT)[0];
+        
+	Wi = ones(ACTMATsum, 1)*1/Mi;
+	
+	// collect results
+	MatchCount = MatchCount + (int) Mi;
+	if (MatchCount <= NM)
+	  {
+	    foo1 = ones(ACTMATsum, 1)*(i+1);
+	    memcpy(tI.data+MCindx, foo1.data, foo1.size*sizeof(double));
+	    
+	    foo1 = selif(INN, ACTMAT);
+	    memcpy(tIM.data+MCindx, foo1.data, foo1.size*sizeof(double));
+	    
+	    memcpy(tW.data+MCindx, Wi.data, Wi.size*sizeof(double));
+	    
+	    MCindx = MCindx+foo1.size;
+	    first = 0; 
+	  }
+	else if (first!=1)
+	  {
+	    //first time above NM
+	    if(firstNM==1)
+	      {
+		int OldMatchCount = MatchCount - (int) Mi;
+		
+		I=Matrix(OldMatchCount, 1);
+		IM=Matrix(OldMatchCount, 1);
+		W=Matrix(OldMatchCount, 1);
+		
+		memcpy(I.data, tI.data, OldMatchCount*sizeof(double));
+		memcpy(IM.data, tIM.data, OldMatchCount*sizeof(double));
+		memcpy(W.data, tW.data, OldMatchCount*sizeof(double));
+		
+		firstNM=0;
+	      }
+	    I = rbind(I, ones(ACTMATsum, 1)*(i+1));
+	    IM = rbind(IM, selif(INN, ACTMAT));
+	    W = rbind(W, Wi);
+	  } 
+	else 
+	  {
+	    //first time
+	    tI = ones(ACTMATsum, 1)*(i+1);
+	    tIM = selif(INN, ACTMAT);
+	    tW = Wi;
+	    
+	    first = 0;		
+	    firstNM=0;
+	  }
+        
+      } // end of (TREATi==1 & All!=1) | All==1 )
+    } //END OF i MASTER LOOP!
+
+    // subset matrices to get back to the right dims
+    if (firstNM==1)
+      {
+	I=Matrix(MatchCount, 1);
+	IM=Matrix(MatchCount, 1);
+	W=Matrix(MatchCount, 1);
+	
+	memcpy(I.data, tI.data, MatchCount*sizeof(double));
+	memcpy(IM.data, tIM.data, MatchCount*sizeof(double));
+	memcpy(W.data, tW.data, MatchCount*sizeof(double));
+      }
+    
+    // tret = gettimeofday(&tv2,&tz2);
+    // long secs = tv2.tv_sec - tv1.tv_sec;
+    // long msecs = tv2.tv_usec - tv1.tv_usec;
+    // double actual = ((double) secs*1000000+ (double) msecs)/1000000;
+    // printf("actual: %lf, secs: %d, msecs: %d\n", actual, secs, msecs);
+    
+    /*ATT is okay already */
+    /* ATE*/
+    if(All==1)
+    {
+      long tl  = rows(I);
+      Matrix I2  = zeros(tl, 1);
+      Matrix IM2 = zeros(tl, 1);
+      Matrix trt = zeros(tl, 1);
+      
+      for(i=0; i<tl; i++)
+      {
+        k =(int) I[i] -1 ;
+        trt[i] = Tr[k];
+      }
+      
+      for (i=0; i<tl; i++)
+      {
+        if (trt[i]==1)
+	      {
+          I2[i] = I[i];
+          IM2[i] = IM[i];
+	      } 
+        else
+	      {
+          I2[i] = IM[i];
+          IM2[i] = I[i];		
+	      }
+      }
+      
+      I = I2;
+      IM = IM2;
+    } 
+    else if(All==2)     /* ATC */
+    {
+      Matrix Itmp = I;
+      Matrix IMtmp = IM;
+      
+      I = IMtmp;
+      IM = Itmp;
+    }
+    
+    Matrix rr = cbind(I, IM);
+    rr = cbind(rr, W);
+    
+    // display(rr);
+    
+    /* Free Memory */
+    //free(S);
+    free(order_DistPot);
+    
+    r = rows(rr);
+    c = cols(rr);
+    
+    PROTECT(ret=allocMatrix(REALSXP, r, c));
+    /* Loop through the data and display the same in matrix format */
+    k = 0;
+    for( i = 0; i < c; i++ )
+    {
+      for( j = 0; j < r; j++ )
+      {
+        // REAL(ret)[k] = rr(j,i);
+        // REAL(ret)[k] = rr[j*c+i];
+        /* Use Macro to Index */
+        REAL(ret)[k] = rr[M(j, i, c)];
+        k++;
+      }
+    }
+    UNPROTECT(1);
+    return(ret);    
+  } //end of FasterMatchC
+
+
   SEXP FastMatchC(SEXP I_N, SEXP I_xvars, SEXP I_All, SEXP I_M, SEXP I_cdd,
                   SEXP I_ww, SEXP I_Tr, SEXP I_X, SEXP I_weight)
   {
@@ -114,11 +652,9 @@ extern "C"
     Matrix DX;
 #endif
 
-    Matrix Kcount  = zeros(N,1);
-    Matrix KKcount = zeros(N,1);
     Matrix foo1;
     Matrix foo2;
-    
+
     /* set misc */
     int TREATi = 0, ACTMATsum = 0;
     
@@ -280,9 +816,6 @@ extern "C"
         // counts how many times each observation is matched.
         double Mi = sum(multi_scalar(weight, ACTMAT));
         
-        Kcount = Kcount + 
-          weight[i] * multi_scalar(weight, ACTMAT)/Mi;
-        
 #ifdef __NBLAS__
         foo1 = weight;
         foo1.multi_scalar(weight);
@@ -292,8 +825,6 @@ extern "C"
         foo1 = multi_scalar(foo1, ACTMAT);
 #endif
         
-        KKcount = KKcount + (weight[i]* foo1)/(Mi*Mi);
-        
         Wi = selif(weight, ACTMAT);
         Wi = weight[i]*Wi/Mi;
         
@@ -301,18 +832,18 @@ extern "C"
         
         // collect results
         if (first==1)
-	      {
-          I = ones(ACTMATsum, 1)*(i+1);
-          IM = selif(INN, ACTMAT);
-          W = Wi;
-          first = 0;
-	      }// end of first==1 
+	  {
+	    I = ones(ACTMATsum, 1)*(i+1);
+	    IM = selif(INN, ACTMAT);
+	    W = Wi;
+	    first = 0;
+	  }// end of first==1 
         else 
-	      {
-          I = rbind(I, ones(ACTMATsum, 1)*(i+1));
-          IM = rbind(IM, selif(INN, ACTMAT));
-          W = rbind(W, Wi);
-	      } // end of i else
+	  {
+	    I = rbind(I, ones(ACTMATsum, 1)*(i+1));
+	    IM = rbind(IM, selif(INN, ACTMAT));
+	    W = rbind(W, Wi);
+	  } // end of i else
         
       } // end of (TREATi==1 & All!=1) | All==1 )
       } //END OF i MASTER LOOP!
@@ -523,7 +1054,7 @@ extern "C"
 
     Matrix Dist, DistPot, weightPot, tt, 
       weightPot_sort, weightPot_sum, ACTDIST, Wi, xmat, I, IM, W;
-    Matrix ACTMAT, POTMAT;
+    Matrix ACTMAT, POTMAT(N, 1);
 
     //    tret = gettimeofday(&tv2,&tz2);
     //    long secs = tv2.tv_sec - tv1.tv_sec;
@@ -659,10 +1190,29 @@ extern "C"
 		      }
 		  }
 	      } /* if (restrict_trigger==1) */
-	    
+
             // set of potential matches (all observations with other treatment)
             // JSS, note:logical vector
 	    POTMAT = EqualityTestScalar(Tr, 1-TREATi);
+	    
+	    if (caliper==1)
+	      {
+		for (j=0; j<N; j++)
+		  {
+		    if((int) POTMAT[j]==1)
+		      {
+			for (k=0; k<xvars; k++)
+			  {
+			    diff = abs(Xorig[M(i, k, xvars)] - Xorig[M(j,k,xvars)]); 
+			    if (diff > CaliperVec[k])
+			      {
+				Dist[j] = DOUBLE_XMAX;
+				break;
+			      }
+			  }
+		      }
+		  } 
+	      }//end of if caliper
 	    
             // X's for potential matches
             DistPot = selif(Dist, POTMAT);
@@ -696,50 +1246,22 @@ extern "C"
 	    // distance at last match
             double Distmax = S[MMM];
 	    
+	    if (restrict_trigger==1 | caliper==1)
+	      {
+		if ( (Distmax+cdd) > DOUBLE_XMAX_CHECK)
+		  {
+		    sum_caliper_drops++;
+		    continue;
+		  }
+	      } 
+
             // selection of actual matches 
             // logical index
-	    if (restrict_trigger==1)
-	      {
-		foo_d = min_scalar((Distmax+cdd), DOUBLE_XMAX-1);
-		ACTMAT = LessEqualTestScalar(Dist,  foo_d);
-		
-		if ( ( (int) sumc(ACTMAT)[0]) < 1)
-		  continue;
-	      } 
-	    else 
-	      {
-		ACTMAT = LessEqualTestScalar(Dist,  (Distmax+cdd));
-	      } /* if (restrict_trigger==1) */
-	    
+	    ACTMAT = LessEqualTestScalar(Dist,  (Distmax+cdd));
 	    ACTMAT = VectorAnd(POTMAT, ACTMAT);
 	    
-	    if (caliper==1)
-	      {
-		// counts how many times each observation is matched.
-		long Mi = (long) sum(ACTMAT);
-		
-		IMi = selif(INN, ACTMAT);
-		
-		for (j=0; j<Mi; j++)
-		  {
-		    for (k=0; k<xvars; k++)
-		      {
-			diff = abs(Xorig[M(i, k, xvars)] - (double) Xorig[M((int) (IMi[j]-1),k,xvars)]); 
-			if (diff > CaliperVec[k])
-			  {
-			    ACTMAT[(int) (IMi[j]-1)] = 0;
-			    sum_caliper_drops++;
-			    
-			    break;
-			  }
-		      }
-		  } 
-		if ( ( (int) sumc(ACTMAT)[0]) < 1)
-		  continue;
-	      }//end of if caliper
-	    
-            // distance to actual matches            
-            ACTDIST = selif(Dist, ACTMAT);
+	    // distance to actual matches            
+	    ACTDIST = selif(Dist, ACTMAT);
 	    
             // counts how many times each observation is matched.
 	    double Mi = sum(multi_scalar(weight, ACTMAT));
@@ -869,6 +1391,507 @@ extern "C"
     UNPROTECT(1);
     return(ret);    
   } //end of MatchLoopC
+
+  SEXP MatchLoopCfast(SEXP I_N, SEXP I_xvars, SEXP I_All, SEXP I_M, SEXP I_cdd,
+		      SEXP I_caliper,
+		      SEXP I_ww, SEXP I_Tr, SEXP I_X, 
+		      SEXP I_CaliperVec, SEXP I_Xorig,
+		      SEXP I_restrict_trigger, SEXP I_restrict_nrow, SEXP I_restrict)
+  {
+    SEXP ret;
+    
+    long N, xvars, All, M, caliper, restrict_trigger, restrict_nrow, sum_caliper_drops=0;
+    double cdd, diff, foo_d, Distmax;
+    
+    long i, j, k, r, c;
+    
+    N = asInteger(I_N);
+    xvars = asInteger(I_xvars);
+    All = asInteger(I_All);
+    M = asInteger(I_M);
+    cdd = asReal(I_cdd);
+    caliper = (long) asReal(I_caliper);
+    restrict_nrow = asInteger(I_restrict_nrow);
+    restrict_trigger = asInteger(I_restrict_trigger);
+    
+    //    struct timeval tv1, tv2;	// Required "timeval" structures (see man pg.)
+    //    struct timezone tz1, tz2;	// Required "timezone" structures (see man pg.)
+    //    long tret = gettimeofday(&tv1,&tz1);
+    
+    Matrix ww = Matrix(xvars, xvars);
+    Matrix Tr = Matrix(N, 1);
+    Matrix X = Matrix(N, xvars);
+    
+    k=0;
+    //rows and colums are fliped!! j,i != i,j
+    for(j=0;j<xvars; j++)
+      {
+	for(i=0;i<xvars; i++)
+	  {
+	    //ww(i,j) = REAL(I_ww)[k];
+	    ww[M(i,j,xvars)] = REAL(I_ww)[k];
+	    k++;
+	  }
+      }
+    
+    for(i=0;i<N; i++)
+      {
+	Tr[i] = REAL(I_Tr)[i];
+      }
+    
+    //rows and colums are fliped!! j,i != i,j
+    k=0;
+    for(j=0;j<xvars; j++)
+      {
+	for(i=0;i<N; i++)
+	  {
+	    //X(i,j) = REAL(I_X)[k];
+	    X[M(i,j,xvars)] = REAL(I_X)[k];
+	    k++;
+	  }
+      }
+    
+    Matrix IMi;
+    Matrix Xorig;
+    Matrix CaliperVec;
+    if(caliper==1)
+    {
+      Xorig = Matrix(N, xvars);
+      CaliperVec = Matrix(xvars, 1);
+      
+      for (i=0; i<xvars; i++)
+      {
+        CaliperVec[i] = REAL(I_CaliperVec)[i];
+      }
+      
+      //rows and colums are fliped!! j,i != i,j
+      k=0;
+      for(j=0;j<xvars; j++)
+      {
+        for(i=0;i<N; i++)
+	      {
+          //X(i,j) = REAL(I_X)[k];
+          Xorig[M(i,j,xvars)] = REAL(I_Xorig)[k];
+          k++;
+	      }
+      }	
+    } // end of caliper==1
+    
+    Matrix restrict; 
+    if (restrict_trigger==1)
+    {
+      restrict = Matrix(restrict_nrow, 3);
+      
+      k=0;
+      for(j=0;j<3; j++)
+      {
+        for(i=0;i<restrict_nrow; i++)
+	      {
+          restrict[M(i,j,3)] = REAL(I_restrict)[k];
+          k++;
+	      }
+      }	
+    } /* if (restrict_trigger==1) */
+
+    Matrix INN = seqa(1, 1, N);
+    // TT is just equal to INN
+
+#ifdef __NBLAS__
+    Matrix DX(N, xvars), ZX(N, xvars), Dist(N, xvars);
+#else
+    Matrix index_onesN = ones(N, 1);
+    Matrix xx;
+    Matrix DX, Dist;
+#endif
+
+    Matrix foo1;
+    Matrix foo2;
+
+    /* set misc */
+    int TREATi = 0, ACTMATsum = 0;
+
+    Matrix tt, ACTDIST, Wi, xmat,
+      I, IM, W;
+    Matrix ACTMAT, POTMAT(N, 1);
+
+    // Temporary size for these matrices to avoid rbind
+    int NM = N*M*100;
+    Matrix tI  = Matrix(NM,1);
+    Matrix tIM = Matrix(NM,1);
+    Matrix tW  = Matrix(NM,1);
+
+    //    tret = gettimeofday(&tv2,&tz2);
+    //    long secs = tv2.tv_sec - tv1.tv_sec;
+    //    long msecs = tv2.tv_usec - tv1.tv_usec;
+    //    double actual = ((double) secs*1000000+ (double) msecs)/1000000;
+    //    printf("actual: %lf, secs: %d, msecs: %d\n", actual, secs, msecs);
+
+    //These are larger than needed; it is just easier this way
+    int *order_DistPot = (int *) malloc(N*sizeof(int));  
+    //double *S = (double *) malloc(N*sizeof(double));  
+    Matrix DistPot=Matrix(N, 1);
+
+    // struct timeval tv1, tv2;	// Required "timeval" structures (see man pg.)
+    // struct timezone tz1, tz2;	// Required "timezone" structures (see man pg.)
+    // long tret = gettimeofday(&tv1,&tz1);
+    
+    int MatchCount=0;
+    int MCindx=0;
+    int first=1;
+    int firstNM=1;
+    for(i=0; i < N; i++)
+      {
+	// treatment indicator for observation to be matched        
+	TREATi = (int) Tr[i];
+	
+	// proceed with all observations if All==1
+	// but only with treated observations if All=0        
+	if ( (TREATi==1 & All!=1) | All==1 )
+	  {
+#ifdef __NBLAS__
+	    // this loop is equivalent to the matrix X less the matrix A, which is
+	    // the product of N rows by 1 column of 1.0 and row R of X.
+	    double *dest = ZX.data;
+	    double *src  = X.data;
+	    double *row  = X.data + (i * xvars);
+	    for (int jj = 0; jj < N; ++jj) {
+	      for (int kk = 0; kk < xvars; ++kk, ++dest, ++src) {
+		*dest = *src - row[kk];
+	      }
+	    }
+
+	    if (xvars>1)
+	      {
+		//JSS
+		// do the second multiplication with dgemm, multiplying the matrix
+		// above, D, by the transpose of matrix W.
+		
+		cblas_dgemm(CblasRowMajor,// column major
+			    CblasNoTrans, // A not transposed
+			    CblasTrans,   // B transposed
+			    xvars,        // M
+			    N,            // N
+			    xvars,        // K
+			    1.0,          // alpha, (alpha * A * B)
+			    ww.data,      // A
+			    xvars,        // leading dimension for A
+			    ZX.data,      // B
+			    xvars,        // leading dimension for B
+			    0.0,          // beta, (beta * C)
+			    DX.data,      // C
+			    N);           // leading dimension for C
+		
+		DX.multi_scalar(DX);
+		std::swap(DX.colsize, DX.rowsize);
+		
+		Dist = sumc(DX);
+		
+		std::swap(Dist.colsize, Dist.rowsize); // transpose 1 x N -> N x 1
+		std::swap(DX.colsize, DX.rowsize);
+	      } else {
+	      // do the second multiplication with dgemm, multiplying the matrix
+	      // above, D, by the transpose of matrix W.
+	      cblas_dgemm(CblasRowMajor, // column major
+			  CblasNoTrans, // A not transposed
+			  CblasTrans,   // B transposed
+			  N,            // M
+			  xvars,        // N
+			  xvars,        // K
+			  1.0,          // alpha, (alpha * A * B)
+			  ZX.data,      // A
+			  xvars,        // leading dimension for A
+			  ww.data,      // B
+			  xvars,        // leading dimension for B
+			  0.0,          // beta, (beta * C)
+			  DX.data,      // C
+			  xvars);       // leading dimension for C
+
+	      DX.multi_scalar(DX);
+	      Dist = DX;
+	    } // end of xvars
+#else
+	    // covariate value for observation to be matched                        
+	    xx = X(i,_);
+	    
+	    
+	    DX = (X - (index_onesN * xx)) * t(ww);
+	    
+	    if (xvars>1)
+	      {
+		//JSS
+		foo1 = t(multi_scalar(DX, DX));
+		Dist = t(sumc(foo1));
+		
+	      } 
+	    else 
+	      {
+		Dist = multi_scalar(DX, DX);
+	      } // end of xvars
+#endif /* end __NBLAS__ */
+	    
+	    // Dist distance to observation to be matched
+	    // is N by 1 vector	    
+
+	    if (restrict_trigger==1)
+	      {
+		for(j=0; j<restrict_nrow; j++)
+		  {
+		    if ( ((long) restrict[M(j,0,3)])-1 ==i )
+		      {
+			
+			if (restrict[M(j,2,3)] < 0) {
+			  Dist[ ((long) restrict[M(j,1,3)])-1 ] = DOUBLE_XMAX;
+			}
+			else {
+			  Dist[ ((long) restrict[M(j,1,3)])-1 ] = restrict[M(j,2,3)];
+			}
+		      }
+		    else if ( ((long) restrict[M(j,1,3)])-1 ==i ) 
+		      {
+			
+			if (restrict[M(j,2,3)] < 0) {
+			  Dist[ ((long) restrict[M(j,0,3)])-1 ] = DOUBLE_XMAX;
+			}
+			else {
+			  Dist[ ((long) restrict[M(j,0,3)])-1 ] = restrict[M(j,2,3)];
+			}
+		      }
+		  }
+	      } /* if (restrict_trigger==1) */
+
+            // set of potential matches (all observations with other treatment)
+            // JSS, note:logical vector
+	    POTMAT = EqualityTestScalar(Tr, 1-TREATi);
+
+	    if (caliper==1)
+	      {
+		for (j=0; j<N; j++)
+		  {
+		    if((int) POTMAT[j]==1)
+		      {
+			for (k=0; k<xvars; k++)
+			  {
+			    diff = abs(Xorig[M(i, k, xvars)] - Xorig[M(j,k,xvars)]); 
+			    if (diff > CaliperVec[k])
+			      {
+				Dist[j] = DOUBLE_XMAX;
+				break;
+			      }
+			  }
+		      }
+		  } 
+	      }//end of if caliper
+
+            // X's for potential matches
+            DistPot = selif(Dist, POTMAT);
+	    //DistPot_size is a constant!! Fix it
+	    long DistPot_size = size(DistPot);
+
+	    //rsort_with_index(DistPot.data, order_DistPot, DistPot_size);
+	    //R_rsort(DistPot.data, DistPot_size);
+	    //rPsort(DistPot.data, DistPot_size, M);
+
+	    Distmax = kth_smallest(DistPot.data, DistPot_size, (M-1));
+
+	    if (restrict_trigger==1 | caliper==1)
+	      {
+		if ( (Distmax+cdd) > DOUBLE_XMAX_CHECK)
+		  {
+		    sum_caliper_drops++;
+		    continue;
+		  }
+	      } 
+
+            // selection of actual matches 
+            // logical index
+	    ACTMAT = LessEqualTestScalar(Dist,  (Distmax+cdd));
+	    ACTMAT = VectorAnd(POTMAT, ACTMAT);
+	    
+	    // distance to actual matches            
+	    ACTDIST = selif(Dist, ACTMAT);
+	    
+            // counts how many times each observation is matched.
+	    double Mi = sum(ACTMAT);
+	    ACTMATsum = (int) sumc(ACTMAT)[0];
+
+	    Wi = ones(ACTMATsum, 1)*1/Mi;
+
+	    // collect results
+	    MatchCount = MatchCount + (int) Mi;
+	    if (MatchCount <= NM)
+	      {
+		foo1 = ones(ACTMATsum, 1)*(i+1);
+		memcpy(tI.data+MCindx, foo1.data, foo1.size*sizeof(double));
+
+		foo1 = selif(INN, ACTMAT);
+		memcpy(tIM.data+MCindx, foo1.data, foo1.size*sizeof(double));
+
+		memcpy(tW.data+MCindx, Wi.data, Wi.size*sizeof(double));
+
+		MCindx = MCindx+foo1.size;
+		first = 0; 
+	      }
+	    else if (first!=1)
+	      {
+		//first time above NM
+		if(firstNM==1)
+		  {
+		    int OldMatchCount = MatchCount - (int) Mi;
+
+		    I=Matrix(OldMatchCount, 1);
+		    IM=Matrix(OldMatchCount, 1);
+		    W=Matrix(OldMatchCount, 1);
+
+		    memcpy(I.data, tI.data, OldMatchCount*sizeof(double));
+		    memcpy(IM.data, tIM.data, OldMatchCount*sizeof(double));
+		    memcpy(W.data, tW.data, OldMatchCount*sizeof(double));
+
+		    firstNM=0;
+		  }
+		I = rbind(I, ones(ACTMATsum, 1)*(i+1));
+		IM = rbind(IM, selif(INN, ACTMAT));
+		W = rbind(W, Wi);
+	      } 
+	    else 
+	      {
+		//first time
+		tI = ones(ACTMATsum, 1)*(i+1);
+		tIM = selif(INN, ACTMAT);
+		tW = Wi;
+
+		first = 0;		
+		firstNM=0;
+	      }
+	    
+	  } // end of (TREATi==1 & All!=1) | All==1 )
+      } //END OF i MASTER LOOP!
+
+    // subset matrices to get back to the right dims
+    if (firstNM==1)
+      {
+	I=Matrix(MatchCount, 1);
+	IM=Matrix(MatchCount, 1);
+	W=Matrix(MatchCount, 1);
+
+	memcpy(I.data, tI.data, MatchCount*sizeof(double));
+	memcpy(IM.data, tIM.data, MatchCount*sizeof(double));
+	memcpy(W.data, tW.data, MatchCount*sizeof(double));
+      }
+
+#if defined(NERVERDEF)
+    printf("I.rowsize %d\n", I.rowsize);
+    printf("tI.rowsize %d\n", tI.rowsize);
+
+    printf("IM.rowsize %d\n", IM.rowsize);
+    printf("tIM.rowsize %d\n", tIM.rowsize);
+
+    printf("W.rowsize %d\n", W.rowsize);
+    printf("tW.rowsize %d\n", tW.rowsize);
+
+    printf("NM: %d\n", NM);
+    printf("display\n");
+    fflush(stdout);
+
+    for(i=0; i<I.rowsize; i++)
+      {
+	printf("%d %d: %lf %lf %lf\n", i, i+1, 
+	       I[i], 
+	       IM[i],
+	       W[i]); 
+    	fflush(stdout);
+      }
+
+    printf("h1\n");
+    fflush(stdout);
+#endif
+
+    // tret = gettimeofday(&tv2,&tz2);
+    // long secs = tv2.tv_sec - tv1.tv_sec;
+    // long msecs = tv2.tv_usec - tv1.tv_usec;
+    // double actual = ((double) secs*1000000+ (double) msecs)/1000000;
+    // printf("actual: %lf, secs: %d, msecs: %d\n", actual, secs, msecs);
+    
+    Matrix rr = cbind(I, IM);
+    rr = cbind(rr, W);
+
+    long tl  = rows(I);
+
+    /*ATT is okay already */
+    /* ATE*/
+    if(All==1 & I[0]!=0)
+      {
+	Matrix I2  = zeros(tl, 1);
+	Matrix IM2 = zeros(tl, 1);
+	Matrix trt = zeros(tl, 1);
+
+	for(i=0; i<tl; i++)
+	  {
+	    k =(int) I[i] -1 ;
+	    trt[i] = Tr[k];
+	  }
+	for (i=0; i<tl; i++)
+	  {
+	    if (trt[i]==1)
+	      {
+		I2[i] = I[i];
+		IM2[i] = IM[i];
+	      } 
+	    else
+	      {
+		I2[i] = IM[i];
+		IM2[i] = I[i];		
+	      }
+	  }
+	I = I2;
+	IM = IM2;
+      } 
+    else if(All==2)     /* ATC */
+      {
+	Matrix Itmp = I;
+	Matrix IMtmp = IM;
+	
+	I = IMtmp;
+	IM = Itmp;
+      }
+
+    rr = cbind(rr, I);
+    rr = cbind(rr, IM);
+
+    if (caliper==1)
+      {
+	Matrix scalar_returns = zeros(tl, 1);
+	scalar_returns[0] = sum_caliper_drops;
+	rr = cbind(rr, scalar_returns);
+      }
+    
+    // rr key
+    // 1] I (unadjusted); 2] IM (unadjusted); 3] weight; 4] I (adjusted); 5] IM (adjusted);
+    // scalar returns [0]: caliper drops
+    
+    /* Free Memory */
+    //free(S);
+    free(order_DistPot);
+    
+    r = rows(rr);
+    c = cols(rr);
+
+    PROTECT(ret=allocMatrix(REALSXP, r, c));
+    /* Loop through the data and display the same in matrix format */
+    k = 0;
+    for( i = 0; i < c; i++ )
+      {
+	for( j = 0; j < r; j++ )
+	  {
+	    // REAL(ret)[k] = rr(j,i);
+	    // REAL(ret)[k] = rr[j*c+i];
+	    /* Use Macro to Index */
+	    REAL(ret)[k] = rr[M(j, i, c)];
+	    k++;
+	  }
+      }
+    UNPROTECT(1);
+    return(ret);    
+  } //end of MatchLoopCfast
 
 } //end of extern "C"
 
@@ -1112,3 +2135,5 @@ void display(Matrix A)
   }
   printf("\n");
 }
+
+
