@@ -19,10 +19,10 @@
 \usage{
 Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
       BiasAdjust = FALSE, exact = NULL, caliper = NULL,
-      Weight = 1, Weight.matrix = NULL, weights = rep(1, length(Y)),
+      Weight = 1, Weight.matrix = NULL, weights = NULL,
       Var.calc = 0, sample = FALSE, tolerance = 1e-05,
       distance.tolerance = 1e-05, restrict=NULL,
-      match.out = NULL, version="fast")
+      match.out = NULL, version="standard")
 }
 \arguments{
   \item{Y}{ A vector containing the outcome of interest.
@@ -53,10 +53,8 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
   \item{BiasAdjust}{ A logical scalar for whether regression adjustment
     should be used. See the \code{Z} matrix.}
   \item{exact}{ A logical scalar or vector for whether exact matching
-    should be done.  \emph{Variables which are to be exactly matched on
-      should also be given a very large weight (e.g., 1000) via the
-      \code{Weight.matrix} option}. If a logical scalar is
-    provided, that logical value is applied to all covariates of
+    should be done.  If a logical scalar is provided, that logical value is
+      applied to all covariates of
     \code{X}.  If a logical vector is provided, a logical value should
     be provided for each covariate in \code{X}. Using a logical vector
     allows the user to specify exact matching for some but not other
@@ -65,9 +63,7 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     exact match. The \code{exact} option takes precedence over the
     \code{caliper} option.}
   \item{caliper}{ A scalar or vector denoting the caliper(s) which
-    should be used when matching.  \emph{Variables for which a caliper is
-      to be used should also be given a very large weight (e.g., 1000) via
-      the \code{Weight.matrix} option}.  A caliper is the distance which is
+    should be used when matching.  A caliper is the distance which is
     acceptable for any match.  Observations which are outside of the
     caliper are dropped. If a scalar caliper is provided, this caliper is
     used for all covariates in \code{X}.  If a vector of calipers is
@@ -75,8 +71,7 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     \code{X}. The caliper is interpreted to be in standardized units.  For
     example, \code{caliper=.25} means that all matches not equal to or
     within .25 standard deviations of each covariate in \code{X} are
-    dropped.  The \code{ecaliper} object which is returned by \code{Match}
-    shows the enforced caliper on the scale of the \code{X} variables.}
+    dropped.}
   \item{Weight}{ A scalar for the type of
     weighting scheme the matching algorithm should use when weighting
     each of the covariates in \code{X}.  The default value of
@@ -108,7 +103,8 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     so that it is highly weighted.  In order to enforce exact matching
     see the \code{exact} and \code{caliper} options.}
   \item{weights}{ A vector the same length as \code{Y} which
-    provides observations specific weights.}
+    provides observations specific weights.  If none are provided, equal
+    weights of 1 for each observations are assumed.}
   \item{Var.calc}{ A scalar for the variance estimate
     that should be used.  By default \code{Var.calc=0} which means that
     homoscedasticity is assumed.  For values of  \code{Var.calc > 0},
@@ -150,8 +146,12 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     arguments as used for the previous invocation of \code{Match} unless
     you know exactly what you are doing.}
   \item{version}{The version of the code to be used.  The "fast" C/C++
-    version of the code is used unless the "old" (stable) version is
-    requested.}
+    version of the code does not calculate Abadie Imbens standard
+    errors.  The "legacy" version of the code does not make a call to an
+    optimized C/C++ library and is included only for historical
+    compatibility.  The "fast" version of the code is significantly
+    faster than the "standard" version for large datasets, and the
+    "legacy" version is much slower than either of the other two.}
 }
 \details{
   
@@ -168,6 +168,9 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
   the optimal weight to give each covariate. The object returned by
   \code{\link{GenMatch}} can be supplied to the \code{Weight.matrix}
   option of \code{Match} to obtain estimates.\cr
+
+  The \code{\link{Matchby}} function provides a wrapper for \code{Match}
+  which is much faster for large datasets when it can be used. \cr
   
   Three demos are included: \code{GerberGreenImai}, \code{DehejiaWahba},
   and \code{AbadieImbens}.  These can be run by calling the
@@ -176,8 +179,8 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
 
 \value{
   \item{est }{The estimated average causal effect.}
-  \item{se }{The standard error.  This standard error is principled if
-    \code{X} consists of either covariates or a known propensity score
+  \item{se }{The Abadie-Imebens standard error.  This standard error is
+    principled if \code{X} consists of either covariates or a known propensity score
     because it takes into account the uncertainty of the matching
     procedure.  If an estimated propensity score is used, the
     uncertainty involved in its estimation is not accounted for although the
@@ -185,14 +188,14 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
   \item{est.noadj }{The estimated average causal effect without any
     \code{BiasAdjust}.  If \code{BiasAdjust} is not requested, this is the
     same as \code{est}.}
-  \item{se.naive }{The naive standard error.  This is the standard error
+  \item{se.standard }{The usual standard error.  This is the standard error
     calculated on the matched data using the usual method of calculating
     the difference of means (between treated and control) weighted by the
     observation weights provided by \code{weights}.  Note that the
     standard error provided by \code{se} takes into account the uncertainty
-    of the matching procedure while \code{se.naive} does not.  Neither
-    \code{se} nor \code{se.naive} take into account the uncertainty of
-    estimating a propensity score.  \code{se.naive} does
+    of the matching procedure while \code{se.standard} does not.  Neither
+    \code{se} nor \code{se.standard} take into account the uncertainty of
+    estimating a propensity score.  \code{se.standard} does
     not take into account any \code{BiasAdjust}.  Summary of the naive
     results can be requested by setting the \code{full=TRUE} flag when
     using the \code{\link{summary.Match}} function on the object
@@ -232,19 +235,27 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     \code{X} variables.  This object has the same length as the number of
     covariates in \code{X}.}
   \item{exact}{The value of the \code{exact} function argument.}
-  \item{ndrops}{The number of actual observations which were dropped
-    either because of caliper or exact matching.  This number is not
-    reliable if observation specific weights were passed in using the \code{weights}
-    option.  But \code{ndrops.matches} will always be accurate.}
-  \item{ndrops.matches}{The number of matches including ties which were dropped either because of the
-    caliper or exact matching. Note that since this number includes
-    ties, it is not the same as \code{ndrops}.}  
+  \item{ndrops}{The number of weighted observations which were dropped
+    either because of caliper or exact matching.  This number, unlike
+    \code{ndrops.matches}, takes into account observation specific
+    weights which the user may have provided via the \code{weights}
+    argument.}
+  \item{ndrops.matches}{The number of matches which were dropped either because of 
+    caliper or exact matching.}  
 }
 \references{
 
+  Sekhon, Jasjeet S. 2006.  ``Matching: Algorithms and Software for
+  Multivariate and Propensity Score Matching with Balance Optimization
+  via Genetic Search.'' \url{http://sekhon.berkeley.edu/matching/}
+
+  Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias
+  Reduction in Matching Methods for Causal Inference.''  Working Paper.
+  \url{http://sekhon.berkeley.edu/papers/SekhonBalanceMetrics.pdf}
+
   Abadie, Alberto and Guido Imbens. 2005.
   ``Large Sample Properties of Matching Estimators for Average
-  Treatment Effects.'' \emph{Econometrica}.
+  Treatment Effects.'' \emph{Econometrica} 74(1): 235-267.
   \url{http://ksghome.harvard.edu/~.aabadie.academic.ksg/sme.pdf} 
 
   Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
@@ -255,9 +266,6 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
   Imbens, Guido. 2004. Matching Software for Matlab and
   Stata. \url{http://elsa.berkeley.edu/~imbens/estimators.shtml}
 
-  Sekhon, Jasjeet S. 2006.  ``Matching: Algorithms and Software for
-  Multivariate and Propensity Score Matching with Balance Optimization
-  via Genetic Search.'' \url{http://sekhon.berkeley.edu/matching/}  
 }
 \author{Jasjeet S. Sekhon, UC Berkeley, \email{sekhon@berkeley.edu},
   \url{http://sekhon.berkeley.edu/}.
@@ -265,6 +273,7 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
 \seealso{ Also see \code{\link{summary.Match}},
   \code{\link{GenMatch}},
   \code{\link{MatchBalance}},
+  \code{\link{Matchby}},  
   \code{\link{balanceMV}}, \code{\link{balanceUV}},
   \code{\link{qqstats}}, \code{\link{ks.boot}},
   \code{\link{GerberGreenImai}}, \code{\link{lalonde}}
@@ -295,9 +304,9 @@ Tr  <- lalonde$treat
 
 #
 # one-to-one matching with replacement (the "M=1" option).
-# Estimating the treatment effect on the treated (the "estimand" option which defaults to 0).
+# Estimating the treatment effect on the treated (the "estimand" option defaults to ATT).
 #
-rr  <- Match(Y=Y,Tr=Tr,X=X,M=1);
+rr  <- Match(Y=Y, Tr=Tr, X=X, M=1);
 summary(rr)
 
 #

@@ -156,7 +156,7 @@ MatchGenoudStage1caliper <- function(Tr=Tr, X=X, All=All, M=M, weights=weights,
 ###############################################################################
 
 GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
-                     weights=rep(1,length(Tr)),
+                     weights=NULL,
                      pop.size = 50, max.generations=100,
                      wait.generations=4, hard.generation.limit=FALSE,
                      starting.values=rep(1,ncol(X)),
@@ -184,6 +184,14 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
     BalanceMatrix  <- as.matrix(BalanceMatrix)
 
     xvars <- ncol(X)
+
+    if (is.null(weights))
+      {
+        weights <- rep(1,length(Tr))
+        weights.flag <- FALSE
+      } else {
+        weights.flag <- TRUE
+      }    
 
     #check inputs
     if (sum(Tr !=1 & Tr !=0) > 0) {
@@ -438,7 +446,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
 
         if(!GenMatchCaliper.trigger)
           {
-
+            
             FastMatchC.internal <- function(N, xvars, All, M, cdd, ww, Tr, Xmod, weights)
               {
                 ret <- .Call("FastMatchC", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
@@ -447,12 +455,26 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                              PACKAGE="Matching")
                 return(ret)
               }
-
-            rr <- FastMatchC.internal(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
-                                      cdd=distance.tolerance, ww=ww, Tr=s1.Tr, Xmod=s1.X,
-                                      weights=weights)
+            FasterMatchC.internal <- function(N, xvars, All, M, cdd, ww, Tr, Xmod, weights)
+              {
+                ret <- .Call("FasterMatchC", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
+                             as.double(cdd), as.real(ww), as.real(Tr),
+                             as.real(Xmod), 
+                             PACKAGE="Matching")
+                return(ret)
+              }
+            
+            if (weights.flag==TRUE)
+              {
+                rr <- FastMatchC.internal(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
+                                          cdd=distance.tolerance, ww=ww, Tr=s1.Tr, Xmod=s1.X,
+                                          weights=weights)
+              } else {
+                rr <- FasterMatchC.internal(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
+                                             cdd=distance.tolerance, ww=ww, Tr=s1.Tr, Xmod=s1.X)
+              } #end of weights.flag
           } else {
-
+            
             MatchLoopC.internal <- function(N, xvars, All, M, cdd, caliperflag, ww, Tr, Xmod, weights, CaliperVec, Xorig,
                                             restrict.trigger, restrict)
               {
@@ -472,7 +494,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                                       CaliperVec=CaliperVec, Xorig=Xorig,
                                       restrict.trigger=restrict.trigger, restrict=restrict)
             
-                                        #no matches
+            #no matches
             if(rr[1,1]==0) {
               warning("no valid matches found in GenMatch evaluation") 
               return(rep(-9999, balancevars*2))

@@ -11,10 +11,10 @@
 
 Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
                    BiasAdjust=FALSE,exact=NULL,caliper=NULL,
-                   Weight=1,Weight.matrix=NULL, weights=rep(1,length(Y)),
+                   Weight=1,Weight.matrix=NULL, weights=NULL,
                    Var.calc=0, sample=FALSE, tolerance=0.00001,
                    distance.tolerance=0.00001, restrict=NULL,
-                   match.out=NULL, version="fast")
+                   match.out=NULL, version="standard")
   {
 
     #we don't need to use a Y
@@ -26,6 +26,14 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
       {
         stop("Match(): input includes NAs")
         return(invisible(NULL))
+      }
+
+    if (is.null(weights))
+      {
+        weights <- rep(1,length(Y))
+        weights.flag <- FALSE
+      } else {
+        weights.flag <- TRUE
       }
 
     Y  <- as.matrix(Y)
@@ -40,9 +48,12 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
     xvars <- ncol(X)
 
     if (sum(Tr !=1 & Tr !=0) > 0) {
-      stop("Treatment indicator must be a logical variable---i.e., TRUE (1) or FALSE (0)")
-    }    
-
+      stop("Treatment indicator ('Tr') must be a logical variable---i.e., TRUE (1) or FALSE (0)")
+    }
+    if (var(Tr)==0) {
+      stop("Treatment indicator ('Tr') must contain both treatment and control observations")
+    }        
+    
     #check inputs
     if (tolerance < 0)
       {
@@ -84,11 +95,21 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
         warning("User set 'Weight' to an illegal value.  Resetting to the default which is 1.")        
         Weight <- 1
       }
-    if (version!="fast" & version != "stable")
+    if (version!="fast" & version != "standard" & version != "legacy")
       {
-        warning("User set 'version' to an illegal value.  Resetting to the default which is 'fast'.")        
-        version <- "fast"
+        warning("User set 'version' to an illegal value.  Resetting to the default which is 'standard'.")        
+        version <- "standard"
       }
+    if (Var.calc !=0 & version=="fast")
+      {
+        warning("Var.calc cannot be estimate when version=='fast'")
+        Var.calc=0
+      }
+    if (BiasAdj!=FALSE & version=="fast")
+      {
+        warning("Bias Adjustment cannot be estimated when version=='fast'")
+        BiasAdj=0
+      }    
 
     if (!is.null(match.out) & class(match.out) != "Match") {
       warning("match.out object not of class 'Match'")
@@ -119,13 +140,43 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
     # END: produce and error if some column of X has zero variance   
     ###########################
 
+    orig.nobs  <- length(Y)
+    nobs  <- orig.nobs
+    orig.treated.nobs  <- sum(Tr==1)
+    orig.control.nobs  <- sum(Tr==0)
+    orig.wnobs  <- sum(weights)
+    orig.weighted.treated.nobs <- sum( weights[Tr==1] )    
+    weights.orig  <- as.matrix(weights)
+    zvars <- ncol(Z);
+
+    estimand.orig <- estimand
     if (estimand=="ATT")
       {
         estimand  <- 0
+
+        if(BiasAdj==1 & orig.treated.nobs<zvars)
+          {
+            warning("Fewer treated obs than variables in 'Z': BiasAdjust set to FALSE")
+            BiasAdj=0            
+          }
+
       } else if(estimand=="ATE") {
         estimand  <- 1
+
+        if(BiasAdj==1 & orig.nobs<zvars)
+          {
+            warning("Fewer obs than variables in 'Z': BiasAdjust set to FALSE")
+            BiasAdj=0            
+          }
       } else if(estimand=="ATC") {
         estimand  <- 2
+
+        if(BiasAdj==1 & orig.control.nobs<zvars)
+          {
+            warning("Fewer control obs than variables in 'Z': BiasAdjust set to FALSE")
+            BiasAdj=0            
+          }
+
       } else {
         estimand  <- 0
         warning("User set 'estimand' to an illegal value.  Resetting to the default which is 'ATT'")
@@ -148,12 +199,20 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
         Weight.matrix <- dim(X)[2]
       }
 
-    orig.nobs  <- length(Y)
-    nobs  <- orig.nobs
-    orig.treated.nobs  <- sum(Tr==1)
-    orig.wnobs  <- sum(weights)
-    orig.weighted.treated.nobs <- sum( weights[Tr==1] )    
-    weights.orig  <- as.matrix(weights)
+    if(Var.calc >= orig.treated.nobs)
+      {
+        warning("'Var.calc' >= the number of treated obs: 'Var.calc' reset to 0")
+        Var.calc=0
+      }
+    if(Var.calc >= orig.control.nobs)
+      {
+        warning("'Var.calc' >= the number of control obs: 'Var.calc' reset to 0")
+        Var.calc=0
+      }
+    if(orig.nobs > 20000 & version!="fast")
+      {
+        warning("The version='fast' option is recommended for large datasets if speed is desired.")
+      }
 
     #check the restrict matrix input
     if(!is.null(restrict))
@@ -221,7 +280,7 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
       }    
 
 #    if(version=="fast" & is.null(ecaliper) & sum(weights==1)==orig.nobs)
-    if(version=="fast")
+    if(version=="fast" | version=="standard")
       {
         if(!is.null(match.out))
           {
@@ -229,13 +288,14 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
                               Weight=Weight, Weight.matrix=Weight.matrix, Var.calc=Var.calc,
                               weight=weights, SAMPLE=sample, ccc=ccc, cdd=cdd,
                               ecaliper=ecaliper, exact=exact, caliper=caliper,
-                              restrict=restrict, MatchLoopC.indx=match.out$MatchLoopC)
+                              restrict=restrict, MatchLoopC.indx=match.out$MatchLoopC,
+                              weights.flag=weights.flag, version=version)
           } else {
             ret <- RmatchLoop(Y=Y, Tr=Tr, X=X, Z=Z, V=V, All=estimand, M=M, BiasAdj=BiasAdj,
                               Weight=Weight, Weight.matrix=Weight.matrix, Var.calc=Var.calc,
                               weight=weights, SAMPLE=sample, ccc=ccc, cdd=cdd,
                               ecaliper=ecaliper, exact=exact, caliper=caliper,
-                              restrict=restrict)            
+                              restrict=restrict, weights.flag=weights.flag, version=version)            
           }
       } else {
         ret <- Rmatch(Y=Y, Tr=Tr, X=X, Z=Z, V=V, All=estimand, M=M, BiasAdj=BiasAdj,
@@ -246,6 +306,8 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
 
     if(is.null(ret$est))
       {
+        cat("is.null(ret$est), est:", ret$est,"\n")
+        print(ret)
         if(ret$valid < 1)
           {
             if (ret$sum.caliper.drops > 0) {
@@ -272,7 +334,7 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
     index.control  <- indx[,2]
     weights        <- indx[,3]
     sum.caliper.drops <- ret$sum.caliper.drops
-    
+
    #RESET INDEX.TREATED        
     indx  <- as.matrix(cbind(index.treated,index.control))
     if (estimand==0) {
@@ -303,21 +365,22 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
       index.treated  <- indx[,2]
       index.control  <- indx[,1]
     }        
-    
+
+
     mdata  <- list()
     mdata$Y  <- c(Y[index.treated],Y[index.control])
     mdata$Tr <- c(Tr[index.treated],Tr[index.control])
     mdata$X  <- rbind(X[index.treated,],X[index.control,])
-    mdata$orig.weighted.treated.nobs <- orig.weighted.treated.nobs    
-    
+    mdata$orig.weighted.treated.nobs <- orig.weighted.treated.nobs
+
     #naive standard errors
     mest  <- sum((Y[index.treated]-Y[index.control])*weights)/sum(weights)
     v1  <- Y[index.treated] - Y[index.control]
     varest  <- sum( ((v1-mest)^2)*weights)/(sum(weights)*sum(weights))
-    se.naive  <- sqrt(varest)
+    se.standard  <- sqrt(varest)
 
     wnobs <- sum(weights)
-    
+
     if(estimand==0)
       {
         #ATT
@@ -332,16 +395,17 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
         }
             
 
-    z  <- list(est=ret$est, se=ret$se, est.noadj=mest, se.naive=se.naive,
+    z  <- list(est=ret$est, se=ret$se, est.noadj=mest, se.standard=se.standard,
                se.cond=ret$se.cond, 
-               mdata=mdata, em=ret$em,
+               mdata=mdata, 
                index.treated=index.treated, index.control=index.control,
                weights=weights, orig.nobs=orig.nobs, orig.wnobs=orig.wnobs,
                orig.treated.nobs=orig.treated.nobs,
                nobs=nobs, wnobs=wnobs,
                caliper=caliper, ecaliper=ecaliper, exact=exact,
                ndrops=actual.drops, ndrops.matches=sum.caliper.drops,
-               MatchLoopC=ret$MatchLoopC)
+               MatchLoopC=ret$MatchLoopC, version=version,
+               estimand=estimand.orig)
 
     class(z)  <- "Match"    
     return(z)
@@ -359,19 +423,29 @@ summary.Match  <- function(object, ..., full=FALSE, digits=5)
       return(invisible(NULL))
     }
 
-    cat("\n")
-    cat("Estimate... ",format(object$est,digits=digits),"\n")
-    cat("SE......... ",format(object$se,digits=digits),"\n")
-    cat("T-stat..... ",format(object$est/object$se,digits=digits),"\n")
-    cat("p.val...... ",format.pval((1-pnorm(abs(object$est/object$se)))*2,digits=digits),"\n")
-    cat("\n")
+    if(object$version!="fast")
+      {
+        cat("\n")
+        cat("Estimate... ",format(object$est,digits=digits),"\n")
+        cat("AI SE...... ",format(object$se,digits=digits),"\n")
+        cat("T-stat..... ",format(object$est/object$se,digits=digits),"\n")
+        cat("p.val...... ",format.pval((1-pnorm(abs(object$est/object$se)))*2,digits=digits),"\n")
+        cat("\n")
+      } else {
+        cat("\n")
+        cat("Estimate... ",format(object$est,digits=digits),"\n")
+        cat("SE......... ",format(object$se.standard,digits=digits),"\n")
+        cat("T-stat..... ",format(object$est/object$se.standard,digits=digits),"\n")
+        cat("p.val...... ",format.pval((1-pnorm(abs(object$est/object$se.standard)))*2,digits=digits),"\n")
+        cat("\n")        
+      }
 
     if(full)
       {
         cat("Est noAdj.. ",format(object$est.noadj,digits=digits),"\n")        
-        cat("Naive SE... ",format(object$se.naive,digits=digits),"\n")
-        cat("Naive T-st. ",format(object$est.noadj/object$se.naive,digits=digits),"\n")
-        cat("Naive p.val ",format.pval((1-pnorm(abs(object$est.noadj/object$se.naive)))*2,digits=digits),"\n")
+        cat("SE......... ",format(object$se.standard,digits=digits),"\n")
+        cat("T-stat..... ",format(object$est.noadj/object$se.standard,digits=digits),"\n")
+        cat("p.val...... ",format.pval((1-pnorm(abs(object$est.noadj/object$se.standard)))*2,digits=digits),"\n")
         cat("\n")
       }
 
@@ -380,22 +454,30 @@ summary.Match  <- function(object, ..., full=FALSE, digits=5)
       cat("Original number of observations (weighted)... ", round(object$orig.wnobs, 3),"\n")
     cat("Original number of observations.............. ", object$orig.nobs,"\n")
     if(object$mdata$orig.weighted.treated.nobs!=object$orig.treated.nobs)
-      cat("Original number of treated obs (weighted).... ", round(object$mdata$orig.weighted.treated.nobs, 3),"\n")    
-    cat("Original number of treated obs............... ", object$orig.treated.nobs,"\n")    
+      cat("Original number of treated obs (weighted).... ", round(object$mdata$orig.weighted.treated.nobs, 3),"\n")
+    if(object$estimand!="ATC")
+      {
+        cat("Original number of treated obs............... ", object$orig.treated.nobs,"\n")
+      } else {
+        cat("Original number of control obs............... ",
+            object$orig.nobs-object$orig.treated.nobs,"\n")        
+      }
     cat("Matched number of observations............... ", round(object$wnobs, 3),"\n")
     cat("Matched number of observations  (unweighted). ", length(object$index.treated),"\n")
 
     cat("\n")
     if(!is.null(object$exact))
       {
-        cat("Actual number of observations dropped by 'exact' or 'caliper'... ",round(object$ndrops, 3),"\n")        
-        cat("Matches including ties dropped by 'exact' or 'caliper'.......... ",object$ndrops.matches,"\n")
+        cat("Number of obs dropped by 'exact' or 'caliper' ", object$ndrops.matches, "\n")
+        if (object$ndrops.matches!=round(object$ndrops))
+          cat("Weighted #obs dropped by 'exact' or 'caliper' ", round(object$ndrops, 3),"\n")        
         cat("\n\n")        
       }else if(!is.null(object$caliper))
       {
         cat("Caliper (SDs)........................................  ",object$caliper,"\n")            
-        cat("Actual number of observations dropped by 'caliper'... ",round(object$ndrops, 3),"\n")        
-        cat("Matches including ties dropped by 'caliper'.......... ",object$ndrops.matches,"\n")
+        cat("Number of obs dropped by 'exact' or 'caliper' ", object$ndrops.matches, "\n")
+        if (object$ndrops.matches!=round(object$ndrops))
+          cat("Weighted #obs dropped by 'exact' or 'caliper' ", round(object$ndrops, 3),"\n")        
         cat("\n\n")
       } else {
         cat("\n")
@@ -1071,13 +1153,11 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
     se <- sqrt(var)
     se.cond <- sqrt(var.cond)
 
-    Sig <- sqrt(Sigs)
-    aug.data <- cbind(Y,Tr,X,Z,Kcount,Sig,weight)
+#    Sig <- sqrt(Sigs)
+#    aug.data <- cbind(Y,Tr,X,Z,Kcount,Sig,weight)
 
     if (All==2)
       est <- -1*est
-
-    em <- as.matrix(c(0,0))
 
 #    if (exact==1)
 #      {
@@ -1092,9 +1172,9 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
 #        em[2,1] <- sum(Vdif>0.000001)
 #      }#end of exact==1
 
-    return(list(est=est, se=se, se.cond=se.cond, em=em, W=W,
+    return(list(est=est, se=se, se.cond=se.cond, W=W,
                 sum.caliper.drops=sum.caliper.drops,
-                art.data=art.data, aug.data=aug.data))
+                art.data=art.data))
   }# end of Rmatch
 
 
@@ -2347,7 +2427,7 @@ summary.ks.boot <- function(object, ..., digits=5)
 
 RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.calc, weight,
                        SAMPLE, ccc, cdd, ecaliper=NULL, exact=NULL, caliper=NULL, restrict=NULL,
-                       MatchLoopC.indx=NULL)
+                       MatchLoopC.indx=NULL, weights.flag, version="standard")
   {
     s1 <- MatchGenoudStage1caliper(Tr=Tr, X=X, All=All, M=M, weights=weight,
                                    exact=exact, caliper=caliper,
@@ -2456,7 +2536,7 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
       } else if (Weight==2) {
         if (min (eigen( t(X)%*%X/N, only.values=TRUE, EISPACK = TRUE)$values) > 0.0000001)
           {
-            Weight.matrix= solve(t(X)%*%X/N) 
+            Weight.matrix= solve(t(X)%*%X/N)
           } else {
             Weight.matrix <- diag(Kx)
           }
@@ -2499,15 +2579,23 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
       {
     #indx:
     # 1] I (unadjusted); 2] IM (unadjusted); 3] weight; 4] I (adjusted); 5] IM (adjusted)
-        MatchLoopC.indx <- MatchLoopC(N=s1$N, xvars=Kx, All=s1$All, M=s1$M,
-                                      cdd=cdd, caliperflag=caliperflag,
-                                      ww=ww, Tr=s1$Tr, Xmod=s1$X,
-                                      weights=weight,
-                                      CaliperVec=use.ecaliper, Xorig=X.orig,
-                                      restrict.trigger=restrict.trigger, restrict=restrict)
-      } 
+        if(weights.flag==TRUE)
+          {
+            MatchLoopC.indx <- MatchLoopC(N=s1$N, xvars=Kx, All=s1$All, M=s1$M,
+                                          cdd=cdd, caliperflag=caliperflag,
+                                          ww=ww, Tr=s1$Tr, Xmod=s1$X,
+                                          weights=weight,
+                                          CaliperVec=use.ecaliper, Xorig=X.orig,
+                                          restrict.trigger=restrict.trigger, restrict=restrict)
+          } else {
+            MatchLoopC.indx <- MatchLoopCfast(N=s1$N, xvars=Kx, All=s1$All, M=s1$M,
+                                              cdd=cdd, caliperflag=caliperflag,
+                                              ww=ww, Tr=s1$Tr, Xmod=s1$X,
+                                              CaliperVec=use.ecaliper, Xorig=X.orig,
+                                              restrict.trigger=restrict.trigger, restrict=restrict)
+          }
+      }
     indx <- MatchLoopC.indx
-
 
     if(indx[1,1]==0)
       {
@@ -2520,20 +2608,21 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
             ret$sum.caliper.drops <- 0
           }
         return(ret)
-      } else if (nrow(indx)< 2)
-        {
-          ret <- list()
-          ret$valid <- 1
-          if (caliperflag)
-            {
-              ret$sum.caliper.drops <- indx[1,6]
-            } else {
-              ret$sum.caliper.drops <- 0
-            }
-          return(ret)
-        }
+      } 
+    #we now keep going if we only have 1 valid match
+    #else if (nrow(indx)< 2)
+    #  {
+    #    ret <- list()
+    #    ret$valid <- 1
+    #    if (caliperflag)
+    #      {
+    #        ret$sum.caliper.drops <- indx[1,6]
+    #      } else {
+    #        ret$sum.caliper.drops <- 0
+    #      }
+    #    return(ret)
+    #  }
         
-    
     if (All==2)
       {
         foo <- indx[,5]
@@ -2554,21 +2643,35 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
 
     I <- indx[,1]
     IT <- Tr[indx[,1]]
-    IM <- indx[,2]    
+    IM <- indx[,2]
 
 #    IX <- X[indx[,1],]
 #    Xt <- X[indx[,4],]
 #    Xc <- X[indx[,5],]
-
-    IZ <- Z[indx[,1],]
-    Zt <- Z[indx[,4],]
-    Zc <- Z[indx[,5],]
 
 #    IY <- Y[indx[,1]]
     Yt <- Y[indx[,4]]
     Yc <- Y[indx[,5]]
 
     W <- indx[,3]
+    
+    if(BiasAdj==1 & sum(W) < ncol(Z))
+      {
+        warning("Fewer (weighted) matches than variables in 'Z': BiasAdjust set to FALSE")
+        BiasAdj=0
+      }    
+
+    if(BiasAdj==1)
+      {
+        if(sum(W) < ncol(Z))
+          {
+            warning("Fewer matches than variables for Bias Adjustment")
+          }
+        
+        IZ <- Z[indx[,1],]
+        Zt <- Z[indx[,4],]
+        Zc <- Z[indx[,5],]
+      }
 
     # transform matched covariates back for artificial data set
 #    Xt.u <- Xt
@@ -2581,65 +2684,104 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
 #        IX.u[,k] <- Mu.X[k,1]+Sig.X[k,1] * IX.u[,k]
 #      }
 
-    Kcount2 <- as.matrix(rep(0, N))    
-    KKcount2 <- as.matrix(rep(0, N))
-    YCAUS2 <- matrix(0, nrow=N, ncol=1)
-    ZCAUS2 <- matrix(0, nrow=N, ncol=Kz)    
-    for (i in 1:N)
+    #reset Var.Calc if >= the sum of weights
+    if(Var.calc >= sum(W))
       {
-        if ( ( Tr[i]==1 & All!=1) | All==1 )
+        warning("'Var.calc' >= the number of matches: 'Var.calc' reset to 0")
+        Var.calc=0
+      }
+    
+
+    est.func <- function(N, All, Tr, indx, weight, BiasAdj, Kz)
+      {
+        Kcount <- as.matrix(rep(0, N))    
+        KKcount <- as.matrix(rep(0, N))
+        YCAUS <- matrix(0, nrow=N, ncol=1)
+
+        if (BiasAdj==1)
           {
-            
-            foo.indx <- indx[,1]==i
-            sum.foo <- sum(foo.indx)
-
-            if (sum.foo < 1)
-              next;            
-
-            foo <- rep(FALSE, N)
-            foo.indx <- indx[foo.indx,2]
-            foo[foo.indx] <- rep(TRUE,sum.foo)
-
-            Kcount2 <- Kcount2 + weight[i] * weight*foo/sum(foo*weight)            
-
-            KKcount2 <- KKcount2 + weight[i]*weight*weight*foo/
-              (sum(foo*weight)*sum(foo*weight))
-
-
-            if(Tr[i]==1)
+            ZCAUS <- matrix(0, nrow=N, ncol=Kz)
+          } else {
+            ZCAUS <- NULL
+          }
+        
+        for (i in 1:N)
+          {
+            if ( ( Tr[i]==1 & All!=1) | All==1 )
               {
-                foo.indx2 <- indx[,1]==i
-                YCAUS2[i] <- Y[i] - sum((Y[indx[foo.indx2,2]]*indx[foo.indx2,3]))/sum(indx[foo.indx2,3])
 
-                if (sum.foo > 1)
-                  {
-                    ZCAUS2[i,] <-
-                      Z[i,] - t(Z[indx[foo.indx2,2],]) %*% indx[foo.indx2,3]/sum(indx[foo.indx2,3])
-                  } else {
-                    ZCAUS2[i,] <-
-                      Z[i,] - Z[indx[foo.indx2,2],]*indx[foo.indx2,3]/sum(indx[foo.indx2,3])
-                  }
+                foo.indx <- indx[,1]==i
+                foo.indx2 <- foo.indx
                 
-              } else {
-                foo.indx2 <- indx[,1]==i
-                YCAUS2[i] <- sum((Y[indx[foo.indx2,2]]*indx[foo.indx2,3]))/sum(indx[foo.indx2,3]) - Y[i]
+                sum.foo <- sum(foo.indx)
+                
+                if (sum.foo < 1)
+                  next;            
+                
+                foo <- rep(FALSE, N)
+                foo.indx <- indx[foo.indx,2]
+                foo[foo.indx] <- rep(TRUE,sum.foo)
 
-                if (sum.foo > 1)
+                #   inner.func <- function(N, weight, indx, foo.indx2, Y, Tr, foo)
+  
+                Kcount <- Kcount + weight[i] * weight*foo/sum(foo*weight)
+                
+                KKcount <- KKcount + weight[i]*weight*weight*foo/
+                  (sum(foo*weight)*sum(foo*weight))
+                
+                foo.indx2.2 <- indx[foo.indx2,2];
+                foo.indx2.3 <- indx[foo.indx2,3];
+                sum.foo.indx2.3 <- sum(foo.indx2.3)
+
+                if(Tr[i]==1)
                   {
-                    ZCAUS2[i,] <-
-                      t(Z[indx[foo.indx2,2],]) %*% indx[foo.indx2,3]/sum(indx[foo.indx2,3]) - Z[i,]
+                    YCAUS[i] <- Y[i] - sum((Y[foo.indx2.2]*foo.indx2.3))/sum.foo.indx2.3
                   } else {
-                    ZCAUS2[i,] <-
-                      Z[indx[foo.indx2,2],]*indx[foo.indx2,3]/sum(indx[foo.indx2,3]) - Z[i,]
+                    YCAUS[i] <- sum((Y[foo.indx2.2]*foo.indx2.3))/sum.foo.indx2.3 - Y[i]
                   }
+
+                if (BiasAdj==1)
+                  {
+                    
+                    if(Tr[i]==1)
+                      {
+                        if (sum.foo > 1)
+                          {
+                            ZCAUS[i,] <-
+                              Z[i,] - t(Z[foo.indx2.2,]) %*% foo.indx2.3/sum.foo.indx2.3
+                          } else {
+                            ZCAUS[i,] <-
+                              Z[i,] - Z[foo.indx2.2,]*foo.indx2.3/sum.foo.indx2.3
+                          }
+                      } else {
+                        if (sum.foo > 1)
+                          {
+                            ZCAUS[i,] <- t(Z[foo.indx2.2,]) %*% foo.indx2.3/sum.foo.indx2.3 - Z[i,]
+                          } else {
+                            ZCAUS[i,] <- Z[foo.indx2.2,]*foo.indx2.3/sum.foo.indx2.3 - Z[i,]
+                          }
+                      }
+                  } #endof BiasAdj
               }
           } #end of if
+        return(list(YCAUS=YCAUS,ZCAUS=ZCAUS,Kcount=Kcount,KKcount=KKcount))
+      } #end of est.func
+    
+    if(version=="standard" & BiasAdj==0)
+      {
+        ret <- .Call("EstFuncC", as.integer(N), as.integer(All), as.integer(nrow(indx)),
+                     as.real(Y), as.real(Tr),
+                     as.real(weight), as.real(indx))
+        YCAUS <- ret[,1];
+        Kcount <- ret[,2];
+        KKcount <- ret[,3];
+      } else if (version=="standard") {
+        ret.est <- est.func(N=N, All=All, Tr=Tr, indx=indx, weight=weight, BiasAdj=BiasAdj, Kz=Kz)
+        YCAUS <- ret.est$YCAUS
+        ZCAUS <- ret.est$ZCAUS
+        Kcount <- ret.est$Kcount
+        KKcount <- ret.est$KKcount
       }
-
-    YCAUS <- YCAUS2
-    ZCAUS <- ZCAUS2
-    Kcount <- Kcount2
-    KKcount <- KKcount2
 
     if (All!=1)
       {
@@ -2648,35 +2790,33 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
         Yc <- as.matrix(Yc[IT==1])
         Yt <- as.matrix(Yt[IT==1])
         W  <- as.matrix(W[IT==1])
-        if (Kz > 1)
+        if (BiasAdj==1)
           {
-            Zc <- as.matrix(Zc[IT==1,])
-            Zt <- as.matrix(Zt[IT==1,])
-            IZ <- as.matrix(IZ[IT==1,])
-          } else{
-            Zc <- as.matrix(Zc[IT==1])
-            Zt <- as.matrix(Zt[IT==1])
-            IZ <- as.matrix(IZ[IT==1])            
+            if (Kz > 1)
+              {
+                Zc <- as.matrix(Zc[IT==1,])
+                Zt <- as.matrix(Zt[IT==1,])
+                IZ <- as.matrix(IZ[IT==1,])
+              } else{
+                Zc <- as.matrix(Zc[IT==1])
+                Zt <- as.matrix(Zt[IT==1])
+                IZ <- as.matrix(IZ[IT==1])            
+              }
           }
-
 #        IM <- as.matrix(IM[IT==1,])
 #        IY <- as.matrix(IY[IT==1])
-        
-
 #        IX.u  <- as.matrix(IX.u[IT==1,])
 #        Xc.u  <- as.matrix(Xc.u[IT==1,])
 #        Xt.u  <- as.matrix(Xt.u[IT==1,])
-        
 #        Xc    <- as.matrix(Xc[IT==1,])
 #        Xt <- as.matrix(Xt[IT==1,])
-
       } #end of if
-
+    
     if (length(I) < 1)
       {
         return(list(sum.caliper.drops=N))
       }
-
+    
     if (BiasAdj==1)
       {
         # III. Regression of outcome on covariates for matches
@@ -2765,7 +2905,6 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
             Alphac <- as.matrix(wout[2:NW,1])
           }
       }
-    
 
     if(BiasAdj==1)
       {
@@ -2787,7 +2926,7 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
         Yt.adj <- Yt
         Tau.i <- Yt.adj - Yc.adj        
       }
-
+       
     art.data <- cbind(I,IM)
 
     # III. If conditional variance is needed, initialize variance vector
@@ -2855,58 +2994,58 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
         #variance estimate 
         Sigs <- Sig*Sig
       } #end of var.calc > 0
-
-    # matching estimator
-    est <- t(W) %*% Tau.i/sum(W)
+       
+    est <- t(W) %*% Tau.i/sum(W) # matching estimator
 #    est.t <- sum((iot.t*Tr+iot.c*Kcount*Tr)*Y)/sum(iot.t*Tr+iot.c*Kcount*Tr)
 #    est.c <- sum((iot.t*(1-Tr)+iot.c*Kcount*(1-Tr))*Y)/sum(iot.t*(1-Tr)+iot.c*Kcount*(1-Tr))
 
-    if (Var.calc==0)
+    if(version=="standard")
       {
-        eps <- Tau.i - as.real(est)
-        eps.sq <- eps*eps
-        Sigs <- 0.5 * matrix(1, N, 1) %*% (t(eps.sq) %*% W)/sum(W)
-#        sss <- sqrt(Sigs[1,1])
-      } #end of Var.calc==0
-
-    SN <- sum(iot.t)
-    var.sample <- sum((Sigs*(iot.t+iot.c*Kcount)*(iot.t+iot.c*Kcount))/(SN*SN))
-
-    if (All==1)
-      {
-        var.pop <- sum((Sigs*(iot.c*Kcount*Kcount+2*iot.c*Kcount-iot.c*KKcount))/(SN*SN))
+        if (Var.calc==0)
+          {
+            eps <- Tau.i - as.real(est)
+            eps.sq <- eps*eps
+            Sigs <- 0.5 * matrix(1, N, 1) %*% (t(eps.sq) %*% W)/sum(W) #sss <- sqrt(Sigs[1,1])
+          } #end of Var.calc==0
+        
+        SN <- sum(iot.t)
+        var.sample <- sum((Sigs*(iot.t+iot.c*Kcount)*(iot.t+iot.c*Kcount))/(SN*SN))
+        
+        if (All==1)
+          {
+            var.pop <- sum((Sigs*(iot.c*Kcount*Kcount+2*iot.c*Kcount-iot.c*KKcount))/(SN*SN))
+          } else {
+            var.pop=sum((Sigs*(iot.c*Kcount*Kcount-iot.c*KKcount))/(SN*SN))
+          }
+        
+        if (BiasAdj==1)
+          {
+            dvar.pop <- sum(iot.t*(SCAUS-as.real(est))*(SCAUS-as.real(est)))/(SN*SN)
+          } else {
+            dvar.pop <- sum(iot.t*(YCAUS-as.real(est))*(YCAUS-as.real(est)))/(SN*SN)
+          }
+        
+        var.pop <- var.pop + dvar.pop
+        
+        if (SAMPLE==1)
+          {
+            var <- var.sample
+          } else {
+            var <- max(var.sample, var.pop)
+            var <- var.pop
+          }
+        
+        var.cond <- max(var.sample,var.pop)-var.sample
+        se <- sqrt(var)
+        se.cond <- sqrt(var.cond)
+        #Sig <- sqrt(Sigs)        
       } else {
-        var.pop=sum((Sigs*(iot.c*Kcount*Kcount-iot.c*KKcount))/(SN*SN))
+        se=NULL
+        se.cond=NULL
       }
-
-    if (BiasAdj==1)
-      {
-        dvar.pop <- sum(iot.t*(SCAUS-as.real(est))*(SCAUS-as.real(est)))/(SN*SN)
-      } else {
-        dvar.pop <- sum(iot.t*(YCAUS-as.real(est))*(YCAUS-as.real(est)))/(SN*SN)
-      }
-
-    var.pop <- var.pop + dvar.pop
-
-    if (SAMPLE==1)
-      {
-        var <- var.sample
-      } else {
-        var <- max(var.sample, var.pop)
-        var <- var.pop
-      }
-
-    var.cond <- max(var.sample,var.pop)-var.sample
-    se <- sqrt(var)
-    se.cond <- sqrt(var.cond)
-
-    Sig <- sqrt(Sigs)
-    aug.data <- cbind(Y,Tr,X,Z,Kcount,Sig,weight)
-
+        
     if (All==2)
       est <- -1*est
-
-    em <- as.matrix(c(0,0))
 
 #    if (exact==1)
 #      {
@@ -2921,9 +3060,9 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
 #        em[2,1] <- sum(Vdif>0.000001)
 #      }#end of exact==1
 
-    return(list(est=est, se=se, se.cond=se.cond, em=em, W=W,
+    return(list(est=est, se=se, se.cond=se.cond, W=W,
                 sum.caliper.drops=sum.caliper.drops,
-                art.data=art.data, aug.data=aug.data,
+                art.data=art.data, 
                 MatchLoopC=MatchLoopC.indx))
   }# end of RmatchLoop
 
@@ -2938,6 +3077,18 @@ MatchLoopC <- function(N, xvars, All, M, cdd, caliperflag, ww, Tr, Xmod, weights
                  PACKAGE="Matching")
     return(ret)
   } #end of MatchLoopC
+
+MatchLoopCfast <- function(N, xvars, All, M, cdd, caliperflag, ww, Tr, Xmod, CaliperVec, Xorig,
+                           restrict.trigger, restrict)
+  {
+    
+    ret <- .Call("MatchLoopCfast", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
+                 as.double(cdd), as.integer(caliperflag), as.real(ww), as.real(Tr),
+                 as.real(Xmod), as.real(CaliperVec), as.real(Xorig),
+                 as.integer(restrict.trigger), as.integer(nrow(restrict)), as.real(restrict),
+                 PACKAGE="Matching")
+    return(ret)
+  } #end of MatchLoopCfast
 
 
 
