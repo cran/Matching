@@ -155,14 +155,13 @@ Matchby(Y, Tr, X, by, estimand = "ATT", M = 1, exact = NULL, caliper = NULL,
 \author{Jasjeet S. Sekhon, UC Berkeley, \email{sekhon@berkeley.edu},
   \url{http://sekhon.berkeley.edu/}.
 }
-\seealso{ Also see \code{\link{Match},
+\seealso{ Also see \code{\link{Match}},
     \code{\link{summary.Matchby}},
     \code{\link{GenMatch}},
     \code{\link{MatchBalance}},
     \code{\link{balanceMV}}, \code{\link{balanceUV}},
     \code{\link{qqstats}}, \code{\link{ks.boot}},
     \code{\link{GerberGreenImai}}, \code{\link{lalonde}}
-  }
 }
 \examples{
 #
