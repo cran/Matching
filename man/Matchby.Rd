@@ -4,8 +4,8 @@
 \description{
   This function is a wrapper for the \code{\link{Match}} function which
   separates the matching problem into subgroups defined by a factor.
-  This is equivalent to conducting exact matching on each factor.
-  Matches within each factor are found as determined by the
+  This is equivalent to conducting exact matching on each level of a factor.
+  Matches within each level are found as determined by the
   usual matching options.  This function is much faster for large
   datasets than the \code{\link{Match}} function itself.
 }

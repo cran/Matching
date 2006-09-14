@@ -18,15 +18,14 @@
   computations.
 }
 \usage{
-GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
-         weights=NULL,
+GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1, weights=NULL,
          pop.size = 50, max.generations=100,
          wait.generations=4, hard.generation.limit=FALSE,
          starting.values=rep(1,ncol(X)),
          fit.func="pvals",
          data.type.integer=TRUE,
          MemoryMatrix=TRUE,
-         exact=NULL, caliper=NULL, 
+         exact=NULL, caliper=NULL, replace=TRUE,
          nboots=0, ks=TRUE, verbose=FALSE,
          tolerance = 1e-05,
          distance.tolerance=tolerance,
@@ -166,6 +165,13 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
     standard deviations of each covariate in \code{X} are dropped.
     The \code{ecaliper} object which is returned by \code{GenMatch} shows
     the enforced caliper on the scale of the \code{X} variables.}
+  \item{replace}{Whether matching should be done with replacement.  Note
+    that if \code{FALSE}, the order of matches generally matters.
+    Matches will be found in the same order as the data is
+    sorted.  Thus, the match(es) for the first observation will be found
+    first and then for the second etc. Ties may use up observations.
+    One could randomly break ties by matching on a random X---e.g.,
+    include \code{rnorm(length(Tr), 0, 1)} as a matching variable.}  
   \item{nboots}{The number of bootstrap samples to be run for the
     \code{ks} test.}
   \item{ks}{ A logical flag for if the univariate bootstrap

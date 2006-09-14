@@ -14,13 +14,29 @@
 # -fstrict-aliasing -freorder-blocks -fsched-interblock is added for OS X (already included in the Linux gcc -O2 option
 # does no harm on Linux
 
+#Matching Version 3.4.4+: we need to add the -ffriend-injection argument for g++
+#versions 4.1+ because ARM-style name-injection of friend declarations
+#is no longer the default.  
+
 CXX=`"${R_HOME}/bin/R" CMD config CXX`
 
 echo $CXX | grep g++ > /dev/null 2>&1
 if [ "$?" -eq "0" ]; then
+
+ CFLAGS="-O3 -finline-functions -funswitch-loops -fgcse-after-reload -ffast-math -funroll-loops -fexpensive-optimizations -fstrict-aliasing -freorder-blocks -fsched-interblock"
+
  CXXFLAGS="-O3 -finline-functions -funswitch-loops -fgcse-after-reload -ffast-math -funroll-loops -fexpensive-optimizations -fstrict-aliasing -freorder-blocks -fsched-interblock"
- echo "PKG_CXXFLAGS=$CXXFLAGS" > src/Makevars
- echo "PKG_CFLAGS=$CXXFLAGS" >> src/Makevars
+
+ VERSION=`$CXX --version`
+ echo $VERSION | grep "4.1.\|4.2." > /dev/null 2>&1
+ if [ "$?" -eq "0" ]; then
+
+ CXXFLAGS="-O3 -finline-functions -funswitch-loops -fgcse-after-reload -ffast-math -funroll-loops -fexpensive-optimizations -fstrict-aliasing -freorder-blocks -fsched-interblock -ffriend-injection"
+ fi
+
+ echo "PKG_CFLAGS=$CFLAGS" > src/Makevars
+ echo "PKG_CXXFLAGS=$CXXFLAGS" >> src/Makevars
+
 
 # are we on osx?
 # if so, don't compile our own cblas headers
