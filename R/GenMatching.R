@@ -163,7 +163,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                      fit.func="pvals",
                      data.type.integer=TRUE,
                      MemoryMatrix=TRUE,
-                     exact=NULL, caliper=NULL, 
+                     exact=NULL, caliper=NULL, replace=TRUE,
                      nboots=0, ks=TRUE, verbose=FALSE,
                      tolerance=0.00001,
                      distance.tolerance=tolerance,
@@ -341,6 +341,46 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         stop("invalid 'fit.func' argument")
       }
 
+    if(replace==FALSE)
+      {
+        #replace==FALE, needs enough observation
+        #ATT
+        orig.weighted.control.nobs <- sum(weights[Tr!=1])
+        orig.weighted.treated.nobs <- sum(weights[Tr==1])
+        if(estimand=="ATC")
+          {
+            if (orig.weighted.treated.nobs < orig.weighted.control.nobs)
+              {
+                warning("replace==FALSE, but there are more (weighted) control obs than treated obs.  Some obs will be dropped.  You may want to estimate ATC instead")
+              }
+          } else if(estimand=="ATE") 
+            {
+              #ATE
+              if (orig.weighted.treated.nobs > orig.weighted.control.nobs)
+                {
+                  warning("replace==FALSE, but there are more (weighted) treated obs than control obs.  Some treated obs will not be matched.  You may want to estimate ATC instead.")
+                }              
+              if (orig.weighted.treated.nobs < orig.weighted.control.nobs)
+                {
+                  warning("replace==FALSE, but there are more (weighted) control obs than treated obs.  Some control obs will not be matched.  You may want to estimate ATT instead.")
+                }
+            } else {
+              #ATT
+              if (orig.weighted.treated.nobs > orig.weighted.control.nobs)
+                {
+                  warning("replace==FALSE, but there are more (weighted) treated obs than control obs.  Some treated obs will not be matched.  You may want to estimate ATC instead.")
+                }
+            }
+        
+        #we need a restrict matrix if we are going to not do replacement
+        if(is.null(restrict))
+          {
+            restrict <- t(as.matrix(c(0,0,0)))
+          }
+      }#end of replace==FALSE    
+
+    
+
     #check the restrict matrix input
     if(!is.null(restrict))
       {
@@ -474,25 +514,62 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                                              cdd=distance.tolerance, ww=ww, Tr=s1.Tr, Xmod=s1.X)
               } #end of weights.flag
           } else {
-            
-            MatchLoopC.internal <- function(N, xvars, All, M, cdd, caliperflag, ww, Tr, Xmod, weights, CaliperVec, Xorig,
-                                            restrict.trigger, restrict)
+            MatchLoopC.internal <- function(N, xvars, All, M, cdd, caliperflag, replace, ww, Tr, Xmod, weights, CaliperVec,
+                                            Xorig, restrict.trigger, restrict)
               {
                 
+                if(restrict.trigger)
+                  {
+                    restrict.nrow <- nrow(restrict)
+                  } else {
+                    restrict.nrow <- 0
+                  }    
+                
                 ret <- .Call("MatchLoopC", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
-                             as.double(cdd), as.integer(caliperflag), as.real(ww), as.real(Tr),
+                             as.double(cdd), as.integer(caliperflag), as.integer(replace), as.real(ww), as.real(Tr),
                              as.real(Xmod), as.real(weights), as.real(CaliperVec), as.real(Xorig),
-                             as.integer(restrict.trigger), as.integer(nrow(restrict)), as.real(restrict),
+                             as.integer(restrict.trigger), as.integer(restrict.nrow), as.real(restrict),
                              PACKAGE="Matching")
                 return(ret)
               } #end of MatchLoopC.internal
             
-            rr <- MatchLoopC.internal(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
-                                      cdd=distance.tolerance,
-                                      caliperflag=caliperFlag,
-                                      ww=ww, Tr=s1.Tr, Xmod=s1.X, weights=weights,
-                                      CaliperVec=CaliperVec, Xorig=Xorig,
-                                      restrict.trigger=restrict.trigger, restrict=restrict)
+            MatchLoopCfast.internal <- function(N, xvars, All, M, cdd, caliperflag, replace, ww, Tr, Xmod, CaliperVec, Xorig,
+                                                restrict.trigger, restrict)
+              {
+                
+                if(restrict.trigger)
+                  {
+                    restrict.nrow <- nrow(restrict)
+                  } else {
+                    restrict.nrow <- 0
+                  }    
+                
+                ret <- .Call("MatchLoopCfast", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
+                             as.double(cdd), as.integer(caliperflag), as.integer(replace), as.real(ww), as.real(Tr),
+                             as.real(Xmod), as.real(CaliperVec), as.real(Xorig),
+                             as.integer(restrict.trigger), as.integer(restrict.nrow), as.real(restrict),
+                             PACKAGE="Matching")
+                return(ret)
+              } #end of MatchLoopCfast.internal
+
+            if (weights.flag==TRUE)
+              {
+                rr <- MatchLoopC.internal(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
+                                          cdd=distance.tolerance,
+                                          caliperflag=caliperFlag,
+                                          replace=replace,
+                                          ww=ww, Tr=s1.Tr, Xmod=s1.X, weights=weights,
+                                          CaliperVec=CaliperVec, Xorig=Xorig,
+                                          restrict.trigger=restrict.trigger, restrict=restrict)
+              } else {
+                rr <- MatchLoopCfast.internal(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
+                                              cdd=distance.tolerance,
+                                              caliperflag=caliperFlag,
+                                              replace=replace,
+                                              ww=ww, Tr=s1.Tr, Xmod=s1.X, 
+                                              CaliperVec=CaliperVec, Xorig=Xorig,
+                                              restrict.trigger=restrict.trigger, restrict=restrict)
+              } #end of weights.flag
             
             #no matches
             if(rr[1,1]==0) {
@@ -819,7 +896,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                                "fit.func"))
 
         if(GenMatchCaliper.trigger) {
-          GENclusterExport(cl, c("caliperFlag", "CaliperVec", "Xorig", "restrict.trigger", "restrict"))
+          GENclusterExport(cl, c("caliperFlag", "CaliperVec", "Xorig", "restrict.trigger", "restrict","replace"))
         }
         
         GENclusterExport(cl, "genoudfunc")
@@ -861,6 +938,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         mout <- MatchLoopC(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
                            cdd=distance.tolerance,
                            caliperflag=caliperFlag,
+                           replace=replace,
                            ww=ww, Tr=s1.Tr, Xmod=s1.X, weights=weights,
                            CaliperVec=CaliperVec, Xorig=Xorig,
                            restrict.trigger=restrict.trigger, restrict=restrict)

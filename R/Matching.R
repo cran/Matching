@@ -10,7 +10,7 @@
 # score. MatchBalance(), balanceMV() and balanceUV() test for balance.
 
 Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
-                   BiasAdjust=FALSE,exact=NULL,caliper=NULL,
+                   BiasAdjust=FALSE,exact=NULL,caliper=NULL, replace=TRUE,
                    Weight=1,Weight.matrix=NULL, weights=NULL,
                    Var.calc=0, sample=FALSE, tolerance=0.00001,
                    distance.tolerance=0.00001, restrict=NULL,
@@ -277,7 +277,50 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
             if (exact[i])
               ecaliper[i] <- tolerance;
           }
-      }    
+      }
+
+    if(replace==FALSE)
+      {
+        #replace==FALE, needs enough observation
+        #ATT
+        orig.weighted.control.nobs <- sum(weights[Tr!=1])
+        if(estimand==0)
+          {
+            if (orig.weighted.treated.nobs > orig.weighted.control.nobs)
+              {
+                warning("replace==FALSE, but there are more (weighted) treated obs than control obs.  Some treated obs will not be matched.  You may want to estimate ATC instead.")
+              }
+          } else if(estimand==1) 
+            {
+              #ATE
+              if (orig.weighted.treated.nobs > orig.weighted.control.nobs)
+                {
+                  warning("replace==FALSE, but there are more (weighted) treated obs than control obs.  Some treated obs will not be matched.  You may want to estimate ATC instead.")
+                }              
+              if (orig.weighted.treated.nobs < orig.weighted.control.nobs)
+                {
+                  warning("replace==FALSE, but there are more (weighted) control obs than treated obs.  Some control obs will not be matched.  You may want to estimate ATT instead.")
+                }
+            } else 
+        {
+              #ATC
+          if (orig.weighted.treated.nobs < orig.weighted.control.nobs)
+            {
+              warning("replace==FALSE, but there are more (weighted) control obs than treated obs.  Some obs will be dropped.  You may want to estimate ATC instead")
+            }
+        }
+        
+        #we need a restrict matrix if we are going to not do replacement
+        if(is.null(restrict))
+          {
+            restrict <- t(as.matrix(c(0,0,0)))
+          }
+        if(version!="fast" &  version!="standard")
+          {
+            warning("reverting to 'standard' version because replace=FALSE")
+            version="standard"
+          }
+      }#end of replace==FALSE
 
 #    if(version=="fast" & is.null(ecaliper) & sum(weights==1)==orig.nobs)
     if(version=="fast" | version=="standard")
@@ -289,13 +332,13 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
                               weight=weights, SAMPLE=sample, ccc=ccc, cdd=cdd,
                               ecaliper=ecaliper, exact=exact, caliper=caliper,
                               restrict=restrict, MatchLoopC.indx=match.out$MatchLoopC,
-                              weights.flag=weights.flag, version=version)
+                              weights.flag=weights.flag,  replace=replace, version=version)
           } else {
             ret <- RmatchLoop(Y=Y, Tr=Tr, X=X, Z=Z, V=V, All=estimand, M=M, BiasAdj=BiasAdj,
                               Weight=Weight, Weight.matrix=Weight.matrix, Var.calc=Var.calc,
                               weight=weights, SAMPLE=sample, ccc=ccc, cdd=cdd,
                               ecaliper=ecaliper, exact=exact, caliper=caliper,
-                              restrict=restrict, weights.flag=weights.flag, version=version)            
+                              restrict=restrict, weights.flag=weights.flag,  replace=replace, version=version)   
           }
       } else {
         ret <- Rmatch(Y=Y, Tr=Tr, X=X, Z=Z, V=V, All=estimand, M=M, BiasAdj=BiasAdj,
@@ -306,8 +349,6 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
 
     if(is.null(ret$est))
       {
-        cat("is.null(ret$est), est:", ret$est,"\n")
-        print(ret)
         if(ret$valid < 1)
           {
             if (ret$sum.caliper.drops > 0) {
@@ -2427,7 +2468,7 @@ summary.ks.boot <- function(object, ..., digits=5)
 
 RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.calc, weight,
                        SAMPLE, ccc, cdd, ecaliper=NULL, exact=NULL, caliper=NULL, restrict=NULL,
-                       MatchLoopC.indx=NULL, weights.flag, version="standard")
+                       MatchLoopC.indx=NULL, weights.flag, replace=TRUE, version="standard")
   {
     s1 <- MatchGenoudStage1caliper(Tr=Tr, X=X, All=All, M=M, weights=weight,
                                    exact=exact, caliper=caliper,
@@ -2582,19 +2623,20 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
         if(weights.flag==TRUE)
           {
             MatchLoopC.indx <- MatchLoopC(N=s1$N, xvars=Kx, All=s1$All, M=s1$M,
-                                          cdd=cdd, caliperflag=caliperflag,
+                                          cdd=cdd, caliperflag=caliperflag, replace=replace,
                                           ww=ww, Tr=s1$Tr, Xmod=s1$X,
                                           weights=weight,
                                           CaliperVec=use.ecaliper, Xorig=X.orig,
-                                          restrict.trigger=restrict.trigger, restrict=restrict)
+                                          restrict.trigger=restrict.trigger, restrict=restrict,)
           } else {
             MatchLoopC.indx <- MatchLoopCfast(N=s1$N, xvars=Kx, All=s1$All, M=s1$M,
-                                              cdd=cdd, caliperflag=caliperflag,
+                                              cdd=cdd, caliperflag=caliperflag, replace=replace,
                                               ww=ww, Tr=s1$Tr, Xmod=s1$X,
                                               CaliperVec=use.ecaliper, Xorig=X.orig,
                                               restrict.trigger=restrict.trigger, restrict=restrict)
           }
       }
+
     indx <- MatchLoopC.indx
 
     if(indx[1,1]==0)
@@ -3066,26 +3108,40 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
                 MatchLoopC=MatchLoopC.indx))
   }# end of RmatchLoop
 
-MatchLoopC <- function(N, xvars, All, M, cdd, caliperflag, ww, Tr, Xmod, weights, CaliperVec, Xorig,
+MatchLoopC <- function(N, xvars, All, M, cdd, caliperflag, replace, ww, Tr, Xmod, weights, CaliperVec, Xorig,
                        restrict.trigger, restrict)
   {
 
+    if(restrict.trigger)
+      {
+        restrict.nrow <- nrow(restrict)
+      } else {
+        restrict.nrow <- 0
+      }    
+
     ret <- .Call("MatchLoopC", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
-                 as.double(cdd), as.integer(caliperflag), as.real(ww), as.real(Tr),
+                 as.double(cdd), as.integer(caliperflag), as.integer(replace), as.real(ww), as.real(Tr),
                  as.real(Xmod), as.real(weights), as.real(CaliperVec), as.real(Xorig),
-                 as.integer(restrict.trigger), as.integer(nrow(restrict)), as.real(restrict),
+                 as.integer(restrict.trigger), as.integer(restrict.nrow), as.real(restrict),
                  PACKAGE="Matching")
     return(ret)
   } #end of MatchLoopC
 
-MatchLoopCfast <- function(N, xvars, All, M, cdd, caliperflag, ww, Tr, Xmod, CaliperVec, Xorig,
+MatchLoopCfast <- function(N, xvars, All, M, cdd, caliperflag, replace, ww, Tr, Xmod, CaliperVec, Xorig,
                            restrict.trigger, restrict)
   {
+
+    if(restrict.trigger)
+      {
+        restrict.nrow <- nrow(restrict)
+      } else {
+        restrict.nrow <- 0
+      }    
     
     ret <- .Call("MatchLoopCfast", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
-                 as.double(cdd), as.integer(caliperflag), as.real(ww), as.real(Tr),
+                 as.double(cdd), as.integer(caliperflag), as.integer(replace), as.real(ww), as.real(Tr),
                  as.real(Xmod), as.real(CaliperVec), as.real(Xorig),
-                 as.integer(restrict.trigger), as.integer(nrow(restrict)), as.real(restrict),
+                 as.integer(restrict.trigger), as.integer(restrict.nrow), as.real(restrict),
                  PACKAGE="Matching")
     return(ret)
   } #end of MatchLoopCfast

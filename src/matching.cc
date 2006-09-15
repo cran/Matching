@@ -492,15 +492,21 @@ extern "C"
     } //END OF i MASTER LOOP!
 
     // subset matrices to get back to the right dims
-    if (firstNM==1)
+    if (firstNM==1 & MatchCount > 0)
       {
 	I=Matrix(MatchCount, 1);
 	IM=Matrix(MatchCount, 1);
 	W=Matrix(MatchCount, 1);
-	
+
 	memcpy(I.data, tI.data, MatchCount*sizeof(double));
 	memcpy(IM.data, tIM.data, MatchCount*sizeof(double));
 	memcpy(W.data, tW.data, MatchCount*sizeof(double));
+      }
+    else if (firstNM==1)
+      {
+	I=Matrix(1, 1);
+	IM=Matrix(1, 1);
+	W=Matrix(1, 1);
       }
     
     // tret = gettimeofday(&tv2,&tz2);
@@ -927,15 +933,16 @@ extern "C"
 
   
   SEXP MatchLoopC(SEXP I_N, SEXP I_xvars, SEXP I_All, SEXP I_M, SEXP I_cdd,
-                  SEXP I_caliper,
+                  SEXP I_caliper, SEXP I_replace,
                   SEXP I_ww, SEXP I_Tr, SEXP I_X, SEXP I_weight,
                   SEXP I_CaliperVec, SEXP I_Xorig,
                   SEXP I_restrict_trigger, SEXP I_restrict_nrow, SEXP I_restrict)
   {
     SEXP ret;
     
-    long N, xvars, All, M, caliper, restrict_trigger, restrict_nrow, sum_caliper_drops=0;
-    double cdd, diff, foo_d;
+    long N, xvars, All, M, caliper, replace, restrict_trigger, restrict_nrow, sum_caliper_drops=0,
+      replace_count=0;
+    double cdd, diff;
     
     long i, j, k, r, c;
     
@@ -945,6 +952,7 @@ extern "C"
     M = asInteger(I_M);
     cdd = asReal(I_cdd);
     caliper = (long) asReal(I_caliper);
+    replace = asInteger(I_replace);
     restrict_nrow = asInteger(I_restrict_nrow);
     restrict_trigger = asInteger(I_restrict_trigger);
     
@@ -1027,11 +1035,18 @@ extern "C"
       {
         for(i=0;i<restrict_nrow; i++)
 	      {
-          restrict[M(i,j,3)] = REAL(I_restrict)[k];
-          k++;
+		restrict[M(i,j,3)] = REAL(I_restrict)[k];
+		k++;
 	      }
       }	
     } /* if (restrict_trigger==1) */
+
+    // required for replace=0, to keep track of obs already used
+    long *ReplaceVector;
+    if(replace==0)
+      {
+	ReplaceVector = (long *) malloc(N*sizeof(long));
+      }
 
     Matrix INN = seqa(1, 1, N);
     // TT is just equal to INN
@@ -1053,7 +1068,7 @@ extern "C"
     int TREATi = 0, ACTMATsum = 0;
 
     Matrix Dist, DistPot, weightPot, tt, 
-      weightPot_sort, weightPot_sum, ACTDIST, Wi, xmat, I, IM, W;
+      weightPot_sort, weightPot_sum, ACTDIST, Wi, xmat, I, IM, IMt, W;
     Matrix ACTMAT, POTMAT(N, 1);
 
     //    tret = gettimeofday(&tv2,&tz2);
@@ -1191,6 +1206,15 @@ extern "C"
 		  }
 	      } /* if (restrict_trigger==1) */
 
+	    // Don't match observations we have already matched
+	    if(replace_count > 0)
+	      {
+		for(j=0; j<replace_count; j++)
+		  {
+		    Dist[ ( ReplaceVector[j] - 1) ] = DOUBLE_XMAX;
+		  }
+	      } // end of replace_count
+
             // set of potential matches (all observations with other treatment)
             // JSS, note:logical vector
 	    POTMAT = EqualityTestScalar(Tr, 1-TREATi);
@@ -1245,7 +1269,7 @@ extern "C"
 
 	    // distance at last match
             double Distmax = S[MMM];
-	    
+
 	    if (restrict_trigger==1 | caliper==1)
 	      {
 		if ( (Distmax+cdd) > DOUBLE_XMAX_CHECK)
@@ -1284,19 +1308,44 @@ extern "C"
 	    Wi = weight[i]*Wi/Mi;
 	    
 	    ACTMATsum = (int) sumc(ACTMAT)[0];
-	    
+
+	    //if no replacement
+	    if(replace==0)
+	      {
+		IMt = selif(INN, ACTMAT);
+		for (j=0; j<IMt.rowsize; j++)
+		  {
+		    ReplaceVector[replace_count] = (long) IMt.data[j];
+		    replace_count++;
+		  }
+	      }//end of replace==0
+
 	    // collect results
 	    if (first==1)
 	      {
 		I = ones(ACTMATsum, 1)*(i+1);
-		IM = selif(INN, ACTMAT);
+		if(replace==0)
+		  {
+		    IM = IMt;
+		  } 
+		else 
+		  {
+		    IM = selif(INN, ACTMAT);
+		  }
 		W = Wi;
 		first = 0;
 	      }// end of first==1 
 	    else 
 	      {
 		I = rbind(I, ones(ACTMATsum, 1)*(i+1));
-		IM = rbind(IM, selif(INN, ACTMAT));
+		if(replace==0)
+		  {
+		    IM = rbind(IM, IMt);
+		  } 
+		else
+		  {
+		    IM = rbind(IM, selif(INN, ACTMAT));
+		  }
 		W = rbind(W, Wi);
 	      } // end of i else
 	    
@@ -1370,6 +1419,10 @@ extern "C"
     /* Free Memory */
     free(S);
     free(order_DistPot);
+    if(replace==0)
+      {
+	free(ReplaceVector);
+      }
     
     r = rows(rr);
     c = cols(rr);
@@ -1393,15 +1446,16 @@ extern "C"
   } //end of MatchLoopC
 
   SEXP MatchLoopCfast(SEXP I_N, SEXP I_xvars, SEXP I_All, SEXP I_M, SEXP I_cdd,
-		      SEXP I_caliper,
+		      SEXP I_caliper, SEXP I_replace,
 		      SEXP I_ww, SEXP I_Tr, SEXP I_X, 
 		      SEXP I_CaliperVec, SEXP I_Xorig,
 		      SEXP I_restrict_trigger, SEXP I_restrict_nrow, SEXP I_restrict)
   {
     SEXP ret;
     
-    long N, xvars, All, M, caliper, restrict_trigger, restrict_nrow, sum_caliper_drops=0;
-    double cdd, diff, foo_d, Distmax;
+    long N, xvars, All, M, caliper, replace, restrict_trigger, restrict_nrow, sum_caliper_drops=0,
+      replace_count=0;
+    double cdd, diff, Distmax;
     
     long i, j, k, r, c;
     
@@ -1411,6 +1465,7 @@ extern "C"
     M = asInteger(I_M);
     cdd = asReal(I_cdd);
     caliper = (long) asReal(I_caliper);
+    replace = asInteger(I_replace);
     restrict_nrow = asInteger(I_restrict_nrow);
     restrict_trigger = asInteger(I_restrict_trigger);
     
@@ -1487,11 +1542,18 @@ extern "C"
       {
         for(i=0;i<restrict_nrow; i++)
 	      {
-          restrict[M(i,j,3)] = REAL(I_restrict)[k];
-          k++;
+		restrict[M(i,j,3)] = REAL(I_restrict)[k];
+		k++;
 	      }
       }	
     } /* if (restrict_trigger==1) */
+
+    // required for replace=0, to keep track of obs already used
+    long *ReplaceVector;
+    if(replace==0)
+      {
+	ReplaceVector = (long *) malloc(N*sizeof(long));
+      }
 
     Matrix INN = seqa(1, 1, N);
     // TT is just equal to INN
@@ -1510,8 +1572,7 @@ extern "C"
     /* set misc */
     int TREATi = 0, ACTMATsum = 0;
 
-    Matrix tt, ACTDIST, Wi, xmat,
-      I, IM, W;
+    Matrix tt, ACTDIST, Wi, xmat, I, IM,  IMt, W;
     Matrix ACTMAT, POTMAT(N, 1);
 
     // Temporary size for these matrices to avoid rbind
@@ -1659,6 +1720,15 @@ extern "C"
 		  }
 	      } /* if (restrict_trigger==1) */
 
+	    // Don't match observations we have already matched
+	    if(replace_count > 0)
+	      {
+		for(j=0; j<replace_count; j++)
+		  {
+		    Dist[ ( ReplaceVector[j] - 1) ] = DOUBLE_XMAX;
+		  }
+	      } // end of replace_count
+
             // set of potential matches (all observations with other treatment)
             // JSS, note:logical vector
 	    POTMAT = EqualityTestScalar(Tr, 1-TREATi);
@@ -1716,6 +1786,17 @@ extern "C"
 
 	    Wi = ones(ACTMATsum, 1)*1/Mi;
 
+	    //if no replacement
+	    if(replace==0)
+	      {
+		IMt = selif(INN, ACTMAT);
+		for (j=0; j<IMt.rowsize; j++)
+		  {
+		    ReplaceVector[replace_count] = (long) IMt.data[j];
+		    replace_count++;
+		  }
+	      }//end of replace==0
+
 	    // collect results
 	    MatchCount = MatchCount + (int) Mi;
 	    if (MatchCount <= NM)
@@ -1723,8 +1804,16 @@ extern "C"
 		foo1 = ones(ACTMATsum, 1)*(i+1);
 		memcpy(tI.data+MCindx, foo1.data, foo1.size*sizeof(double));
 
-		foo1 = selif(INN, ACTMAT);
-		memcpy(tIM.data+MCindx, foo1.data, foo1.size*sizeof(double));
+		if(replace==0)
+		  {
+		    memcpy(tIM.data+MCindx, IMt.data, IMt.size*sizeof(double));
+		  }
+		else
+		  {
+		    foo1 = selif(INN, ACTMAT);
+		    memcpy(tIM.data+MCindx, foo1.data, foo1.size*sizeof(double));
+		  }
+
 
 		memcpy(tW.data+MCindx, Wi.data, Wi.size*sizeof(double));
 
@@ -1749,7 +1838,14 @@ extern "C"
 		    firstNM=0;
 		  }
 		I = rbind(I, ones(ACTMATsum, 1)*(i+1));
-		IM = rbind(IM, selif(INN, ACTMAT));
+		if(replace==0)
+		  {
+		    IM = rbind(IM, IMt);
+		  }
+		else 
+		  {
+		    IM = rbind(IM, selif(INN, ACTMAT));
+		  }
 		W = rbind(W, Wi);
 	      } 
 	    else 
@@ -1767,7 +1863,7 @@ extern "C"
       } //END OF i MASTER LOOP!
 
     // subset matrices to get back to the right dims
-    if (firstNM==1)
+    if (firstNM==1 & MatchCount > 0)
       {
 	I=Matrix(MatchCount, 1);
 	IM=Matrix(MatchCount, 1);
@@ -1776,6 +1872,12 @@ extern "C"
 	memcpy(I.data, tI.data, MatchCount*sizeof(double));
 	memcpy(IM.data, tIM.data, MatchCount*sizeof(double));
 	memcpy(W.data, tW.data, MatchCount*sizeof(double));
+      }
+    else if (firstNM==1)
+      {
+	I=Matrix(1, 1);
+	IM=Matrix(1, 1);
+	W=Matrix(1, 1);
       }
 
 #if defined(NERVERDEF)
@@ -1800,9 +1902,6 @@ extern "C"
 	       W[i]); 
     	fflush(stdout);
       }
-
-    printf("h1\n");
-    fflush(stdout);
 #endif
 
     // tret = gettimeofday(&tv2,&tz2);
@@ -1810,7 +1909,7 @@ extern "C"
     // long msecs = tv2.tv_usec - tv1.tv_usec;
     // double actual = ((double) secs*1000000+ (double) msecs)/1000000;
     // printf("actual: %lf, secs: %d, msecs: %d\n", actual, secs, msecs);
-    
+
     Matrix rr = cbind(I, IM);
     rr = cbind(rr, W);
 
@@ -1867,10 +1966,14 @@ extern "C"
     // rr key
     // 1] I (unadjusted); 2] IM (unadjusted); 3] weight; 4] I (adjusted); 5] IM (adjusted);
     // scalar returns [0]: caliper drops
-    
+
     /* Free Memory */
     //free(S);
     free(order_DistPot);
+    if(replace==0)
+      {
+	free(ReplaceVector);
+      }
     
     r = rows(rr);
     c = cols(rr);

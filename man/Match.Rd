@@ -12,13 +12,12 @@
   scores to use. The \code{\link{GenMatch}} function can be used to
   \emph{automatically find balance} by the use of a genetic search
   algorithm which determines the optimal weight to give each covariate.
-  \code{Match} provides principled standard errors when matching is done
-  with covariates or a known propensity score.  Ties are handled in a
-  deterministic and coherent fashion.
+  \code{Match} provides Abadie-Imbens standard errors as well the usual
+  Neyman errors.  Ties are handled deterministically.
 }
 \usage{
 Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
-      BiasAdjust = FALSE, exact = NULL, caliper = NULL,
+      BiasAdjust = FALSE, exact = NULL, caliper = NULL, replace=TRUE,
       Weight = 1, Weight.matrix = NULL, weights = NULL,
       Var.calc = 0, sample = FALSE, tolerance = 1e-05,
       distance.tolerance = 1e-05, restrict=NULL,
@@ -72,6 +71,13 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     example, \code{caliper=.25} means that all matches not equal to or
     within .25 standard deviations of each covariate in \code{X} are
     dropped.}
+  \item{replace}{Whether matching should be done with replacement.  Note
+    that if \code{FALSE}, the order of matches generally matters.
+    Matches will be found in the same order as the data is
+    sorted.  Thus, the match(es) for the first observation will be found
+    first and then for the second etc. Ties may use up observations.
+    One could randomly break ties by matching on a random X---e.g.,
+    include \code{rnorm(length(Tr), 0, 1)} as a matching variable.}  
   \item{Weight}{ A scalar for the type of
     weighting scheme the matching algorithm should use when weighting
     each of the covariates in \code{X}.  The default value of
