@@ -185,7 +185,7 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
 
 \value{
   \item{est }{The estimated average causal effect.}
-  \item{se }{The Abadie-Imebens standard error.  This standard error is
+  \item{se }{The Abadie-Imbens standard error.  This standard error is
     principled if \code{X} consists of either covariates or a known propensity score
     because it takes into account the uncertainty of the matching
     procedure.  If an estimated propensity score is used, the
