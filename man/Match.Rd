@@ -202,11 +202,10 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     of the matching procedure while \code{se.standard} does not.  Neither
     \code{se} nor \code{se.standard} take into account the uncertainty of
     estimating a propensity score.  \code{se.standard} does
-    not take into account any \code{BiasAdjust}.  Summary of the naive
-    results can be requested by setting the \code{full=TRUE} flag when
-    using the \code{\link{summary.Match}} function on the object
-    returned by
-    \code{Match}.}
+    not take into account any \code{BiasAdjust}.  Summary of both types
+    of standard error results can be requested by setting the
+    \code{full=TRUE} flag when using the \code{\link{summary.Match}}
+    function on the object returned by \code{Match}.}
   \item{se.cond }{The conditional standard error.  The practitioner
     should not generally use this.}
   \item{mdata }{A list which contains the matched datasets produced by
@@ -220,13 +219,19 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     can be recovered by
     \code{rbind(X[index.treated,],X[index.control,])}. The user should
     generally just examine the output of \code{mdata}.}
-  \item{index.control }{An index for the control observations in the
+  \item{index.control }{A vector containing the observation numbers from
+    the original data for the control observations in the
     matched data.  This index in conjunction with \code{index.treated}
     can be used to recover the matched dataset produced by
     \code{Match}.  For example, the \code{X} matrix used by \code{Match}
     can be recovered by
     \code{rbind(X[index.treated,],X[index.control,])}. The user should
     generally just examine the output of \code{mdata}.}
+  \item{index.dropped}{A vector containing the observation numbers from
+    the original data which were dropped (if any) in the matched dataset 
+    because of various options such as \code{caliper} and
+    \code{exact}.  If no observations were dropped, this
+    index will be \code{NULL}.}
   \item{weights }{The weight for the matched dataset.  If all of the
     observations had a weight of 1 on input, they will have a weight of
     1 on output if each observation was only matched once.}

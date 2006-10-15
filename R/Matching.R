@@ -434,17 +434,38 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
           #ATC
           actual.drops <- (orig.wnobs-orig.weighted.treated.nobs)-wnobs 
         }
+
+    #What obs were dropped?
+    index.dropped <-  NULL #nothing was dropped
+    if (sum.caliper.drops > 0 )
+      {
+        if(estimand.orig=="ATT")
+          {
+            matched.index <- which(Tr==1)
+            matched <- !(matched.index %in% index.treated)        
+            
+          } else if(estimand.orig=="ATC")
+            {
+              matched.index <- which(Tr==0)
+              matched <- !(matched.index %in% index.control)
+            } else if(estimand.orig=="ATE")
+              {
+                matched.index <- 1:length(Tr)
+                matched <- !(matched.index %in% c(index.treated,index.control))
+              } 
+        index.dropped <- matched.index[matched]  #obs not matched
+      } #end of sum.caliper.drops > 0
             
 
     z  <- list(est=ret$est, se=ret$se, est.noadj=mest, se.standard=se.standard,
                se.cond=ret$se.cond, 
                mdata=mdata, 
-               index.treated=index.treated, index.control=index.control,
+               index.treated=index.treated, index.control=index.control, index.dropped=index.dropped,
                weights=weights, orig.nobs=orig.nobs, orig.wnobs=orig.wnobs,
                orig.treated.nobs=orig.treated.nobs,
                nobs=nobs, wnobs=wnobs,
                caliper=caliper, ecaliper=ecaliper, exact=exact,
-               ndrops=actual.drops, ndrops.matches=sum.caliper.drops,
+               ndrops=actual.drops, ndrops.matches=sum.caliper.drops, 
                MatchLoopC=ret$MatchLoopC, version=version,
                estimand=estimand.orig)
 
