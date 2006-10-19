@@ -7,12 +7,14 @@
   This is equivalent to conducting exact matching on each level of a factor.
   Matches within each level are found as determined by the
   usual matching options.  This function is much faster for large
-  datasets than the \code{\link{Match}} function itself.
+  datasets than the \code{\link{Match}} function itself.  For additional
+  speed, consider doing matching without replacement---see the
+  \code{replace} option.
 }
 
 \usage{
-Matchby(Y, Tr, X, by, estimand = "ATT", M = 1, exact = NULL, caliper = NULL,
-        Weight = 1, Weight.matrix = NULL, tolerance = 1e-05,
+Matchby(Y, Tr, X, by, estimand = "ATT", M = 1, ties=FALSE, replace=TRUE,
+        exact = NULL, caliper = NULL, Weight = 1, Weight.matrix = NULL, tolerance = 1e-05,
         distance.tolerance = 1e-05, print.level=1, version="fast", ...)
 }
 \arguments{
@@ -32,10 +34,38 @@ Matchby(Y, Tr, X, by, estimand = "ATT", M = 1, exact = NULL, caliper = NULL,
     treated. "ATE" is the sample average treatment effect (for all), and
     "ATC" is the sample average treatment effect for the controls.}
   \item{M}{ A scalar for the number of matches which should be
-    found (with replacement). The default is one-to-one matching. }
+    found. The default is one-to-one matching. Also see the
+    \code{ties} option.}
+  \item{ties}{\emph{Note that by default \code{ties=FALSE} although the
+      default for the \code{Match} in \code{GenMatch} functions is
+      \code{TRUE}.} This option controls whether ties should be handled
+    deterministically. If \code{ties==FALSE}, ties will be randomly
+    broken.  This in general is not a good idea because the variance
+    of \code{Y} will be underestimated (Abadie and Imbens 2005).
+    \emph{But if the dataset is large and there are many ties between
+      potential matches, setting \code{ties=FALSE} often results in a
+      large speedup with negligible bias.}  If \code{ties==TRUE}, ties
+    are handled deterministically.  For example, if one treated
+    observation matches more than one control observation, the matched
+    dataset will include the multiple matched control observations and
+    the matched data will be weighted to reflect the multiple matches.
+    The sum of the weighted observations will still equal the original
+    number of observations. Whether two potential matches are close
+    enough to be considered tied, is controlled by the
+    \code{distance.tolerance} option.}
+  \item{replace}{Whether matching should be done with replacement.  Note
+    that if \code{FALSE}, the order of matches generally matters.  Matches
+    will be found in the same order as the data is sorted.  Thus, the
+    match(es) for the first observation will be found first and then for
+    the second etc. Matching without replacement will generally increase
+    bias so it is not recommended.  \emph{But if the dataset is large and
+      there are many potential matches, setting \code{replace=false} often
+      results in a large speedup and negligible or no bias.} Ties are
+    randomly broken when \code{replace==FALSE}---see the \code{ties}
+    option for details.}    
   \item{exact}{ A logical scalar or vector for whether exact matching
     should be done.  If a logical scalar is provided, that logical value is
-      applied to all covariates of
+    applied to all covariates of
     \code{X}.  If a logical vector is provided, a logical value should
     be provided for each covariate in \code{X}. Using a logical vector
     allows the user to specify exact matching for some but not other
@@ -106,7 +136,14 @@ Matchby(Y, Tr, X, by, estimand = "ATT", M = 1, exact = NULL, caliper = NULL,
   separates the matching problem into subgroups defined by a factor.  This
   is the equivalent to doing exact matching on each factor, and the
   way in which matches are found within each factor is determined by the
-  usual matching options.
+  usual matching options. \cr
+  
+  \emph{Note that by default \code{ties=FALSE} although the default for
+    the \code{Match} in \code{GenMatch} functions is \code{TRUE}.  This is
+    done because randomly breaking ties in large datasets often results in
+    a great speedup.}  For additional speed, consider doing matching
+  without replacement which is often much faster when the dataset is
+  large---see the \code{replace} option.
 }
 
 \value{

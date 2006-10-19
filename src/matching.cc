@@ -3,7 +3,7 @@ Jasjeet S. Sekhon <sekhon@berkeley.edu>
 HTTP://sekhon.berkeley.edu/
 UC Berkeley
 
-05/20/2006
+2006/10/16
 Under the GNU Public License Version 2
 */
 
@@ -293,7 +293,7 @@ extern "C"
     /* set misc */
     int TREATi = 0, ACTMATsum = 0;
     
-    Matrix DistPot, tt, ACTDIST, Wi, xmat, I, IM, W;
+    Matrix DistPot, tt, Wi, xmat, I, IM, W;
     Matrix ACTMAT, POTMAT;
 
     // Temporary size for these matrices to avoid rbind
@@ -432,8 +432,8 @@ extern "C"
         ACTMAT = LessEqualTestScalar(Dist,  (Distmax+cdd));
         ACTMAT = VectorAnd(POTMAT, ACTMAT);
         
-        // distance to actual matches            
-        ACTDIST = selif(Dist, ACTMAT);
+        // distance to actual matches.  This is NEVER used.
+        // ACTDIST = selif(Dist, ACTMAT);
         
 	// counts how many times each observation is matched.
 	double Mi = sum(ACTMAT);
@@ -665,7 +665,7 @@ extern "C"
     int TREATi = 0, ACTMATsum = 0;
     
     Matrix Dist, DistPot, weightPot, tt, 
-      weightPot_sort, weightPot_sum, ACTDIST, Wi, xmat, I, IM, W;
+      weightPot_sort, weightPot_sum, Wi, xmat, I, IM, W;
     Matrix ACTMAT, POTMAT;
     
     //    tret = gettimeofday(&tv2,&tz2);
@@ -816,8 +816,8 @@ extern "C"
         ACTMAT = LessEqualTestScalar(Dist,  (Distmax+cdd));
         ACTMAT = VectorAnd(POTMAT, ACTMAT);
         
-        // distance to actual matches            
-        ACTDIST = selif(Dist, ACTMAT);
+        // distance to actual matches.  This is NEVER used.
+        // ACTDIST = selif(Dist, ACTMAT);
         
         // counts how many times each observation is matched.
         double Mi = sum(multi_scalar(weight, ACTMAT));
@@ -933,14 +933,14 @@ extern "C"
 
   
   SEXP MatchLoopC(SEXP I_N, SEXP I_xvars, SEXP I_All, SEXP I_M, SEXP I_cdd,
-                  SEXP I_caliper, SEXP I_replace,
+                  SEXP I_caliper, SEXP I_replace, SEXP I_ties,
                   SEXP I_ww, SEXP I_Tr, SEXP I_X, SEXP I_weight,
                   SEXP I_CaliperVec, SEXP I_Xorig,
                   SEXP I_restrict_trigger, SEXP I_restrict_nrow, SEXP I_restrict)
   {
     SEXP ret;
     
-    long N, xvars, All, M, caliper, replace, restrict_trigger, restrict_nrow, sum_caliper_drops=0,
+    long N, xvars, All, M, caliper, replace, ties, restrict_trigger, restrict_nrow, sum_caliper_drops=0,
       replace_count=0;
     double cdd, diff;
     
@@ -953,6 +953,7 @@ extern "C"
     cdd = asReal(I_cdd);
     caliper = (long) asReal(I_caliper);
     replace = asInteger(I_replace);
+    ties = asInteger(I_ties);
     restrict_nrow = asInteger(I_restrict_nrow);
     restrict_trigger = asInteger(I_restrict_trigger);
     
@@ -1048,6 +1049,10 @@ extern "C"
 	ReplaceVector = (long *) malloc(N*sizeof(long));
       }
 
+    //Start random number generator if we are breaking ties
+    if (ties==0)
+      GetRNGstate();
+
     Matrix INN = seqa(1, 1, N);
     // TT is just equal to INN
 
@@ -1068,7 +1073,7 @@ extern "C"
     int TREATi = 0, ACTMATsum = 0;
 
     Matrix Dist, DistPot, weightPot, tt, 
-      weightPot_sort, weightPot_sum, ACTDIST, Wi, xmat, I, IM, IMt, W;
+      weightPot_sort, weightPot_sum, Wi, xmat, I, IM, IMt, W;
     Matrix ACTMAT, POTMAT(N, 1);
 
     //    tret = gettimeofday(&tv2,&tz2);
@@ -1283,9 +1288,31 @@ extern "C"
             // logical index
 	    ACTMAT = LessEqualTestScalar(Dist,  (Distmax+cdd));
 	    ACTMAT = VectorAnd(POTMAT, ACTMAT);
+
+	    if (ties==0)
+	      {
+		int Mii = (int) sum(ACTMAT);
+		//Do we have ties?
+		if (Mii > M)
+		  {
+		    IMt = selif(INN, ACTMAT);
+		    int nties_broken = 0;
+		    int ntiesToBreak = Mii - M;
+		    while (nties_broken < ntiesToBreak) {
+		      int idrop = (int) ( unif_rand()*(double) Mii);
+		      k = (int) IMt[idrop];
+		      if (k > (-1+TOL) )
+			{
+			  ACTMAT[k - 1] = 0;
+			  IMt[idrop] = -1;
+			  nties_broken++;
+			} // end if
+		    }// end of while loop
+		  }
+	      }// end of ties loop	    
 	    
-	    // distance to actual matches            
-	    ACTDIST = selif(Dist, ACTMAT);
+	    // distance to actual matches.  This is NEVER used.
+	    // ACTDIST = selif(Dist, ACTMAT);
 	    
             // counts how many times each observation is matched.
 	    double Mi = sum(multi_scalar(weight, ACTMAT));
@@ -1351,12 +1378,10 @@ extern "C"
 	    
 	  } // end of (TREATi==1 & All!=1) | All==1 )
       } //END OF i MASTER LOOP!
-    
-    // tret = gettimeofday(&tv2,&tz2);
-    // long secs = tv2.tv_sec - tv1.tv_sec;
-    // long msecs = tv2.tv_usec - tv1.tv_usec;
-    // double actual = ((double) secs*1000000+ (double) msecs)/1000000;
-    // printf("actual: %lf, secs: %d, msecs: %d\n", actual, secs, msecs);
+
+    //Stop random number generator if we are breaking ties
+    if (ties==0)
+      PutRNGstate();
     
     Matrix rr = cbind(I, IM);
     rr = cbind(rr, W);
@@ -1446,14 +1471,14 @@ extern "C"
   } //end of MatchLoopC
 
   SEXP MatchLoopCfast(SEXP I_N, SEXP I_xvars, SEXP I_All, SEXP I_M, SEXP I_cdd,
-		      SEXP I_caliper, SEXP I_replace,
+		      SEXP I_caliper, SEXP I_replace, SEXP I_ties,
 		      SEXP I_ww, SEXP I_Tr, SEXP I_X, 
 		      SEXP I_CaliperVec, SEXP I_Xorig,
 		      SEXP I_restrict_trigger, SEXP I_restrict_nrow, SEXP I_restrict)
   {
     SEXP ret;
     
-    long N, xvars, All, M, caliper, replace, restrict_trigger, restrict_nrow, sum_caliper_drops=0,
+    long N, xvars, All, M, caliper, replace, ties, restrict_trigger, restrict_nrow, sum_caliper_drops=0,
       replace_count=0;
     double cdd, diff, Distmax;
     
@@ -1466,6 +1491,7 @@ extern "C"
     cdd = asReal(I_cdd);
     caliper = (long) asReal(I_caliper);
     replace = asInteger(I_replace);
+    ties = asInteger(I_ties);
     restrict_nrow = asInteger(I_restrict_nrow);
     restrict_trigger = asInteger(I_restrict_trigger);
     
@@ -1555,6 +1581,10 @@ extern "C"
 	ReplaceVector = (long *) malloc(N*sizeof(long));
       }
 
+    //Start random number generator if we are breaking ties
+    if (ties==0)
+      GetRNGstate();
+
     Matrix INN = seqa(1, 1, N);
     // TT is just equal to INN
 
@@ -1572,7 +1602,7 @@ extern "C"
     /* set misc */
     int TREATi = 0, ACTMATsum = 0;
 
-    Matrix tt, ACTDIST, Wi, xmat, I, IM,  IMt, W;
+    Matrix tt, Wi, xmat, I, IM,  IMt, W;
     Matrix ACTMAT, POTMAT(N, 1);
 
     // Temporary size for these matrices to avoid rbind
@@ -1776,9 +1806,31 @@ extern "C"
             // logical index
 	    ACTMAT = LessEqualTestScalar(Dist,  (Distmax+cdd));
 	    ACTMAT = VectorAnd(POTMAT, ACTMAT);
+
+	    if (ties==0)
+	      {
+		int Mii = (int) sum(ACTMAT);
+		//Do we have ties?
+		if (Mii > M)
+		  {
+		    IMt = selif(INN, ACTMAT);
+		    int nties_broken = 0;
+		    int ntiesToBreak = Mii - M;
+		    while (nties_broken < ntiesToBreak) {
+		      int idrop = (int) ( unif_rand()*(double) Mii);
+		      k = (int) IMt[idrop];
+		      if (k > (-1+TOL) )
+			{
+			  ACTMAT[k - 1] = 0;
+			  IMt[idrop] = -1;
+			  nties_broken++;
+			} // end if
+		    }// end of while loop
+		  }
+	      }// end of ties loop	    
 	    
-	    // distance to actual matches            
-	    ACTDIST = selif(Dist, ACTMAT);
+	    // distance to actual matches.  This is NEVER used.
+	    // ACTDIST = selif(Dist, ACTMAT);
 	    
             // counts how many times each observation is matched.
 	    double Mi = sum(ACTMAT);
@@ -1861,6 +1913,10 @@ extern "C"
 	    
 	  } // end of (TREATi==1 & All!=1) | All==1 )
       } //END OF i MASTER LOOP!
+
+    //Stop random number generator if we are breaking ties
+    if (ties==0)
+      PutRNGstate();
 
     // subset matrices to get back to the right dims
     if (firstNM==1 & MatchCount > 0)

@@ -163,7 +163,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                      fit.func="pvals",
                      data.type.integer=TRUE,
                      MemoryMatrix=TRUE,
-                     exact=NULL, caliper=NULL, replace=TRUE,
+                     exact=NULL, caliper=NULL, replace=TRUE, ties=TRUE,
                      nboots=0, ks=TRUE, verbose=FALSE,
                      tolerance=0.00001,
                      distance.tolerance=tolerance,
@@ -284,6 +284,30 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         warning("User set 'M' to an illegal value.  Resetting to the default which is 1.")
         M <- 1        
       }
+    if (replace!=FALSE & replace!=TRUE)
+      {
+        warning("'replace' must be TRUE or FALSE.  Setting to TRUE")
+        replace <- TRUE
+      }
+    if(replace==FALSE)
+      ties <- FALSE
+    if (ties!=FALSE & ties!=TRUE)
+      {
+        warning("'ties' must be TRUE or FALSE.  Setting to TRUE")
+        ties <- TRUE
+      }
+
+    if(length(Tr) != nrow(X))
+      {
+        stop("length(Tr) != nrow(X)")
+      }
+    if(!is.function(fit.func))
+      {
+        if(nrow(BalanceMatrix) != length(Tr))
+          {
+            stop("nrow(BalanceMatrix) != length(Tr)")
+          }
+      }
     
     ###########################
     # BEGIN: produce an error if some column of X has zero variance
@@ -395,7 +419,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         restrict.trigger <- FALSE
       }
 
-    if(!is.null(caliper) | !is.null(exact) | restrict.trigger)
+    if(!is.null(caliper) | !is.null(exact) | restrict.trigger | !ties)
       {
         GenMatchCaliper.trigger <- TRUE
       } else {
@@ -514,7 +538,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                                              cdd=distance.tolerance, ww=ww, Tr=s1.Tr, Xmod=s1.X)
               } #end of weights.flag
           } else {
-            MatchLoopC.internal <- function(N, xvars, All, M, cdd, caliperflag, replace, ww, Tr, Xmod, weights, CaliperVec,
+            MatchLoopC.internal <- function(N, xvars, All, M, cdd, caliperflag, replace, ties, ww, Tr, Xmod, weights, CaliperVec,
                                             Xorig, restrict.trigger, restrict)
               {
                 
@@ -526,14 +550,14 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                   }    
                 
                 ret <- .Call("MatchLoopC", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
-                             as.double(cdd), as.integer(caliperflag), as.integer(replace), as.real(ww), as.real(Tr),
+                             as.double(cdd), as.integer(caliperflag), as.integer(replace), as.integer(ties), as.real(ww), as.real(Tr),
                              as.real(Xmod), as.real(weights), as.real(CaliperVec), as.real(Xorig),
                              as.integer(restrict.trigger), as.integer(restrict.nrow), as.real(restrict),
                              PACKAGE="Matching")
                 return(ret)
               } #end of MatchLoopC.internal
             
-            MatchLoopCfast.internal <- function(N, xvars, All, M, cdd, caliperflag, replace, ww, Tr, Xmod, CaliperVec, Xorig,
+            MatchLoopCfast.internal <- function(N, xvars, All, M, cdd, caliperflag, replace, ties, ww, Tr, Xmod, CaliperVec, Xorig,
                                                 restrict.trigger, restrict)
               {
                 
@@ -545,7 +569,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                   }    
                 
                 ret <- .Call("MatchLoopCfast", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
-                             as.double(cdd), as.integer(caliperflag), as.integer(replace), as.real(ww), as.real(Tr),
+                             as.double(cdd), as.integer(caliperflag), as.integer(replace), as.integer(ties), as.real(ww), as.real(Tr),
                              as.real(Xmod), as.real(CaliperVec), as.real(Xorig),
                              as.integer(restrict.trigger), as.integer(restrict.nrow), as.real(restrict),
                              PACKAGE="Matching")
@@ -557,7 +581,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                 rr <- MatchLoopC.internal(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
                                           cdd=distance.tolerance,
                                           caliperflag=caliperFlag,
-                                          replace=replace,
+                                          replace=replace, ties=ties,
                                           ww=ww, Tr=s1.Tr, Xmod=s1.X, weights=weights,
                                           CaliperVec=CaliperVec, Xorig=Xorig,
                                           restrict.trigger=restrict.trigger, restrict=restrict)
@@ -565,7 +589,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                 rr <- MatchLoopCfast.internal(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
                                               cdd=distance.tolerance,
                                               caliperflag=caliperFlag,
-                                              replace=replace,
+                                              replace=replace, ties=ties,
                                               ww=ww, Tr=s1.Tr, Xmod=s1.X, 
                                               CaliperVec=CaliperVec, Xorig=Xorig,
                                               restrict.trigger=restrict.trigger, restrict=restrict)
@@ -938,7 +962,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         mout <- MatchLoopC(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
                            cdd=distance.tolerance,
                            caliperflag=caliperFlag,
-                           replace=replace,
+                           replace=replace, ties=ties,
                            ww=ww, Tr=s1.Tr, Xmod=s1.X, weights=weights,
                            CaliperVec=CaliperVec, Xorig=Xorig,
                            restrict.trigger=restrict.trigger, restrict=restrict)
