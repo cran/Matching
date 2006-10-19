@@ -13,11 +13,11 @@
   \emph{automatically find balance} by the use of a genetic search
   algorithm which determines the optimal weight to give each covariate.
   \code{Match} provides Abadie-Imbens standard errors as well the usual
-  Neyman errors.  Ties are handled deterministically.
+  Neyman errors.  Ties are handled deterministically by default.
 }
 \usage{
 Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
-      BiasAdjust = FALSE, exact = NULL, caliper = NULL, replace=TRUE,
+      BiasAdjust = FALSE, exact = NULL, caliper = NULL, replace=TRUE, ties=TRUE,
       Weight = 1, Weight.matrix = NULL, weights = NULL,
       Var.calc = 0, sample = FALSE, tolerance = 1e-05,
       distance.tolerance = 1e-05, restrict=NULL,
@@ -47,8 +47,9 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     estimand is "ATT", the sample average treatment effect for the
     treated. "ATE" is the sample average treatment effect (for all), and
     "ATC" is the sample average treatment effect for the controls.}
-  \item{M}{ A scalar for the number of matches which should be
-    found (with replacement). The default is one-to-one matching. }
+  \item{M}{A scalar for the number of matches which should be
+    found. The default is one-to-one matching. Also see the \code{ties}
+    option.}
   \item{BiasAdjust}{ A logical scalar for whether regression adjustment
     should be used. See the \code{Z} matrix.}
   \item{exact}{ A logical scalar or vector for whether exact matching
@@ -72,20 +73,37 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     within .25 standard deviations of each covariate in \code{X} are
     dropped.}
   \item{replace}{Whether matching should be done with replacement.  Note
-    that if \code{FALSE}, the order of matches generally matters.
-    Matches will be found in the same order as the data is
-    sorted.  Thus, the match(es) for the first observation will be found
-    first and then for the second etc. Ties may use up observations.
-    One could randomly break ties by matching on a random X---e.g.,
-    include \code{rnorm(length(Tr), 0, 1)} as a matching variable.}  
-  \item{Weight}{ A scalar for the type of
-    weighting scheme the matching algorithm should use when weighting
-    each of the covariates in \code{X}.  The default value of
-    1 denotes that weights are equal to the inverse of the variances. 2
-    denotes the Mahalanobis distance metric, and 3 denotes
-    that the user will supply a weight matrix (\code{Weight.matrix}).  Note that
-    if the user supplies a \code{Weight.matrix}, \code{Weight} will be automatically
-    set to be equal to 3.}
+    that if \code{FALSE}, the order of matches generally matters.  Matches
+    will be found in the same order as the data is sorted.  Thus, the
+    match(es) for the first observation will be found first and then for
+    the second etc. Matching without replacement will generally increase
+    bias so it is not recommended.  \emph{But if the dataset is large and
+      there are many potential matches, setting \code{replace=false} often
+      results in a large speedup and negligible or no bias.} Ties are
+    randomly broken when \code{replace==FALSE}---see the \code{ties}
+    option for details.}
+  \item{ties}{Whether ties should be handled deterministically.  By
+    default \code{ties==TRUE}. If, for example, one treated observation
+    matches more than one control observation, the matched dataset will
+    include the multiple matched control observations and the matched data
+    will be weighted to reflect the multiple matches.  The sum of the
+    weighted observations will still equal the original number of
+    observations. If \code{ties==FALSE}, ties will be randomly broken.
+    This in general is not a good idea because the variance of \code{Y}
+    will be underestimated (Abadie and Imbens 2005).  \emph{But if the
+      dataset is large and there are many ties between potential matches,
+      setting \code{ties=FALSE} often results in a large speedup with
+      negligible bias.} Whether two potential matches are close enough to be
+    considered tied, is controlled by the \code{distance.tolerance}
+    option.}
+  \item{Weight}{ A scalar for the type of weighting scheme the matching
+    algorithm should use when weighting each of the covariates in
+    \code{X}.  The default value of 1 denotes that weights are equal to
+    the inverse of the variances. 2 denotes the Mahalanobis distance
+    metric, and 3 denotes that the user will supply a weight matrix
+    (\code{Weight.matrix}).  Note that if the user supplies a
+    \code{Weight.matrix}, \code{Weight} will be automatically set to be
+    equal to 3.}
   \item{Weight.matrix}{ This matrix denotes the weights the matching
     algorithm uses when weighting each of the covariates in \code{X}---see
     the \code{Weight} option. This square matrix should have as many
@@ -152,12 +170,14 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     arguments as used for the previous invocation of \code{Match} unless
     you know exactly what you are doing.}
   \item{version}{The version of the code to be used.  The "fast" C/C++
-    version of the code does not calculate Abadie Imbens standard
-    errors.  The "legacy" version of the code does not make a call to an
-    optimized C/C++ library and is included only for historical
-    compatibility.  The "fast" version of the code is significantly
-    faster than the "standard" version for large datasets, and the
-    "legacy" version is much slower than either of the other two.}
+    version of the code does not calculate Abadie-Imbens standard errors.
+    Additional speed can be obtained by setting \code{ties=FALSE} or
+    \code{replace=FALSE} if the dataset is large and/or has many ties.
+    The "legacy" version of the code does not make a call to an optimized
+    C/C++ library and is included only for historical compatibility.  The
+    "fast" version of the code is significantly faster than the "standard"
+    version for large datasets, and the "legacy" version is much slower
+    than either of the other two.}
 }
 \details{
   
@@ -175,8 +195,12 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
   \code{\link{GenMatch}} can be supplied to the \code{Weight.matrix}
   option of \code{Match} to obtain estimates.\cr
 
-  The \code{\link{Matchby}} function provides a wrapper for \code{Match}
-  which is much faster for large datasets when it can be used. \cr
+  \code{Match} is often much faster with large datasets if
+  \code{ties=FALSE} or \code{replace=FALSE}---i.e., if matching is done
+  by randomly breaking ties or without replacement.  Also see the
+  \code{\link{Matchby}} function.  It provides a wrapper for
+  \code{Match} which is much faster for large datasets when it can be
+  used.\cr
   
   Three demos are included: \code{GerberGreenImai}, \code{DehejiaWahba},
   and \code{AbadieImbens}.  These can be run by calling the

@@ -25,7 +25,7 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1, weights=NULL,
          fit.func="pvals",
          data.type.integer=TRUE,
          MemoryMatrix=TRUE,
-         exact=NULL, caliper=NULL, replace=TRUE,
+         exact=NULL, caliper=NULL, replace=TRUE, ties=TRUE,
          nboots=0, ks=TRUE, verbose=FALSE,
          tolerance = 1e-05,
          distance.tolerance=tolerance,
@@ -53,8 +53,9 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1, weights=NULL,
     estimand is "ATT", the sample average treatment effect for the
     treated. "ATE" is the sample average treatment effect (for all), and
     "ATC" is the sample average treatment effect for the controls.}
-  \item{M}{ A scalar for the number of matches which should be
-    found (with replacement). The default is one-to-one matching. }
+  \item{M}{A scalar for the number of matches which should be
+    found. The default is one-to-one matching. Also see the \code{ties}
+    option.}
   \item{weights}{ A vector the same length as \code{Y} which
     provides observations specific weights.  If none are provides, equal
     weights of 1 for each observations are assumed.}
@@ -169,9 +170,24 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1, weights=NULL,
     that if \code{FALSE}, the order of matches generally matters.
     Matches will be found in the same order as the data is
     sorted.  Thus, the match(es) for the first observation will be found
-    first and then for the second etc. Ties may use up observations.
-    One could randomly break ties by matching on a random X---e.g.,
-    include \code{rnorm(length(Tr), 0, 1)} as a matching variable.}  
+    first and then for the second etc. Matching without replacement will
+    generally increase bias so it is not recommended.  Ties are randomly
+    broken when \code{replace==FALSE}---see the \code{ties} option for
+    details.}
+  \item{ties}{Whether ties should be handled deterministically.  By
+    default \code{ties==TRUE}. If, for example, one treated observation
+    matches more than one control observation, the matched dataset will
+    include the multiple matched control observations and the matched data
+    will be weighted to reflect the multiple matches.  The sum of the
+    weighted observations will still equal the original number of
+    observations. If \code{ties==FALSE}, ties will be randomly broken.
+    This in general is not a good idea because the variance of \code{Y}
+    will be underestimated (Abadie and Imbens 2005).  \emph{But if the
+      dataset is large and there are many ties between potential matches,
+      setting \code{ties=FALSE} often results in a large speedup with
+      negligible bias.} Whether two potential matches are close enough to be
+    considered tied, is controlled by the \code{distance.tolerance}
+    option.}
   \item{nboots}{The number of bootstrap samples to be run for the
     \code{ks} test.}
   \item{ks}{ A logical flag for if the univariate bootstrap

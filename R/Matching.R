@@ -10,7 +10,7 @@
 # score. MatchBalance(), balanceMV() and balanceUV() test for balance.
 
 Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
-                   BiasAdjust=FALSE,exact=NULL,caliper=NULL, replace=TRUE,
+                   BiasAdjust=FALSE,exact=NULL,caliper=NULL, replace=TRUE, ties=TRUE,
                    Weight=1,Weight.matrix=NULL, weights=NULL,
                    Var.calc=0, sample=FALSE, tolerance=0.00001,
                    distance.tolerance=0.00001, restrict=NULL,
@@ -45,6 +45,8 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
     BiasAdj  <- as.real(BiasAdjust)
     sample  <- as.real(sample)
 
+    orig.nobs  <- length(Y)
+    nobs  <- orig.nobs
     xvars <- ncol(X)
 
     if (sum(Tr !=1 & Tr !=0) > 0) {
@@ -109,12 +111,48 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
       {
         warning("Bias Adjustment cannot be estimated when version=='fast'")
         BiasAdj=0
-      }    
+      }
+    if (replace!=FALSE & replace!=TRUE)
+      {
+        warning("'replace' must be TRUE or FALSE.  Setting to TRUE")
+        replace <- TRUE
+      }
+    if(replace==FALSE)
+      {
+        ties <- FALSE        
+        version="fast"
+        if (version=="legacy")
+          warning("'version' is set to 'fast' because replace==FALSE")
+      }
+    if (ties!=FALSE & ties!=TRUE)
+      {
+        warning("'ties' must be TRUE or FALSE.  Setting to TRUE")
+        ties <- TRUE
+      }
+    if(ties==FALSE)
+      {
+        version="fast"
+        if (version=="legacy")
+          warning("'version' is set to 'fast' because ties==FALSE")
+      }
 
     if (!is.null(match.out) & class(match.out) != "Match") {
       warning("match.out object not of class 'Match'")
       return(invisible(NULL))
-    }    
+    }
+
+    if( orig.nobs != nrow(X))
+      {
+        stop("length(Tr) != nrow(X)")
+      }
+    if( orig.nobs != nrow(V))
+      {
+        stop("length(Tr) != nrow(V)")
+      }
+    if( orig.nobs != nrow(Z))
+      {
+        stop("length(Tr) != nrow(Z)")
+      }                   
 
     ccc  <- tolerance
     cdd  <- distance.tolerance
@@ -140,8 +178,6 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
     # END: produce and error if some column of X has zero variance   
     ###########################
 
-    orig.nobs  <- length(Y)
-    nobs  <- orig.nobs
     orig.treated.nobs  <- sum(Tr==1)
     orig.control.nobs  <- sum(Tr==0)
     orig.wnobs  <- sum(weights)
@@ -332,13 +368,15 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
                               weight=weights, SAMPLE=sample, ccc=ccc, cdd=cdd,
                               ecaliper=ecaliper, exact=exact, caliper=caliper,
                               restrict=restrict, MatchLoopC.indx=match.out$MatchLoopC,
-                              weights.flag=weights.flag,  replace=replace, version=version)
+                              weights.flag=weights.flag,  replace=replace, ties=ties,
+                              version=version)
           } else {
             ret <- RmatchLoop(Y=Y, Tr=Tr, X=X, Z=Z, V=V, All=estimand, M=M, BiasAdj=BiasAdj,
                               Weight=Weight, Weight.matrix=Weight.matrix, Var.calc=Var.calc,
                               weight=weights, SAMPLE=sample, ccc=ccc, cdd=cdd,
                               ecaliper=ecaliper, exact=exact, caliper=caliper,
-                              restrict=restrict, weights.flag=weights.flag,  replace=replace, version=version)   
+                              restrict=restrict, weights.flag=weights.flag,  replace=replace, ties=ties,
+                              version=version)   
           }
       } else {
         ret <- Rmatch(Y=Y, Tr=Tr, X=X, Z=Z, V=V, All=estimand, M=M, BiasAdj=BiasAdj,
@@ -2489,7 +2527,7 @@ summary.ks.boot <- function(object, ..., digits=5)
 
 RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.calc, weight,
                        SAMPLE, ccc, cdd, ecaliper=NULL, exact=NULL, caliper=NULL, restrict=NULL,
-                       MatchLoopC.indx=NULL, weights.flag, replace=TRUE, version="standard")
+                       MatchLoopC.indx=NULL, weights.flag, replace=TRUE, ties=TRUE, version="standard")
   {
     s1 <- MatchGenoudStage1caliper(Tr=Tr, X=X, All=All, M=M, weights=weight,
                                    exact=exact, caliper=caliper,
@@ -2644,14 +2682,14 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
         if(weights.flag==TRUE)
           {
             MatchLoopC.indx <- MatchLoopC(N=s1$N, xvars=Kx, All=s1$All, M=s1$M,
-                                          cdd=cdd, caliperflag=caliperflag, replace=replace,
+                                          cdd=cdd, caliperflag=caliperflag, replace=replace, ties=ties,
                                           ww=ww, Tr=s1$Tr, Xmod=s1$X,
                                           weights=weight,
                                           CaliperVec=use.ecaliper, Xorig=X.orig,
-                                          restrict.trigger=restrict.trigger, restrict=restrict,)
+                                          restrict.trigger=restrict.trigger, restrict=restrict)
           } else {
             MatchLoopC.indx <- MatchLoopCfast(N=s1$N, xvars=Kx, All=s1$All, M=s1$M,
-                                              cdd=cdd, caliperflag=caliperflag, replace=replace,
+                                              cdd=cdd, caliperflag=caliperflag, replace=replace, ties=ties,
                                               ww=ww, Tr=s1$Tr, Xmod=s1$X,
                                               CaliperVec=use.ecaliper, Xorig=X.orig,
                                               restrict.trigger=restrict.trigger, restrict=restrict)
@@ -3129,7 +3167,7 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
                 MatchLoopC=MatchLoopC.indx))
   }# end of RmatchLoop
 
-MatchLoopC <- function(N, xvars, All, M, cdd, caliperflag, replace, ww, Tr, Xmod, weights, CaliperVec, Xorig,
+MatchLoopC <- function(N, xvars, All, M, cdd, caliperflag, replace, ties, ww, Tr, Xmod, weights, CaliperVec, Xorig,
                        restrict.trigger, restrict)
   {
 
@@ -3141,15 +3179,16 @@ MatchLoopC <- function(N, xvars, All, M, cdd, caliperflag, replace, ww, Tr, Xmod
       }    
 
     ret <- .Call("MatchLoopC", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
-                 as.double(cdd), as.integer(caliperflag), as.integer(replace), as.real(ww), as.real(Tr),
+                 as.double(cdd), as.integer(caliperflag), as.integer(replace), as.integer(ties),
+                 as.real(ww), as.real(Tr),
                  as.real(Xmod), as.real(weights), as.real(CaliperVec), as.real(Xorig),
                  as.integer(restrict.trigger), as.integer(restrict.nrow), as.real(restrict),
                  PACKAGE="Matching")
     return(ret)
   } #end of MatchLoopC
 
-MatchLoopCfast <- function(N, xvars, All, M, cdd, caliperflag, replace, ww, Tr, Xmod, CaliperVec, Xorig,
-                           restrict.trigger, restrict)
+MatchLoopCfast <- function(N, xvars, All, M, cdd, caliperflag, replace, ties, ww, Tr, Xmod, CaliperVec,
+                           Xorig, restrict.trigger, restrict)
   {
 
     if(restrict.trigger)
@@ -3160,7 +3199,8 @@ MatchLoopCfast <- function(N, xvars, All, M, cdd, caliperflag, replace, ww, Tr, 
       }    
     
     ret <- .Call("MatchLoopCfast", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
-                 as.double(cdd), as.integer(caliperflag), as.integer(replace), as.real(ww), as.real(Tr),
+                 as.double(cdd), as.integer(caliperflag), as.integer(replace), as.integer(ties),
+                 as.real(ww), as.real(Tr),
                  as.real(Xmod), as.real(CaliperVec), as.real(Xorig),
                  as.integer(restrict.trigger), as.integer(restrict.nrow), as.real(restrict),
                  PACKAGE="Matching")

@@ -1,5 +1,5 @@
-Matchby  <- function(Y, Tr, X, by, estimand="ATT", M=1, 
-                     exact = NULL, caliper = NULL,
+Matchby  <- function(Y, Tr, X, by, estimand="ATT", M=1, ties=FALSE, replace=TRUE,
+                     exact = NULL, caliper = NULL, 
                      Weight = 1, Weight.matrix = NULL,
                      tolerance = 1e-05, distance.tolerance = 1e-05,                    
                      print.level=1, version="fast", ...)
@@ -23,6 +23,21 @@ Matchby  <- function(Y, Tr, X, by, estimand="ATT", M=1,
     t.control  <- NULL
     t.w  <- NULL
 
+    if (replace!=FALSE & replace!=TRUE)
+      {
+        warning("'replace' must be TRUE or FALSE.  Setting to TRUE")
+        replace <- TRUE
+      }
+    if(replace==FALSE)
+      {
+        ties <- FALSE        
+      }    
+    if (ties!=FALSE & ties!=TRUE)
+      {
+        warning("'ties' must be TRUE or FALSE.  Setting to TRUE")
+        ties <- TRUE
+      }    
+    
     ndrops  <- 0
     for (i in 1:nindx)
       {
@@ -65,7 +80,7 @@ Matchby  <- function(Y, Tr, X, by, estimand="ATT", M=1,
 
         t1  <- Match(Y=f.dta[,1], Tr=f.dta[,2], X=X,
                      estimand=estimand, M=M,
-                     exact=exact, caliper=caliper,
+                     exact=exact, caliper=caliper, replace=replace, ties=ties,
                      Weight=Weight, Weight.matrix=Weight.matrix,
                      tolerance=tolerance, distance.tolerance=distance.tolerance,
                      version=version, ...)
