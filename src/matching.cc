@@ -3,7 +3,7 @@ Jasjeet S. Sekhon <sekhon@berkeley.edu>
 HTTP://sekhon.berkeley.edu/
 UC Berkeley
 
-2006/10/16
+2006/10/24
 Under the GNU Public License Version 2
 */
 
@@ -228,7 +228,7 @@ extern "C"
     SEXP ret;
     
     long N, xvars, All, M; 
-    double cdd, Distmax;
+    double cdd, Distmax, Wi_ratio;;
     
     long i, j, k, r, c;
     
@@ -291,9 +291,9 @@ extern "C"
     Matrix foo2;
 
     /* set misc */
-    int TREATi = 0, ACTMATsum = 0;
+    int TREATi = 0;
     
-    Matrix DistPot, tt, Wi, xmat, I, IM, W;
+    Matrix DistPot, tt, xmat, I, IM, W;
     Matrix ACTMAT, POTMAT;
 
     // Temporary size for these matrices to avoid rbind
@@ -318,8 +318,7 @@ extern "C"
     
     int MatchCount=0;
     int MCindx=0;
-    int first=1;
-    int firstNM=1;
+    int overFirstNM=1;
     for(i=0; i < N; i++)
     {
       // treatment indicator for observation to be matched        
@@ -434,65 +433,70 @@ extern "C"
         
         // distance to actual matches.  This is NEVER used.
         // ACTDIST = selif(Dist, ACTMAT);
-        
+
 	// counts how many times each observation is matched.
 	double Mi = sum(ACTMAT);
-	ACTMATsum = (int) sumc(ACTMAT)[0];
-        
-	Wi = ones(ACTMATsum, 1)*1/Mi;
-	
+	Wi_ratio = 1/Mi;
+
 	// collect results
 	MatchCount = MatchCount + (int) Mi;
-	if (MatchCount <= NM)
+	
+	if(MatchCount > NM)
 	  {
-	    foo1 = ones(ACTMATsum, 1)*(i+1);
-	    memcpy(tI.data+MCindx, foo1.data, foo1.size*sizeof(double));
 	    
-	    foo1 = selif(INN, ACTMAT);
-	    memcpy(tIM.data+MCindx, foo1.data, foo1.size*sizeof(double));
+	    NM = NM+N*M*100;
 	    
-	    memcpy(tW.data+MCindx, Wi.data, Wi.size*sizeof(double));
-	    
-	    MCindx = MCindx+foo1.size;
-	    first = 0; 
-	  }
-	else if (first!=1)
-	  {
-	    //first time above NM
-	    if(firstNM==1)
+	    if(overFirstNM > 0)
 	      {
-		int OldMatchCount = MatchCount - (int) Mi;
-		
-		I=Matrix(OldMatchCount, 1);
-		IM=Matrix(OldMatchCount, 1);
-		W=Matrix(OldMatchCount, 1);
-		
-		memcpy(I.data, tI.data, OldMatchCount*sizeof(double));
-		memcpy(IM.data, tIM.data, OldMatchCount*sizeof(double));
-		memcpy(W.data, tW.data, OldMatchCount*sizeof(double));
-		
-		firstNM=0;
+		printf("Increasing memory because of ties: allocating a matrix of size 3 times %d doubles.\n", NM);
+		printf("I would be faster with the ties=FALSE option.\n");
+		warning("Increasing memory because of ties.  I would be faster with the ties=FALSE option.");
 	      }
-	    I = rbind(I, ones(ACTMATsum, 1)*(i+1));
-	    IM = rbind(IM, selif(INN, ACTMAT));
-	    W = rbind(W, Wi);
-	  } 
-	else 
-	  {
-	    //first time
-	    tI = ones(ACTMATsum, 1)*(i+1);
-	    tIM = selif(INN, ACTMAT);
-	    tW = Wi;
 	    
-	    first = 0;		
-	    firstNM=0;
+	    int OldMatchCount = MatchCount - (int) Mi;
+	    
+	    Matrix tI_tmp  = Matrix(NM,1);
+	    Matrix tIM_tmp = Matrix(NM,1);
+	    Matrix tW_tmp  = Matrix(NM,1);
+	    
+	    memcpy(tI_tmp.data, tI.data, OldMatchCount*sizeof(double));
+	    memcpy(tIM_tmp.data, tIM.data, OldMatchCount*sizeof(double));
+	    memcpy(tW_tmp.data, tW.data, OldMatchCount*sizeof(double));
+	    
+	    tI = tI_tmp;
+	    tIM = tIM_tmp;
+	    tW = tW_tmp;
 	  }
-        
+	
+	//foo1 = ones(ACTMATsum, 1)*(i+1);
+	//memcpy(tI.data+MCindx, foo1.data, foo1.size*sizeof(double));
+	//memcpy(tW.data+MCindx, Wi.data, Wi.size*sizeof(double));
+	
+	for (j=0; j < (int) Mi; j++)
+	  {
+	    tI.data[MCindx+j] = i+1;
+	    tW.data[MCindx+j] = Wi_ratio;
+	  }
+	
+	//foo1 = selif(INN, ACTMAT);
+	//memcpy(tIM.data+MCindx, foo1.data, foo1.size*sizeof(double));
+	//MCindx = MCindx+foo1.size;
+	
+	k=0;
+	for (j=0; j<N; j++)
+	  {
+	    if(ACTMAT.data[j] > (1-TOL))
+	      {
+		tIM.data[MCindx+k] = j+1;
+		k++;
+	      }
+	  }
+	MCindx = MCindx+k;
       } // end of (TREATi==1 & All!=1) | All==1 )
     } //END OF i MASTER LOOP!
 
     // subset matrices to get back to the right dims
-    if (firstNM==1 & MatchCount > 0)
+    if (MatchCount > 0)
       {
 	I=Matrix(MatchCount, 1);
 	IM=Matrix(MatchCount, 1);
@@ -502,7 +506,7 @@ extern "C"
 	memcpy(IM.data, tIM.data, MatchCount*sizeof(double));
 	memcpy(W.data, tW.data, MatchCount*sizeof(double));
       }
-    else if (firstNM==1)
+    else
       {
 	I=Matrix(1, 1);
 	IM=Matrix(1, 1);
@@ -1480,7 +1484,7 @@ extern "C"
     
     long N, xvars, All, M, caliper, replace, ties, restrict_trigger, restrict_nrow, sum_caliper_drops=0,
       replace_count=0;
-    double cdd, diff, Distmax;
+    double cdd, diff, Distmax, Wi_ratio;
     
     long i, j, k, r, c;
     
@@ -1600,13 +1604,16 @@ extern "C"
     Matrix foo2;
 
     /* set misc */
-    int TREATi = 0, ACTMATsum = 0;
+    int TREATi = 0;
 
-    Matrix tt, Wi, xmat, I, IM,  IMt, W;
+    Matrix tt, xmat, I, IM,  IMt, W;
     Matrix ACTMAT, POTMAT(N, 1);
 
     // Temporary size for these matrices to avoid rbind
     int NM = N*M*100;
+    if (ties==0)
+      NM = N*M;
+
     Matrix tI  = Matrix(NM,1);
     Matrix tIM = Matrix(NM,1);
     Matrix tW  = Matrix(NM,1);
@@ -1628,8 +1635,7 @@ extern "C"
     
     int MatchCount=0;
     int MCindx=0;
-    int first=1;
-    int firstNM=1;
+    int overFirstNM=1;
     for(i=0; i < N; i++)
       {
 	// treatment indicator for observation to be matched        
@@ -1834,9 +1840,10 @@ extern "C"
 	    
             // counts how many times each observation is matched.
 	    double Mi = sum(ACTMAT);
-	    ACTMATsum = (int) sumc(ACTMAT)[0];
+	    //ACTMATsum = (int) sumc(ACTMAT)[0];
 
-	    Wi = ones(ACTMATsum, 1)*1/Mi;
+	    Wi_ratio = 1/Mi;
+	    //Wi = ones(ACTMATsum, 1)*1/Mi;
 
 	    //if no replacement
 	    if(replace==0)
@@ -1851,66 +1858,82 @@ extern "C"
 
 	    // collect results
 	    MatchCount = MatchCount + (int) Mi;
-	    if (MatchCount <= NM)
+
+	    /*
+	    if (MatchCount > NM)
 	      {
-		foo1 = ones(ACTMATsum, 1)*(i+1);
-		memcpy(tI.data+MCindx, foo1.data, foo1.size*sizeof(double));
-
-		if(replace==0)
-		  {
-		    memcpy(tIM.data+MCindx, IMt.data, IMt.size*sizeof(double));
-		  }
-		else
-		  {
-		    foo1 = selif(INN, ACTMAT);
-		    memcpy(tIM.data+MCindx, foo1.data, foo1.size*sizeof(double));
-		  }
-
-
-		memcpy(tW.data+MCindx, Wi.data, Wi.size*sizeof(double));
-
-		MCindx = MCindx+foo1.size;
-		first = 0; 
+		MatchCount = MatchCount - (int) Mi;
+		continue;
 	      }
-	    else if (first!=1)
+	    */
+
+	    if(MatchCount > NM)
 	      {
-		//first time above NM
-		if(firstNM==1)
+		
+		NM = NM+N*M*100;
+
+		if(overFirstNM > 0)
 		  {
-		    int OldMatchCount = MatchCount - (int) Mi;
-
-		    I=Matrix(OldMatchCount, 1);
-		    IM=Matrix(OldMatchCount, 1);
-		    W=Matrix(OldMatchCount, 1);
-
-		    memcpy(I.data, tI.data, OldMatchCount*sizeof(double));
-		    memcpy(IM.data, tIM.data, OldMatchCount*sizeof(double));
-		    memcpy(W.data, tW.data, OldMatchCount*sizeof(double));
-
-		    firstNM=0;
-		  }
-		I = rbind(I, ones(ACTMATsum, 1)*(i+1));
-		if(replace==0)
-		  {
-		    IM = rbind(IM, IMt);
+		    printf("Increasing memory because of ties: allocating a matrix of size 3 times %d doubles.\n", NM);
+		    printf("I would be faster with the ties=FALSE option.\n");
+		    warning("Increasing memory because of ties.  I would be faster with the ties=FALSE option.");
 		  }
 		else 
 		  {
-		    IM = rbind(IM, selif(INN, ACTMAT));
+		    printf("Increasing memory because of ties: allocating a matrix of size 3 times %d doubles.", NM);
 		  }
-		W = rbind(W, Wi);
-	      } 
-	    else 
-	      {
-		//first time
-		tI = ones(ACTMATsum, 1)*(i+1);
-		tIM = selif(INN, ACTMAT);
-		tW = Wi;
+		
+		int OldMatchCount = MatchCount - (int) Mi;
+		
+		Matrix tI_tmp  = Matrix(NM,1);
+		Matrix tIM_tmp = Matrix(NM,1);
+		Matrix tW_tmp  = Matrix(NM,1);
+		
+		memcpy(tI_tmp.data, tI.data, OldMatchCount*sizeof(double));
+		memcpy(tIM_tmp.data, tIM.data, OldMatchCount*sizeof(double));
+		memcpy(tW_tmp.data, tW.data, OldMatchCount*sizeof(double));
+		
+		tI = tI_tmp;
+		tIM = tIM_tmp;
+		tW = tW_tmp;
 
-		first = 0;		
-		firstNM=0;
+		/* free(tI_tmp.data);
+		free(tIM_tmp.data);
+		free(tW_tmp.data); */
+	      }
+
+	    //foo1 = ones(ACTMATsum, 1)*(i+1);
+	    //memcpy(tI.data+MCindx, foo1.data, foo1.size*sizeof(double));
+	    //memcpy(tW.data+MCindx, Wi.data, Wi.size*sizeof(double));
+
+	    for (j=0; j < (int) Mi; j++)
+	      {
+		tI.data[MCindx+j] = i+1;
+		tW.data[MCindx+j] = Wi_ratio;
 	      }
 	    
+	    if(replace==0)
+	      {
+		memcpy(tIM.data+MCindx, IMt.data, IMt.size*sizeof(double));
+		MCindx = MCindx+IMt.size;
+	      }
+	    else
+	      {
+		//foo1 = selif(INN, ACTMAT);
+		//memcpy(tIM.data+MCindx, foo1.data, foo1.size*sizeof(double));
+		//MCindx = MCindx+foo1.size;
+		
+		k=0;
+		for (j=0; j<N; j++)
+		  {
+		    if(ACTMAT.data[j] > (1-TOL))
+		      {
+			tIM.data[MCindx+k] = j+1;
+			k++;
+		      }
+		  }
+		MCindx = MCindx+k;
+	      }
 	  } // end of (TREATi==1 & All!=1) | All==1 )
       } //END OF i MASTER LOOP!
 
@@ -1919,7 +1942,7 @@ extern "C"
       PutRNGstate();
 
     // subset matrices to get back to the right dims
-    if (firstNM==1 & MatchCount > 0)
+    if (MatchCount > 0)
       {
 	I=Matrix(MatchCount, 1);
 	IM=Matrix(MatchCount, 1);
@@ -1929,7 +1952,7 @@ extern "C"
 	memcpy(IM.data, tIM.data, MatchCount*sizeof(double));
 	memcpy(W.data, tW.data, MatchCount*sizeof(double));
       }
-    else if (firstNM==1)
+    else
       {
 	I=Matrix(1, 1);
 	IM=Matrix(1, 1);
