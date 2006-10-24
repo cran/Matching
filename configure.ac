@@ -1,3 +1,4 @@
+
 dnl Jasjeet S. Sekhon <sekhon@berkeley.edu> http://sekhon.berkeley.edu
 dnl 2006-09-17
 dnl Process this file with autoconf to produce a configure script.
@@ -25,19 +26,30 @@ dnl using the mingw32 compiler
 dnl -fstrict-aliasing -freorder-blocks -fsched-interblock is added for OS X 
 dnl Already included in the Linux gcc -O2 option, but does no harm on Linux
 
-AC_INIT(Matching, 3.6+, sekhon@berkeley.edu)
+AC_INIT(Matching, 4.0.8+, sekhon@berkeley.edu)
 
 dnl MYCFLAGS0 should work on most compilers and MYCFLAGS1 should work on most GNU C compilers.  
 dnl MYCFLAGS2 may not (generally needs gcc 4.0+).   The last three options in MYCFLAGS2 are the OS X 
 dnl addons referenced above.
 
+
+
 MYCFLAGS0="-O3"
 MYCFLAGS1="-finline-functions -ffast-math -funroll-loops -fexpensive-optimizations"
 MYCFLAGS2="-funswitch-loops -fgcse-after-reload -fstrict-aliasing -freorder-blocks -fsched-interblock"
 
+dnl -funsafe-loop-optimizations for gcc 4.2+; the following doesn't work any better in any case
+dnl MYCFLAGS2="-funswitch-loops -fgcse-after-reload -fstrict-aliasing -freorder-blocks -fsched-interblock -mfpmath=sse,387 -fgcse -fgcse-after-reload -fgcse-lm -fgcse-sm -fsched-spec-load-dangerous -funsafe-loop-optimizations"
+
+
+
 MYCXXFLAGS0="-O3"
 MYCXXFLAGS1="-finline-functions -ffast-math -funroll-loops -fexpensive-optimizations"
 MYCXXFLAGS2="-funswitch-loops -fgcse-after-reload -fstrict-aliasing -freorder-blocks -fsched-interblock"
+
+dnl -funsafe-loop-optimizations for gcc 4.2+; the following doesn't work any better in any case
+dnl MYCXXFLAGS2="-funswitch-loops -fgcse-after-reload -fstrict-aliasing -freorder-blocks -fsched-interblock -mfpmath=sse,387 -fgcse -fgcse-after-reload -fgcse-lm -fgcse-sm -fsched-spec-load-dangerous -funsafe-loop-optimizations"
+
 
 AC_PROG_CC
 

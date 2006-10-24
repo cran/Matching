@@ -189,14 +189,18 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1, weights=NULL,
     considered tied, is controlled by the \code{distance.tolerance}
     option.}
   \item{nboots}{The number of bootstrap samples to be run for the
-    \code{ks} test.}
+    \code{ks} test.  By default this option is set to zero so no
+    bootstraps are done.  If this is a positive integer, the boostrap KS
+    test will be used instead of the usual one.  See
+    \code{\link{ks.boot}} for additional details.}
   \item{ks}{ A logical flag for if the univariate bootstrap
     Kolmogorov-Smirnov (KS) test should be calculated.  If the ks option
     is set to true, the univariate KS test is calculated for all
     non-dichotomous variables.  The bootstrap KS test is consistent even
-    for non-continuous variables.  If a given variable is dichotomous, a
-    t-test is used even if the KS test is requested.  See
-    \code{\link{ks.boot}} for more details.}
+    for non-continuous variables.  By default, the bootstrap KS test is
+    not used. To change this see the \code{nboots} option. If a given
+    variable is dichotomous, a t-test is used even if the KS test is requested.  See
+    \code{\link{ks.boot}} for additional details.}
   \item{verbose}{If details should be printed of each fit evaluation
     done by the genetic algorithm.  Verbose is set to FALSE if the
     \code{cluster} option is used.}

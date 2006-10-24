@@ -247,7 +247,7 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
       }
     if(orig.nobs > 20000 & version!="fast")
       {
-        warning("The version='fast' option is recommended for large datasets if speed is desired.")
+        warning("The version='fast' option is recommended for large datasets if speed is desired.  For additional speed, you may also consider using the ties=FALSE option.", immediate.=TRUE)
       }
 
     #check the restrict matrix input

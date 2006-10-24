@@ -1,6 +1,7 @@
 /* Edited by Jasjeet S. Sekhon <jasjeet_sekhon@berkeley.edu> */
 /* HTTP://sekhon.berkeley.edu                                */
-/* May 25, 2005                                              */
+/* October 24, 2006                                          */
+/* May 25, 2006                                              */
 /* __NATE__ additions by Nate Begeman (Apple)                */
 
 //
@@ -109,9 +110,12 @@ namespace SCYTHE {
 	// data = new double[size];
 	data = (double *) malloc(size * sizeof(double));
 	
+	/*
 	for (int i = 0; i < size; ++i) {
 	    data[i] = inputarray[i];
 	}
+	*/
+	memcpy(data, inputarray, size*sizeof(double));
     }
     
 /*! 
@@ -127,9 +131,12 @@ namespace SCYTHE {
 	//data = new double[size];
 	data = (double *) malloc(size * sizeof(double));
 	
+	/*
 	for (int i = 0; i < size; ++i) {
 	    data[i] = old_Matrix.data[i];
 	}
+	*/
+	memcpy(data, old_Matrix.data, size*sizeof(double));
     }
     
 /*!
@@ -178,13 +185,14 @@ namespace SCYTHE {
 	int newrowsize = 1;
 	int newcolsize = colsize;
 	Matrix newdata(newrowsize, newcolsize);
-	
+
+	/*
 	for (int j = 0; j < newcolsize; ++j) {
 	    newdata.data[j] = data[j + i*colsize];
 	}
-	
+	*/
+	memcpy(newdata.data, data+i*colsize, newcolsize*sizeof(double));
 	return newdata;
-	
     }
     
     
@@ -247,7 +255,8 @@ namespace SCYTHE {
 	int newrowsize = 1;
 	int newcolsize = J.size;
 	Matrix newdata(newrowsize, newcolsize);
-	
+
+	/*
 	for (int j = 0; j < newcolsize; ++j) {
 	    int index = static_cast < int >(J.data[j]);
 	    if (index >= colsize || index < 0) {
@@ -257,6 +266,8 @@ namespace SCYTHE {
 	    index = index + i * colsize;
 	    newdata.data[j] = data[index];
 	}
+	*/
+	memcpy(newdata.data, data+i*colsize, newcolsize*sizeof(double));
 	
 	return newdata;
     }
@@ -297,7 +308,7 @@ namespace SCYTHE {
 	    index = j + index * colsize;
 	    newdata.data[i] = data[index];
 	}
-	
+
 	return newdata;
     }
     
