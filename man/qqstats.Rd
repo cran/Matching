@@ -38,14 +38,14 @@ qqstats(x, y, standardize=TRUE, summary.func)
   \url{http://sekhon.berkeley.edu/}.  
 }
 \references{
+  Sekhon, Jasjeet S. 2007.  ``Multivariate and Propensity Score Matching
+  Software with Automated Balance Optimization.''  Working Paper.
+  \url{http://sekhon.berkeley.edu/papers/MatchingJSS.pdf}
+  
   Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias
   Reduction in Matching Methods for Causal Inference.''  Working Paper.
   \url{http://sekhon.berkeley.edu/papers/SekhonBalanceMetrics.pdf}
   
-  Sekhon, Jasjeet S. 2006.  ``Matching: Algorithms and Software for
-  Multivariate and Propensity Score Matching with Balance Optimization
-  via Genetic Search.'' \url{http://sekhon.berkeley.edu/matching/}    
-
   Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
   Estimating Causal Effects: A General Multivariate Matching Method for
   Achieving Balance in Observational Studies.''  Working Paper.

@@ -2,15 +2,12 @@
 \alias{MatchBalance}
 \title{Tests for Univariate and Multivariate Balance}
 \description{
-  This function provides a variety of univariate and multivariate
-  metrics to determine if balance exists.  The function does no matching.
-  Matching is performed by the \code{\link{Match}} function.
-  \code{MatchBalance} is used to determine if \code{\link{Match}} was
-  successful in achieving balance.  Multivariate balance is determined
-  by the use of a model.  This approach can be used regardless of the
-  algorithm used to do the original matching.  For example, even if
-  \code{\link{Match}} was told NOT to use a propensity score,
-  \code{MatchBalance} can be used to test balance.
+  This function provides a variety of balance statistics useful for
+  determining if balance exists in any unmatched dataset and
+  in matched datasets produced by the \code{\link{Match}}
+  function.  Matching is performed by the \code{\link{Match}} function,
+  and \code{MatchBalance} is used to determine if \code{\link{Match}}
+  was successful in achieving balance on the observed covariates.
 }
 \usage{
 MatchBalance(formul, data = NULL, match.out = NULL, ks = TRUE, mv = FALSE,
@@ -19,54 +16,62 @@ MatchBalance(formul, data = NULL, match.out = NULL, ks = TRUE, mv = FALSE,
              paired=TRUE, ...)
 }
 \arguments{
-  \item{formul}{ A formula denoting the model for which balance should
-    be determined.  This model will be estimated by a binary logistic
-    estimator. The dependent variable in the formula is usually the
-    treatment indicator. Univariate balance tests will be conducted for
-    each of the regressors included in this model. And the multivariate
-    tests will be conducted on the predicted probabilities of treatment
-    for both treated and control based on this formula. The predicted
-    probability densities for both treated and control should be
-    indistinguishable if balance has been achieved. Note that the model
-    defined by this formula is estimated separately for the matched and
-    unmatched datasets.}
+  \item{formul}{
+    This formula does \emph{not} estimate any model.  The formula is
+    simply an efficient way to use the R modeling language to list the
+    variables we wish to obtain univariate balance statistics for.  The
+    dependent variable in the formula is usually the treatment
+    indicator.  One should include many functions of the observed
+    covariates.  Generally, one should request balance statistics on
+    more higher-order terms and interactions than were used to conduct
+    the matching itself.}
   \item{data}{ A data frame which contains all of the variables in the
     formula.  If a data frame is not provided, the variables are
     obtained via lexical scoping.}
   \item{match.out}{ The output object from the \code{\link{Match}}
     function.  If this output is included, \code{\link{MatchBalance}} will provide
-    balance tests for both before and after matching. Otherwise
-    balance tests will only be conducted for the raw data.}
-  \item{ks}{ A logical flag for if the univariate bootstrap
+    balance statistics for both before and after matching. Otherwise
+    balance statistics will only be reported for the raw unmatched
+    data.}
+  \item{ks}{ A logical flag for whether the univariate bootstrap
     Kolmogorov-Smirnov (KS) test should be calculated.  If the ks option
     is set to true, the univariate KS test is calculated for all
     non-dichotomous variables.  The bootstrap KS test is consistent even
     for non-continuous variables.  See \code{\link{ks.boot}} for more
     details.}
-  \item{mv}{ A logical flag for if multivariate balance tests (the Kolmogorov-Smirnov and
-    Chi-Square tests) should be calculated.}
+  \item{mv}{A logical flag for whether multivariate balance tests (the
+    Kolmogorov-Smirnov and Chi-Square tests) should be calculated.  If
+    this flag is \code{TRUE}, then the formula provided to
+    \code{MatchBalance} will be used to estimate a logistic regression.
+    And the multivariate tests will be conducted on the predicted
+    probabilities of treatment for both treated and control based on the
+    formula. The predicted probability densities for both treated and
+    control should be indistinguishable if balance has been
+    achieved. The model defined by this formula is estimated separately
+    for the matched and unmatched datasets. }
   \item{maxit}{ The maximum number of iterations for the glm logistic
     procedure. }
   \item{weights}{A vector of observation specific weights.}
   \item{nboots}{The number of bootstrap samples to be run.  If zero, no
     bootstraps are done.  Bootstrapping is highly recommended because
-    the Kolmogorov-Smirnov test only provides correct coverage when
-    bootstrapped due to the existence of nuisance parameters.  At least
-    500 \code{nboots} (preferably 1000) are recommended for publication
-    quality p-values.  Also see the \code{nmc} option.}
-  \item{nmc}{The number of Monte Carlo simulations to be conducted for
-    each Kolmogorov-Smirnov test calculated.  Monte Carlo simulations
-    are highly recommended because the usual Kolmogorov-Smirnov test is not
-    consistent when the densities being compared contain point masses.  At least
-    500 \code{nmc} (preferably 1000) are recommended for publication
-    quality p-values. Also see the \code{nboots} option.}
+    the bootstrapped Kolmogorov-Smirnov test provides correct coverage
+    even when the distributions being compared are not continuous.  At
+    least 500 \code{nboots} (preferably 1000) are recommended for
+    publication quality p-values.}
+  \item{nmc}{This option is only used if the \code{mv} flag is
+    \code{TRUE}. The number of Monte Carlo simulations to be conducted
+    for each multivariate Kolmogorov-Smirnov test calculated.  Monte
+    Carlo simulations are highly recommended because the usual
+    Kolmogorov-Smirnov test is not consistent when the densities being
+    compared contain point masses.  At least 500 \code{nmc} (preferably
+    1000) are recommended for publication quality p-values. Also see the
+    \code{nboots} option.}
   \item{digits}{The number of significant digits that should be
     displayed.}
   \item{verbose}{The amount of printing to be done.  If zero, there is
     no printing.  If one, the results are summarized.  If
-    two, details are printing such as the number of the bootstrap
-    sample currently being estimated.}
-  \item{paired}{A flag for if the paired \code{\link{t.test}} should be
+    two, details of the computations are printed.}
+  \item{paired}{A flag for whether the paired \code{\link{t.test}} should be
     used after matching.  Regardless of the value of this option, an
     unpaired \code{\link{t.test}} is done for the unmatched data because
     it is assumed that the unmatched data were not generated by a paired
@@ -79,45 +84,41 @@ MatchBalance(formul, data = NULL, match.out = NULL, ks = TRUE, mv = FALSE,
   univariate tests performed on the last variable in \code{formul} are
   returned.  For the other variables call \code{\link{balanceUV}}
   directly.  Note that the univariate test results for all of the
-  variables in \code{formul} are printed if \code{verbose > 1}.}
+  variables in \code{formul} are printed if \code{verbose > 0}.}
 }
 \details{
   This function can be used to determine if matching was successful in
-  achieving balance.  Difference of means between treatment and control
+  achieving balance.  Both pre- and post-matching balance statistics are
+  provided. Difference of means between treatment and control
   groups are provided as well as a variety of summary statistics for the
-  empirical QQ (eQQ) plot between the two groups.  The first set of eQQ
+  empirical-QQ (eQQ) plot between the two groups.  The first set of eQQ
   results are the standardized mean, median and maximum differences.
   The second set of eQQ results are summaries of the raw differences.\cr
 
   Two univariate tests are also provided: the t-test and the bootstrap
   Kolmogorov-Smirnov (KS) test. These tests should not be treated as
-  hypothesis tests in the usual fashion because there is not threshold
-  below which imbalance is not a problem and because of a variety of
-  other issue---see citations.  The bootstrap KS test is highly
+  hypothesis tests in the usual fashion because we wish to maximize
+  balance without limit.  The bootstrap KS test is highly
   recommended (see the \code{ks} and \code{nboots} options) because the
-  bootstrap KS is consistent even for non-continuous covariates, and it
-  is more powerful than the t-test.  Before matching the two sample
-  t-test is used, and after matching the paired t-test is used.\cr
+  bootstrap KS is consistent even for non-continuous distributions.
+  Before matching, the two sample t-test is used; after matching, the
+  paired t-test is used.\cr
 
   Two multivariate tests are provided.  The KS and Chi-Square null
   deviance tests.  The KS test is to be preferred over the Chi-Square
   test because the Chi-Square test is not testing the relevant
-  hypothesis.  The null hypothesis for the KS test is of equal balance
+  hypothesis.  The null hypothesis for the KS test is equal balance
   in the estimated probabilities between treated and control.  The null
-  hypothesis for the Chi-Square test, however, is of all of the
+  hypothesis for the Chi-Square test, however, is all of the
   parameters being insignificant; a comparison of residual versus null
   deviance.  If the covariates being considered are discrete, this KS
   test is asymptotically nonparametric as long as the logit model does
-  not produce zero parameter estimates.  The bootstrap-Monte Carlo
-  version of the KS test is highly recommended because the usual KS test
-  is not consistent when there are point masses in the distributions
-  being compared, and the bootstrap is needed because parameters are
-  being estimated in the logit model.
+  not produce zero parameter estimates.  
   }
   \references{
-  Sekhon, Jasjeet S. 2006.  ``Matching: Algorithms and Software for
-  Multivariate and Propensity Score Matching with Balance Optimization
-  via Genetic Search.'' \url{http://sekhon.berkeley.edu/matching/}    
+  Sekhon, Jasjeet S. 2007.  ``Multivariate and Propensity Score Matching
+  Software with Automated Balance Optimization.''  Working Paper.
+  \url{http://sekhon.berkeley.edu/papers/MatchingJSS.pdf}
 
   Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias
   Reduction in Matching Methods for Causal Inference.''  Working Paper.
@@ -202,4 +203,5 @@ mb  <- MatchBalance(treat~age + I(age^2) + educ + I(educ^2) + black +
 %  LocalWords:  datasets Kolmogorov balanceMV balanceUV logit url Abadie emph
 %  LocalWords:  Edgeworth Verlag Conover Shao Dongsheng UC seealso GenMatch rr
 %  LocalWords:  GerberGreenImai lalonde Dehejia Wahba psid Rajeev Sadek hisp mb
-%  LocalWords:  nodegr estimand htest QQ eQQ cr
+%  LocalWords:  nodegr estimand htest QQ eQQ cr Monte Carlo Smirnov ks rep Chi
+%  LocalWords:  pre nonparametric San CA Jun Tu ealso qqstats educ Tr

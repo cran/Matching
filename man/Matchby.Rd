@@ -36,23 +36,17 @@ Matchby(Y, Tr, X, by, estimand = "ATT", M = 1, ties=FALSE, replace=TRUE,
   \item{M}{ A scalar for the number of matches which should be
     found. The default is one-to-one matching. Also see the
     \code{ties} option.}
-  \item{ties}{\emph{Note that by default \code{ties=FALSE} although the
-      default for the \code{Match} in \code{GenMatch} functions is
-      \code{TRUE}.} This option controls whether ties should be handled
-    deterministically. If \code{ties==FALSE}, ties will be randomly
-    broken.  This in general is not a good idea because the variance
-    of \code{Y} will be underestimated (Abadie and Imbens 2005).
-    \emph{But if the dataset is large and there are many ties between
-      potential matches, setting \code{ties=FALSE} often results in a
-      large speedup with negligible bias.}  If \code{ties==TRUE}, ties
-    are handled deterministically.  For example, if one treated
-    observation matches more than one control observation, the matched
-    dataset will include the multiple matched control observations and
-    the matched data will be weighted to reflect the multiple matches.
+  \item{ties}{A logical flag for whether ties should be handled
+    deterministically.  By default \code{ties==TRUE}. If, for example, one
+    treated observation matches more than one control observation, the
+    matched dataset will include the multiple matched control observations
+    and the matched data will be weighted to reflect the multiple matches.
     The sum of the weighted observations will still equal the original
-    number of observations. Whether two potential matches are close
-    enough to be considered tied, is controlled by the
-    \code{distance.tolerance} option.}
+    number of observations. If \code{ties==FALSE}, ties will be randomly
+    broken.  \emph{If the dataset is large and there are many ties,
+      setting \code{ties=FALSE} often results in a large speedup.} Whether
+    two potential matches are close enough to be considered tied, is
+    controlled by the \code{distance.tolerance} option.}
   \item{replace}{Whether matching should be done with replacement.  Note
     that if \code{FALSE}, the order of matches generally matters.  Matches
     will be found in the same order as the data is sorted.  Thus, the
@@ -166,16 +160,15 @@ Matchby(Y, Tr, X, by, estimand = "ATT", M = 1, ties=FALSE, replace=TRUE,
   \item{version}{The version of \code{\link{Match}} which was used.}
 }
 \references{
-
-  Sekhon, Jasjeet S. 2006.  ``Matching: Algorithms and Software for
-  Multivariate and Propensity Score Matching with Balance Optimization
-  via Genetic Search.'' \url{http://sekhon.berkeley.edu/matching/}
+  Sekhon, Jasjeet S. 2007.  ``Multivariate and Propensity Score Matching
+  Software with Automated Balance Optimization.''  Working Paper.
+  \url{http://sekhon.berkeley.edu/papers/MatchingJSS.pdf}
 
   Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias
   Reduction in Matching Methods for Causal Inference.''  Working Paper.
   \url{http://sekhon.berkeley.edu/papers/SekhonBalanceMetrics.pdf}
 
-  Abadie, Alberto and Guido Imbens. 2005.
+  Abadie, Alberto and Guido Imbens. 2006.
   ``Large Sample Properties of Matching Estimators for Average
   Treatment Effects.'' \emph{Econometrica} 74(1): 235-267.
   \url{http://ksghome.harvard.edu/~.aabadie.academic.ksg/sme.pdf} 
