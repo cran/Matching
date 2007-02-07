@@ -51,7 +51,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-#include <sstream>
+ /* Not needed and causes problem in pre 3.3 gcc #include <sstream> */
  /* #include <new> we've moved to malloc */
 #include <numeric>
 #include <string>

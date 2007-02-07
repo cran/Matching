@@ -11,7 +11,7 @@
 
 Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
                    BiasAdjust=FALSE,exact=NULL,caliper=NULL, replace=TRUE, ties=TRUE,
-                   Weight=1,Weight.matrix=NULL, weights=NULL,
+                   CommonSupport=FALSE,Weight=1,Weight.matrix=NULL, weights=NULL,
                    Var.calc=0, sample=FALSE, tolerance=0.00001,
                    distance.tolerance=0.00001, restrict=NULL,
                    match.out=NULL, version="standard")
@@ -45,27 +45,62 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
     BiasAdj  <- as.real(BiasAdjust)
     sample  <- as.real(sample)
 
-    orig.nobs  <- length(Y)
-    nobs  <- orig.nobs
-    xvars <- ncol(X)
-
     if (sum(Tr !=1 & Tr !=0) > 0) {
       stop("Treatment indicator ('Tr') must be a logical variable---i.e., TRUE (1) or FALSE (0)")
     }
     if (var(Tr)==0) {
       stop("Treatment indicator ('Tr') must contain both treatment and control observations")
-    }        
-    
-    #check inputs
-    if (tolerance < 0)
-      {
-        warning("User set 'tolerance' to less than 0.  Resetting to the default which is 0.00001.")
-        tolerance <- 0.00001
-      }
+    }
     if (distance.tolerance < 0)
       {
         warning("User set 'distance.tolerance' to less than 0.  Resetting to the default which is 0.00001.")
         distance.tolerance <- 0.00001
+      }
+
+    #CommonSupport
+    if (CommonSupport !=1 & CommonSupport !=0) {
+      stop("'CommonSupport' must be a logical variable---i.e., TRUE (1) or FALSE (0)")
+    }    
+    if(CommonSupport==TRUE)
+      {
+        tr.min <- min(X[Tr==1,1])
+        tr.max <- max(X[Tr==1,1])
+
+        co.min <- min(X[Tr==0,1])
+        co.max <- max(X[Tr==0,1])
+
+        if(tr.min >= co.min)
+          {
+            indx1 <- X[,1] < (tr.min-distance.tolerance)
+          } else {
+            indx1 <- X[,1] < (co.min-distance.tolerance)            
+          }
+
+        if(co.max <= tr.max)
+          {        
+            indx2 <- X[,1] > (co.max+distance.tolerance)
+          } else {
+            indx2 <- X[,1] > (tr.max+distance.tolerance)            
+          }
+
+        indx3 <- indx1==0 & indx2==0
+        Y  <- as.matrix(Y[indx3])
+        Tr <- as.matrix(Tr[indx3])
+        X  <- as.matrix(X[indx3,])
+        Z  <- as.matrix(Z[indx3,])
+        V  <- as.matrix(V[indx3,])
+        weights <- as.matrix(weights[indx3])
+      }#end of CommonSupport
+
+    orig.nobs  <- length(Y)
+    nobs  <- orig.nobs
+    xvars <- ncol(X)
+
+    #check additional inputs
+    if (tolerance < 0)
+      {
+        warning("User set 'tolerance' to less than 0.  Resetting to the default which is 0.00001.")
+        tolerance <- 0.00001
       }
     if (M < 1)
       {
@@ -3215,10 +3250,10 @@ MatchLoopCfast <- function(N, xvars, All, M, cdd, caliperflag, replace, ties, ww
   version <- packageDescription("Matching", lib = MatchLib)$Version
   BuildDate <- packageDescription("Matching", lib = MatchLib)$Date
   cat(paste("## \n##  Matching (Version ", version, ", Build Date: ", BuildDate, ")\n", sep = "")) 
-  cat("##  Please see http://sekhon.berkeley.edu/matching for documentation, \n",
-      "##  examples and supporting articles.  Please cite software as:\n",
-      "##   Jasjeet S. Sekhon. 2006.``Matching: Algorithms and Software for Multivariate\n",
-      "##   and Propensity Score Matching with Balance Optimization via Genetic Search.''\n##\n",
+  cat("##  See http://sekhon.berkeley.edu/matching for additional documentation.\n",
+      "##  Please cite software as:\n",
+      "##   Jasjeet S. Sekhon. 2007. ``Multivariate and Propensity Score Matching\n",
+      "##   Software with Automated Balance Optimization: The Matching package for R.''\n##\n",
       sep="")
 }
 

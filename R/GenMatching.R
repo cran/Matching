@@ -161,10 +161,9 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                      wait.generations=4, hard.generation.limit=FALSE,
                      starting.values=rep(1,ncol(X)),
                      fit.func="pvals",
-                     data.type.integer=TRUE,
                      MemoryMatrix=TRUE,
                      exact=NULL, caliper=NULL, replace=TRUE, ties=TRUE,
-                     nboots=0, ks=TRUE, verbose=FALSE,
+                     CommonSupport=FALSE,nboots=0, ks=TRUE, verbose=FALSE,
                      tolerance=0.00001,
                      distance.tolerance=tolerance,
                      min.weight=0,
@@ -174,6 +173,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                      project.path=NULL,
                      paired=TRUE,
                      loss=1,
+                     data.type.integer=FALSE,
                      restrict=NULL,
                      cluster=FALSE,
                      balance=TRUE, ...)
@@ -191,12 +191,50 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         weights.flag <- FALSE
       } else {
         weights.flag <- TRUE
-      }    
+      }
+    weights <- as.matrix(weights)    
 
     #check inputs
     if (sum(Tr !=1 & Tr !=0) > 0) {
       stop("Treatment indicator must be a logical variable---i.e., TRUE (1) or FALSE (0)")
     }
+    if (distance.tolerance < 0)
+      {
+        warning("User set 'distance.tolerance' to less than 0.  Resetting to the default which is 0.00001.")
+        distance.tolerance <- 0.00001
+      }
+    #CommonSupport
+    if (CommonSupport !=1 & CommonSupport !=0) {
+      stop("'CommonSupport' must be a logical variable---i.e., TRUE (1) or FALSE (0)")
+    }    
+    if(CommonSupport==TRUE)
+      {
+        tr.min <- min(X[Tr==1,1])
+        tr.max <- max(X[Tr==1,1])
+
+        co.min <- min(X[Tr==0,1])
+        co.max <- max(X[Tr==0,1])
+
+        if(tr.min >= co.min)
+          {
+            indx1 <- X[,1] < (tr.min-distance.tolerance)
+          } else {
+            indx1 <- X[,1] < (co.min-distance.tolerance)            
+          }
+
+        if(co.max <= tr.max)
+          {        
+            indx2 <- X[,1] > (co.max+distance.tolerance)
+          } else {
+            indx2 <- X[,1] > (tr.max+distance.tolerance)            
+          }
+
+        indx3 <- indx1==0 & indx2==0
+        Tr <- as.matrix(Tr[indx3])
+        X  <- as.matrix(X[indx3,])
+        BalanceMatrix <- as.matrix(BalanceMatrix[indx3,])
+        weights <- as.matrix(weights[indx3])
+      }#end of CommonSupport
     
     if (pop.size < 0 | pop.size!=round(pop.size) )
       {
@@ -269,11 +307,6 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         warning("User set 'tolerance' to less than 0.  Resetting to the default which is 0.00001.")
         tolerance <- 0.00001
       }
-    if (distance.tolerance < 0)
-      {
-        warning("User set 'distance.tolerance' to less than 0.  Resetting to the default which is 0.00001.")
-        distance.tolerance <- 0.00001
-      }
     if (M < 1)
       {
         warning("User set 'M' to less than 1.  Resetting to the default which is 1.")
@@ -308,7 +341,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
             stop("nrow(BalanceMatrix) != length(Tr)")
           }
       }
-    
+
     ###########################
     # BEGIN: produce an error if some column of X has zero variance
     #

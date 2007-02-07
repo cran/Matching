@@ -61,14 +61,14 @@ balanceUV(Tr, Co, weights = rep(1, length(Co)), exact = FALSE, ks=FALSE,
   \url{http://sekhon.berkeley.edu/}.  
 }
 \references{
+  Sekhon, Jasjeet S. 2007.  ``Multivariate and Propensity Score Matching
+  Software with Automated Balance Optimization.''  Working Paper.
+  \url{http://sekhon.berkeley.edu/papers/MatchingJSS.pdf}
+  
   Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias
   Reduction in Matching Methods for Causal Inference.''  Working Paper.
   \url{http://sekhon.berkeley.edu/papers/SekhonBalanceMetrics.pdf}
 
-  Sekhon, Jasjeet S. 2006.  ``Matching: Algorithms and Software for
-  Multivariate and Propensity Score Matching with Balance Optimization
-  via Genetic Search.'' \url{http://sekhon.berkeley.edu/matching/}    
-  
   Hollander, Myles and Douglas A. Wolfe. 1973. \emph{Nonparametric
     statistical inference}. New York: John Wiley & Sons.
   }

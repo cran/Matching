@@ -2,23 +2,28 @@
 \alias{Match}
 \title{Multivariate and Propensity Score Matching Estimator for Causal Inference}
 \description{
-
-  This function performs multivariate matching.  This function is
-  intended to be used in conjunction with the \code{MatchBalance}
-  function which checks if the results of this function have actually
-  achieved balance on a set of covariates.  If one wants to do
-  propensity score matching, one should estimate the propensity model
+  \code{Match} implements a variety of algorithms for multivariate
+  matching including propensity score, Mahalanobis and inverse variance
+  matching.  The function is intended to be used in conjunction with the
+  \code{MatchBalance} function which determines the extent to which
+  \code{Match} has been able to achieve covariate balance.  In order to
+  do propensity score matching, one should estimate the propensity model
   before calling \code{Match}, and then send \code{Match} the propensity
-  scores to use. The \code{\link{GenMatch}} function can be used to
-  \emph{automatically find balance} by the use of a genetic search
-  algorithm which determines the optimal weight to give each covariate.
-  \code{Match} provides Abadie-Imbens standard errors as well the usual
-  Neyman errors.  Ties are handled deterministically by default.
+  score to use.  \code{Match} enables a wide variety of matching
+  options including matching with or without replacement, bias
+  adjustment, different methods for handling ties, exact and caliper
+  matching, and a method for the user to fine tune the matches via a
+  general restriction matrix.  Variance estimators include the usual
+  Neyman standard errors, Abadie-Imbens standard errors, and robust
+  variances which do not assume a homogeneous causal effect. The
+  \code{\link{GenMatch}} function can be used to \emph{automatically
+  find balance} via a genetic search algorithm which determines the
+  optimal weight to give each covariate.
 }
 \usage{
 Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
       BiasAdjust = FALSE, exact = NULL, caliper = NULL, replace=TRUE, ties=TRUE,
-      Weight = 1, Weight.matrix = NULL, weights = NULL,
+      CommonSupport=FALSE,Weight = 1, Weight.matrix = NULL, weights = NULL,
       Var.calc = 0, sample = FALSE, tolerance = 1e-05,
       distance.tolerance = 1e-05, restrict=NULL,
       match.out = NULL, version="standard")
@@ -27,8 +32,8 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
   \item{Y}{ A vector containing the outcome of interest.
     Missing values are not allowed.  An outcome vector is not required
     because the matches generated will be the same regardless of the
-    outcomes.  Of course without any outcomes, no causal effect
-    estimates will be produced only a matched dataset. }
+    outcomes.  Of course, without any outcomes no causal effect
+    estimates will be produced, only a matched dataset. }
   \item{Tr}{ A vector indicating the observations which are
     in the treatment regime and those which are not.  This can either be a
     logical vector or a real vector where 0 denotes control and 1 denotes
@@ -45,7 +50,7 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     which takes precedence.}
   \item{estimand}{ A character string for the estimand.  The default
     estimand is "ATT", the sample average treatment effect for the
-    treated. "ATE" is the sample average treatment effect (for all), and
+    treated. "ATE" is the sample average treatment effect, and
     "ATC" is the sample average treatment effect for the controls.}
   \item{M}{A scalar for the number of matches which should be
     found. The default is one-to-one matching. Also see the \code{ties}
@@ -53,8 +58,8 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
   \item{BiasAdjust}{ A logical scalar for whether regression adjustment
     should be used. See the \code{Z} matrix.}
   \item{exact}{ A logical scalar or vector for whether exact matching
-    should be done.  If a logical scalar is provided, that logical value is
-      applied to all covariates of
+    should be done. If a logical scalar is provided, that logical value is
+      applied to all covariates in
     \code{X}.  If a logical vector is provided, a logical value should
     be provided for each covariate in \code{X}. Using a logical vector
     allows the user to specify exact matching for some but not other
@@ -67,35 +72,47 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     acceptable for any match.  Observations which are outside of the
     caliper are dropped. If a scalar caliper is provided, this caliper is
     used for all covariates in \code{X}.  If a vector of calipers is
-    provided, a caliper value should be provide for each covariate in
+    provided, a caliper value should be provided for each covariate in
     \code{X}. The caliper is interpreted to be in standardized units.  For
     example, \code{caliper=.25} means that all matches not equal to or
     within .25 standard deviations of each covariate in \code{X} are
-    dropped.}
-  \item{replace}{Whether matching should be done with replacement.  Note
-    that if \code{FALSE}, the order of matches generally matters.  Matches
-    will be found in the same order as the data is sorted.  Thus, the
-    match(es) for the first observation will be found first and then for
-    the second etc. Matching without replacement will generally increase
-    bias so it is not recommended.  \emph{But if the dataset is large and
-      there are many potential matches, setting \code{replace=false} often
-      results in a large speedup and negligible or no bias.} Ties are
-    randomly broken when \code{replace==FALSE}---see the \code{ties}
-    option for details.}
-  \item{ties}{Whether ties should be handled deterministically.  By
+    dropped. Note that dropping observations generally changes the
+    quantity being estimated.}
+  \item{replace}{A logical flag for whether matching should be done with
+    replacement.  Note that if \code{FALSE}, the order of matches
+    generally matters.  Matches will be found in the same order as the
+    data are sorted.  Thus, the match(es) for the first observation will
+    be found first, the match(es) for the second observation will be found second, etc.
+    Matching without replacement will generally increase bias.
+    Ties are randomly broken when \code{replace==FALSE}
+    ---see the \code{ties} option for details.}
+  \item{ties}{A logical flag for whether ties should be handled deterministically.  By
     default \code{ties==TRUE}. If, for example, one treated observation
     matches more than one control observation, the matched dataset will
     include the multiple matched control observations and the matched data
     will be weighted to reflect the multiple matches.  The sum of the
     weighted observations will still equal the original number of
     observations. If \code{ties==FALSE}, ties will be randomly broken.
-    This in general is not a good idea because the variance of \code{Y}
-    will be underestimated (Abadie and Imbens 2005).  \emph{But if the
-      dataset is large and there are many ties between potential matches,
-      setting \code{ties=FALSE} often results in a large speedup with
-      negligible bias.} Whether two potential matches are close enough to be
-    considered tied, is controlled by the \code{distance.tolerance}
+    \emph{If the dataset is large and there are many ties, setting
+    \code{ties=FALSE} often results in a large speedup.} Whether two
+    potential matches are close enough to be considered tied, is
+    controlled by the \code{distance.tolerance}
     option.}
+  \item{CommonSupport}{This logical flag implements the usual procedure
+    by which observations outside of the common support of a variable
+    (usually the propensity score) across treatment and control groups are
+    discarded.  The \code{caliper} option is to
+    be preferred to this option because \code{CommonSupport}, consistent
+    with the literature, only drops \emph{outliers} and leaves
+    \emph{inliers} while the caliper option drops both.
+    If \code{CommonSupport==TRUE}, common support will be enforced on
+    the first variable in the \code{X} matrix.  Note that dropping
+    observations generally changes the quantity being estimated. Use of
+    this option renders it impossible to use the returned
+    objects \code{index.treated} and \code{index.control} to
+    reconstruct the matched dataset.  The returned object \code{mdata}
+    will, however, still contain the matched dataset.  Seriously, don't
+    use this option; use the \code{caliper} option instead.}
   \item{Weight}{ A scalar for the type of weighting scheme the matching
     algorithm should use when weighting each of the covariates in
     \code{X}.  The default value of 1 denotes that weights are equal to
@@ -127,8 +144,7 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     so that it is highly weighted.  In order to enforce exact matching
     see the \code{exact} and \code{caliper} options.}
   \item{weights}{ A vector the same length as \code{Y} which
-    provides observations specific weights.  If none are provided, equal
-    weights of 1 for each observations are assumed.}
+    provides observation specific weights.}
   \item{Var.calc}{ A scalar for the variance estimate
     that should be used.  By default \code{Var.calc=0} which means that
     homoscedasticity is assumed.  For values of  \code{Var.calc > 0},
@@ -154,7 +170,7 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     \code{0} which implies that the two observations will always
     be matched.  \cr
 
-    Exclusion restriction are even more common.  For example, if we want
+    Exclusion restrictions are even more common.  For example, if we want
     to exclude the observation pair 4 and 20 and
     the pair 6 and 55 from being matched, the restrict matrix would be:
     \code{restrict=rbind(c(4,20,-1),c(6,55,-1))}}
@@ -166,7 +182,7 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     \code{Match} and one wants to use the same set of matches as found
     before.  This often occurs when one is trying to estimate the causal
     effect of the same treatment (\code{Tr}) on different outcomes
-    (\code{Y}). Be careful when using this option to use the same
+    (\code{Y}). When using this option, be careful to use the same
     arguments as used for the previous invocation of \code{Match} unless
     you know exactly what you are doing.}
   \item{version}{The version of the code to be used.  The "fast" C/C++
@@ -279,16 +295,15 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     caliper or exact matching.}  
 }
 \references{
-
-  Sekhon, Jasjeet S. 2006.  ``Matching: Algorithms and Software for
-  Multivariate and Propensity Score Matching with Balance Optimization
-  via Genetic Search.'' \url{http://sekhon.berkeley.edu/matching/}
+  Sekhon, Jasjeet S. 2007.  ``Multivariate and Propensity Score Matching
+  Software with Automated Balance Optimization.''  Working Paper.
+  \url{http://sekhon.berkeley.edu/papers/MatchingJSS.pdf}
 
   Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias
   Reduction in Matching Methods for Causal Inference.''  Working Paper.
   \url{http://sekhon.berkeley.edu/papers/SekhonBalanceMetrics.pdf}
 
-  Abadie, Alberto and Guido Imbens. 2005.
+  Abadie, Alberto and Guido Imbens. 2006.
   ``Large Sample Properties of Matching Estimators for Average
   Treatment Effects.'' \emph{Econometrica} 74(1): 235-267.
   \url{http://ksghome.harvard.edu/~.aabadie.academic.ksg/sme.pdf} 
@@ -360,4 +375,6 @@ mb  <- MatchBalance(treat~age + I(age^2) + educ + I(educ^2) + black +
 %  LocalWords:  DehejiaWahba AbadieImbens noadj cond mdata datasets wnobs url
 %  LocalWords:  ndrops Abadie Imbens Econometrica Matlab Stata UC seealso Wahba
 %  LocalWords:  balanceMV balanceUV lalonde Dehejia psid Rajeev Sadek glm hisp
-%  LocalWords:  nodegr rr nboots nmc mb
+%  LocalWords:  nodegr rr nboots nmc mb Neyman Tr CommonSupport Var var Matchby
+%  LocalWords:  est orig nobs Guido ealso qqstats educ nonparametric rep es ks
+%  LocalWords:  inliers
