@@ -156,7 +156,7 @@ GenBalance <-
     obs <- length(w)
     n.x  <- length(X[,1][index.treated])
     n.y  <- length(X[,1][index.control])
-    cutp <- round(obs/2)  
+    cutp <- n.x
     w  <- matrix(nrow=obs, ncol=nvars)
 
     for (i in 1:nvars)
@@ -198,8 +198,6 @@ GenBalance <-
     
     if (ks & nboots > 9)
       {
-        n.x  <- cutp
-        n.y  <- obs-cutp
         for (b in 1:nboots)
           {
             sindx  <- sample(1:obs, obs, replace = TRUE)
@@ -283,7 +281,7 @@ KSbootBalanceSummary <- function(index.treated, index.control, X,
   obs <- length(w)
   n.x  <- length(X[,1][index.treated])
   n.y  <- length(X[,1][index.control])
-  cutp <- round(obs/2)  
+  cutp <- n.x
   w  <- matrix(nrow=obs, ncol=nvars)
 
   for (i in 1:nvars)
@@ -300,8 +298,6 @@ KSbootBalanceSummary <- function(index.treated, index.control, X,
         } 
     }#end of i loop
 
-  n.x  <- cutp
-  n.y  <- obs-cutp
   for (b in 1:nboots)
     {
       sindx  <- sample(1:obs, obs, replace = TRUE)

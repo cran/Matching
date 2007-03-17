@@ -63,7 +63,7 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1, weights=NULL,
   \item{pop.size}{Population Size.  This is the number of individuals
     \code{\link[rgenoud]{genoud}} uses to solve the optimization problem.
     The theorems proving that genetic algorithms find good solutions are
-    asymptotic in population size so it is important that this value not
+    asymptotic in population size.  Therefore, it is important that this value not
     be small.  See \code{\link[rgenoud]{genoud}} for more details.}
   \item{max.generations}{ Maximum Generations.  This is the maximum
     number of generations that \code{\link[rgenoud]{genoud}} will run when

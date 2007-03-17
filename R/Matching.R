@@ -1902,7 +1902,6 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
                          maxit=1000, weights=rep(1,nrow(data)),
                          digits=5, verbose=1, paired=TRUE, ...)
   {
-
     if(!is.list(match.out) & !is.null(match.out)) {
       warning("'Match' object contains no valid matches")
       match.out  <- NULL
@@ -1913,11 +1912,26 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
       match.out  <- NULL
     }
 
+    na.action=as.character(options("na.action"))
+    if(na.action!="na.omit" & !na.action=="na.exclude" & !na.action=="na.fail")
+      warning("NA's must be omitted or excluded in MatchBalance() see 'na.action'")
+
     if (is.null(data))
       {
         datain <- NULL
+
+        orig.na.action <- as.character(options("na.action"))
+        options("na.action"=na.pass)        
         xdata <- as.data.frame(get.xdata(formul,datafr=environment(formul)))
         ydata <- as.data.frame(get.ydata(formul,datafr=environment(formul)))
+        options("na.action"=orig.na.action)
+
+        if( sum(is.na(xdata))!=0 | sum(is.na(ydata))!=0)
+           {
+             warning("NA's found in data input.  IT IS HIGHLY RECOMMENDED THAT YOU TEST IF THE MISSING VALUES ARE BALANCED INSTEAD OF JUST DELETING THEM.")
+             xdata <- as.data.frame(get.xdata(formul,datafr=environment(formul)))
+             ydata <- as.data.frame(get.ydata(formul,datafr=environment(formul)))
+           }
         Tr    <- ydata
         data  <- cbind(ydata,xdata)        
       } else {
@@ -1926,9 +1940,24 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
         xdata  <- as.data.frame(get.xdata(formul, data))
         Tr  <- get.ydata(formul, data)        
       }
-
-    if (sum(is.na(data)!=0))
-      stop("MatchBalance: NAs found in data input")
+    if (sum(is.na(data)!=0) & !is.null(datain))
+      {
+        warning("NA's found in data input.  IT IS HIGHLY RECOMMENDED THAT YOU TEST IF THE MISSING VALUES ARE BALANCED INSTEAD OF JUST DELETING THEM.")        
+        if(na.action=="na.omit" | na.action=="na.exclude")
+          {
+            #Tr and xdata already have na.action on them
+            indx1 <- apply(is.na(data),1,sum)==0
+            weights <- weights[indx1]
+            data <- data[indx1,]
+            datain <- datain[indx1,]
+          } else if (na.action=="na.pass")
+            {
+              error("'na.pass' is not a valid action for missing values")
+            } else {
+              na.fail(xdata)
+              na.fail(Tr)
+            }
+      }#end of NA
 
     if (sum(Tr !=1 & Tr !=0) > 0) {
       stop("Treatment indicator must be a logical variable---i.e., TRUE (1) or FALSE (0)")
@@ -2086,7 +2115,7 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
           ml  <- NULL
         }        
       }#verbose end
-    
+
     return(invisible(list(mv=ml,uv=foo)))
   } #end of MatchBalance
 
@@ -2167,7 +2196,7 @@ balanceMV  <- function(formul, data=NULL, match.out=NULL, maxit=1000, weights=re
     #Monte Carlo Estimates for the full sample before matching ks.test
     Ys <- t1$fitted
     obs <- nrow(data)
-    cutp <- round(obs/2)
+    cutp <- length(t1$treated.fitted)
     sim.ks.bm.pval <- NULL
     bbcount <- 0
     if (nmc > 0)
@@ -2297,7 +2326,7 @@ balanceMV  <- function(formul, data=NULL, match.out=NULL, maxit=1000, weights=re
         #Monte Carlo Estimates for the full sample before matching ks.test
         Ys <- Mt1$fitted
         obs <- nrow(Mdata)
-        cutp <- round(obs/2)
+        cutp <- length(Mt1$treated.fitted)
         sim.ks.am.pval <- NULL
         bbcount <- 0
         if (nmc > 0)
@@ -2467,7 +2496,7 @@ get.xdata <- function(formul, datafr) {
   if (length(attr(t1, "term.labels"))==0 & attr(t1, "intercept")==0) {
     m <- NULL;  # no regressors specified for the model matrix
   } else {
-    m <- model.matrix(formul, data=datafr, drop.unused.levels = TRUE);
+    m <- model.matrix(formul, data=datafr, drop.unused.levels = TRUE)
   }
   return(m);
 }
@@ -2481,13 +2510,13 @@ get.ydata <- function(formul, datafr) {
   if (length(attr(t1, "response"))==0) {
     m <- NULL;  # no response variable specified
   }  else {
-    m <- model.response(model.frame(formul, data=datafr));
+    m <- model.response(model.frame(formul, data=datafr))
   }
   return(m);
 }
 
 #
-# bootstrap ks test implemented
+# bootstrap ks test implemented.  Fast version
 #
 
 ks.boot  <- function(Tr, Co, nboots=1000, alternative = c("two.sided", "less", "greater"), verbose=0)
@@ -2499,7 +2528,9 @@ ks.boot  <- function(Tr, Co, nboots=1000, alternative = c("two.sided", "less", "
 
     w    <- c(Tr, Co)
     obs  <- length(w)
-    cutp <- round(obs/2)
+    n.x <- length(Tr)
+    n.y <- length(Co)
+    cutp <- n.x
     ks.boot.pval <- NULL
     bbcount <- 0
 
@@ -2521,11 +2552,10 @@ ks.boot  <- function(Tr, Co, nboots=1000, alternative = c("two.sided", "less", "
         
         sindx  <- sample(1:obs, obs, replace=TRUE)
         
+        X1tmp <- w[sindx[1:cutp]]
+        X2tmp <- w[sindx[(cutp+1):obs]]
         
-        X1tmp  <- w[sindx[1:cutp]]
-        X2tmp  <- w[sindx[(cutp+1):obs]]
-        
-        s.ks   <- Mks.test(X1tmp, X2tmp, exact=FALSE, MC=TRUE, alternative=alternative)$statistic
+        s.ks <- ks.fast(X1tmp, X2tmp, n.x=n.x, n.y=n.y, n=obs)
         
         if (s.ks >= (fs.ks$statistic - tol) )
           bbcount  <- bbcount + 1

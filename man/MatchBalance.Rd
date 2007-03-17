@@ -113,7 +113,11 @@ MatchBalance(formul, data = NULL, match.out = NULL, ks = TRUE, mv = FALSE,
   parameters being insignificant; a comparison of residual versus null
   deviance.  If the covariates being considered are discrete, this KS
   test is asymptotically nonparametric as long as the logit model does
-  not produce zero parameter estimates.  
+  not produce zero parameter estimates.
+
+  \code{NA}'s are handled by the \code{\link{na.action}} option.  But it
+  is highly recommended that \code{NA}'s not simply be deleted, but
+  one should checked to make sure that missingness is balanced.
   }
   \references{
   Sekhon, Jasjeet S. 2007.  ``Multivariate and Propensity Score Matching
