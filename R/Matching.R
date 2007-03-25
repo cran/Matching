@@ -1912,15 +1912,11 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
       match.out  <- NULL
     }
 
-    na.action=as.character(options("na.action"))
-    if(na.action!="na.omit" & !na.action=="na.exclude" & !na.action=="na.fail")
-      warning("NA's must be omitted or excluded in MatchBalance() see 'na.action'")
-
+    orig.na.action <- as.character(options("na.action"))
     if (is.null(data))
       {
         datain <- NULL
 
-        orig.na.action <- as.character(options("na.action"))
         options("na.action"=na.pass)        
         xdata <- as.data.frame(get.xdata(formul,datafr=environment(formul)))
         ydata <- as.data.frame(get.ydata(formul,datafr=environment(formul)))
@@ -1928,6 +1924,9 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
 
         if( sum(is.na(xdata))!=0 | sum(is.na(ydata))!=0)
            {
+             if(orig.na.action!="na.omit" & orig.na.action!="na.exclude" & orig.na.action!="na.fail")
+               warning("'na.action' should be set to 'na.omit', 'na.exclude' or 'na.fail' see 'help(na.action)'")
+
              warning("NA's found in data input.  IT IS HIGHLY RECOMMENDED THAT YOU TEST IF THE MISSING VALUES ARE BALANCED INSTEAD OF JUST DELETING THEM.")
              xdata <- as.data.frame(get.xdata(formul,datafr=environment(formul)))
              ydata <- as.data.frame(get.ydata(formul,datafr=environment(formul)))
@@ -1943,14 +1942,14 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
     if (sum(is.na(data)!=0) & !is.null(datain))
       {
         warning("NA's found in data input.  IT IS HIGHLY RECOMMENDED THAT YOU TEST IF THE MISSING VALUES ARE BALANCED INSTEAD OF JUST DELETING THEM.")        
-        if(na.action=="na.omit" | na.action=="na.exclude")
+        if(orig.na.action=="na.omit" | orig.na.action=="na.exclude")
           {
             #Tr and xdata already have na.action on them
             indx1 <- apply(is.na(data),1,sum)==0
             weights <- weights[indx1]
             data <- data[indx1,]
             datain <- datain[indx1,]
-          } else if (na.action=="na.pass")
+          } else if (orig.na.action=="na.pass")
             {
               error("'na.pass' is not a valid action for missing values")
             } else {
