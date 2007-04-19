@@ -169,6 +169,12 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
         version="fast"
         if (version=="legacy")
           warning("'version' is set to 'fast' because ties==FALSE")
+
+        if(BiasAdjust==TRUE) {
+          warning("Bias Adjustment can only be estimated when ties==TRUE and replace=TRUE.  Setting BiasAdjust=FALSE")
+          BiasAdjust <- FALSE
+          BiasAdj  <- 0
+        }
       }
 
     if (!is.null(match.out) & class(match.out) != "Match") {
