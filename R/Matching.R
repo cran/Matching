@@ -1957,7 +1957,7 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
             datain <- datain[indx1,]
           } else if (orig.na.action=="na.pass")
             {
-              error("'na.pass' is not a valid action for missing values")
+              stop("'na.pass' is not a valid action for missing values")
             } else {
               na.fail(xdata)
               na.fail(Tr)
