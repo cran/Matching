@@ -866,7 +866,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
 
 
         if (is.function(fit.func)) {
-          a <- fit.funct(rr, BalanceMatrix)
+          a <- fit.func(rr, BalanceMatrix)
           return(a)
         } else if (fit.func=="pvals")
           {
@@ -923,7 +923,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
               NULL
             }
             for (name in list) {
-              clusterCall(cl, gets, name, get(name))
+              snow::clusterCall(cl, gets, name, get(name))
             }
           }        
 
@@ -935,7 +935,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
           clustertrigger=2
           cluster <- as.vector(cluster)
           cat("You will now be prompted for passwords so your cluster can be setup.\n")
-          cl <- makeSOCKcluster(cluster)
+          cl <- snow::makeSOCKcluster(cluster)
           cl.genoud <- cl
         }      
       } else {
@@ -946,7 +946,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
       {
         #create restrict.summary, because passing the entire restrict matrix is too much
         
-        clusterEvalQ(cl, library("Matching"))
+        snow::clusterEvalQ(cl, library("Matching"))
         GENclusterExport(cl, c("s1.N", "s1.All", "s1.M", "s1.Tr", "s1.X", "nvars",
                                "tolerance", "distance.tolerance", "weights",
                                "BalanceMatrix", "balancevars", "nboots", "ks", "verbose", "paired", "loss.func",
@@ -1009,7 +1009,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
       }
 
     if (clustertrigger==2)
-      stopCluster(cl)    
+      snow::stopCluster(cl)    
     
     class(rr2) <- "GenMatch"
     return(rr2)
