@@ -54,7 +54,7 @@ MatchGenoudStage1 <- function(Tr=Tr, X=X, All=All, M=M, weights=weights)
 
 MatchGenoudStage1caliper <- function(Tr=Tr, X=X, All=All, M=M, weights=weights,
                                      exact=exact, caliper=caliper,
-                                     distance.tolerance=0.00001)
+                                     distance.tolerance)
   {
     N  <- nrow(X)
     xvars <- ncol(X)
@@ -512,7 +512,8 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         rm(s1)
       } else {
         s1 <- MatchGenoudStage1caliper(Tr=Tr, X=X, All=All, M=M, weights=weights,
-                                       exact=exact, caliper=caliper);
+                                       exact=exact, caliper=caliper,
+                                       distance.tolerance=distance.tolerance)
         s1.Tr <- s1$Tr
         s1.X <- s1$X
         s1.All <- s1$All
