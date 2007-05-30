@@ -58,6 +58,9 @@
 #include <climits>
 #include <cmath>
 
+//explicit include needed for gcc4.3
+#include <cstdlib>
+
 
 // Avoid NameSpace Pollution
 namespace SCYTHE {

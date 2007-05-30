@@ -4,7 +4,9 @@
 \description{
   This function calculates a set of summary statistics for the QQ
   plot of two samples of data.  The summaries are useful for determining
-  if the two samples are from the same distribution.
+  if the two samples are from the same distribution.  If
+  \code{standardize==TRUE}, the empirical CDF is used instead of the
+  empirical-QQ plot.  The later retains the scale of the variable.
 }
 \usage{
 qqstats(x, y, standardize=TRUE, summary.func)

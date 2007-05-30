@@ -157,7 +157,7 @@ MatchGenoudStage1caliper <- function(Tr=Tr, X=X, All=All, M=M, weights=weights,
 
 GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                      weights=NULL,
-                     pop.size = 50, max.generations=100,
+                     pop.size = 100, max.generations=100,
                      wait.generations=4, hard.generation.limit=FALSE,
                      starting.values=rep(1,ncol(X)),
                      fit.func="pvals",
@@ -192,7 +192,14 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
       } else {
         weights.flag <- TRUE
       }
-    weights <- as.matrix(weights)    
+    weights <- as.matrix(weights)
+
+    isna  <- sum(is.na(Tr)) + sum(is.na(X)) + sum(is.na(weights)) + sum(is.na(BalanceMatrix))
+    if (isna!=0)
+      {
+        stop("GenMatch(): input includes NAs")
+        return(invisible(NULL))
+      }    
 
     #check inputs
     if (sum(Tr !=1 & Tr !=0) > 0) {
@@ -238,8 +245,8 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
     
     if (pop.size < 0 | pop.size!=round(pop.size) )
       {
-        warning("User set 'pop.size' to an illegal value.  Resetting to the default which is 50.")
-        pop.size <- 50
+        warning("User set 'pop.size' to an illegal value.  Resetting to the default which is 100.")
+        pop.size <- 100
       }
     if (max.generations < 0 | max.generations!=round(max.generations) )
       {
@@ -340,6 +347,12 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
           {
             stop("nrow(BalanceMatrix) != length(Tr)")
           }
+      }
+
+    #print warning if pop.size, max.generations and wait.generations are all set to their original values
+    if(pop.size==100 & max.generations==100 & wait.generations==4)
+      {
+        warning("The key tuning parameters for optimization were are all left at their default values.  The 'pop.size' option in particular should probably be increased for optimal results.  For details please see the help page and http://sekhon.berkeley.edu/papers/MatchingJSS.pdf")
       }
 
     ###########################
@@ -545,73 +558,57 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         if(!GenMatchCaliper.trigger)
           {
             
-            FastMatchC.internal <- function(N, xvars, All, M, cdd, ww, Tr, Xmod, weights)
-              {
-                ret <- .Call("FastMatchC", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
-                             as.double(cdd), as.real(ww), as.real(Tr),
-                             as.real(Xmod), as.real(weights),
-                             PACKAGE="Matching")
-                return(ret)
-              }
-            FasterMatchC.internal <- function(N, xvars, All, M, cdd, ww, Tr, Xmod, weights)
-              {
-                ret <- .Call("FasterMatchC", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
-                             as.double(cdd), as.real(ww), as.real(Tr),
-                             as.real(Xmod), 
-                             PACKAGE="Matching")
-                return(ret)
-              }
-            
             if (weights.flag==TRUE)
               {
+                FastMatchC.internal <- function(N, xvars, All, M, cdd, ww, Tr, Xmod, weights)
+                  {
+                    ret <- .Call("FastMatchC", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
+                                 as.double(cdd), as.real(ww), as.real(Tr),
+                                 as.real(Xmod), as.real(weights),
+                                 PACKAGE="Matching")
+                    return(ret)
+                  }
+                
                 rr <- FastMatchC.internal(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
                                           cdd=distance.tolerance, ww=ww, Tr=s1.Tr, Xmod=s1.X,
                                           weights=weights)
               } else {
+                FasterMatchC.internal <- function(N, xvars, All, M, cdd, ww, Tr, Xmod, weights)
+                  {
+                    ret <- .Call("FasterMatchC", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
+                                 as.double(cdd), as.real(ww), as.real(Tr),
+                                 as.real(Xmod), 
+                                 PACKAGE="Matching")
+                    return(ret)
+                  }
+                
                 rr <- FasterMatchC.internal(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
                                              cdd=distance.tolerance, ww=ww, Tr=s1.Tr, Xmod=s1.X)
               } #end of weights.flag
           } else {
-            MatchLoopC.internal <- function(N, xvars, All, M, cdd, caliperflag, replace, ties, ww, Tr, Xmod, weights, CaliperVec,
-                                            Xorig, restrict.trigger, restrict)
-              {
-                
-                if(restrict.trigger)
-                  {
-                    restrict.nrow <- nrow(restrict)
-                  } else {
-                    restrict.nrow <- 0
-                  }    
-                
-                ret <- .Call("MatchLoopC", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
-                             as.double(cdd), as.integer(caliperflag), as.integer(replace), as.integer(ties), as.real(ww), as.real(Tr),
-                             as.real(Xmod), as.real(weights), as.real(CaliperVec), as.real(Xorig),
-                             as.integer(restrict.trigger), as.integer(restrict.nrow), as.real(restrict),
-                             PACKAGE="Matching")
-                return(ret)
-              } #end of MatchLoopC.internal
-            
-            MatchLoopCfast.internal <- function(N, xvars, All, M, cdd, caliperflag, replace, ties, ww, Tr, Xmod, CaliperVec, Xorig,
-                                                restrict.trigger, restrict)
-              {
-                
-                if(restrict.trigger)
-                  {
-                    restrict.nrow <- nrow(restrict)
-                  } else {
-                    restrict.nrow <- 0
-                  }    
-                
-                ret <- .Call("MatchLoopCfast", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
-                             as.double(cdd), as.integer(caliperflag), as.integer(replace), as.integer(ties), as.real(ww), as.real(Tr),
-                             as.real(Xmod), as.real(CaliperVec), as.real(Xorig),
-                             as.integer(restrict.trigger), as.integer(restrict.nrow), as.real(restrict),
-                             PACKAGE="Matching")
-                return(ret)
-              } #end of MatchLoopCfast.internal
-
             if (weights.flag==TRUE)
               {
+                MatchLoopC.internal <- function(N, xvars, All, M, cdd, caliperflag, replace, ties, ww, Tr, Xmod, weights, CaliperVec,
+                                                Xorig, restrict.trigger, restrict)
+                  {
+                    
+                    if(restrict.trigger)
+                      {
+                        restrict.nrow <- nrow(restrict)
+                      } else {
+                        restrict.nrow <- 0
+                      }    
+                    
+                    ret <- .Call("MatchLoopC", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
+                                 as.double(cdd), as.integer(caliperflag), as.integer(replace), as.integer(ties), as.real(ww), as.real(Tr),
+                                 as.real(Xmod), as.real(weights), as.real(CaliperVec), as.real(Xorig),
+                                 as.integer(restrict.trigger), as.integer(restrict.nrow), as.real(restrict),
+                                 #next line is sets the DiagWeightMatrixFlag
+                                 as.real(1),                             
+                                 PACKAGE="Matching")
+                    return(ret)
+                  } #end of MatchLoopC.internal
+                
                 rr <- MatchLoopC.internal(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
                                           cdd=distance.tolerance,
                                           caliperflag=caliperFlag,
@@ -620,6 +617,28 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                                           CaliperVec=CaliperVec, Xorig=Xorig,
                                           restrict.trigger=restrict.trigger, restrict=restrict)
               } else {
+                MatchLoopCfast.internal <- function(N, xvars, All, M, cdd, caliperflag, replace, ties, ww, Tr, Xmod, CaliperVec, Xorig,
+                                                    restrict.trigger, restrict)
+                  {
+                    
+                    if(restrict.trigger)
+                      {
+                        restrict.nrow <- nrow(restrict)
+                      } else {
+                        restrict.nrow <- 0
+                      }    
+                    
+                    ret <- .Call("MatchLoopCfast", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
+                                 as.double(cdd), as.integer(caliperflag), as.integer(replace), as.integer(ties), as.real(ww), as.real(Tr),
+                                 as.real(Xmod), as.real(CaliperVec), as.real(Xorig),
+                                 as.integer(restrict.trigger), as.integer(restrict.nrow), as.real(restrict),
+                                 #next line is the DiagWeightMatrixFlag
+                                 as.real(1),                              
+                                 PACKAGE="Matching")
+                    return(ret)
+                  } #end of MatchLoopCfast.internal
+                
+                
                 rr <- MatchLoopCfast.internal(N=s1.N, xvars=nvars, All=s1.All, M=s1.M,
                                               cdd=distance.tolerance,
                                               caliperflag=caliperFlag,

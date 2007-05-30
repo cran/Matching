@@ -152,6 +152,8 @@ if test "$?" = 0 ; then
  cp inst/extras/malloc.c src/malloc.c
  mv src/cblas_dgemm.c inst/extras
  mv src/cblas.h inst/extras
+ mv src/cblas_dasum.c inst/extras
+ mv src/cblas_dscal.c inst/extras
 else
  AC_MSG_RESULT(no)
 fi

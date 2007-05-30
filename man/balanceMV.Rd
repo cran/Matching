@@ -16,7 +16,7 @@
 }
 \usage{
 balanceMV(formul, data = NULL, match.out=NULL, maxit = 1000,
-          weights = rep(1,nrow(data)), nboots=100, nmc=nboots, verbose=0, ...)
+          weights = rep(1,nrow(data)), nboots=100, nmc=nboots, print.level=0, ...)
 }
 \arguments{
   \item{formul}{ A formula denoting the model for which balance should
@@ -52,7 +52,7 @@ balanceMV(formul, data = NULL, match.out=NULL, maxit = 1000,
     consistent when the densities being compared contain point masses.  At least
     500 \code{nmc} (preferably 1000) are recommended for publication
     quality p-values. Also see the \code{nboots} option.}  
-  \item{verbose}{The amount of printing to be done.  If zero, there is
+  \item{print.level}{The amount of printing to be done.  If zero, there is
     no printing.  If two, details are printing such as the number of the
     bootstrap sample currently being estimated.}
   \item{...}{Further arguments passed to \code{\link{glm.control}}.}  
