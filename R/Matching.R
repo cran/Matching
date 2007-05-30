@@ -21,13 +21,6 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
     if (is.null(Y))
       Y = rep(0, length(Tr))
     
-    isna  <- sum(is.na(Y)) + sum(is.na(Tr)) + sum(is.na(X)) + sum(is.na(Z))
-    if (isna!=0)
-      {
-        stop("Match(): input includes NAs")
-        return(invisible(NULL))
-      }
-
     if (is.null(weights))
       {
         weights <- rep(1,length(Y))
@@ -44,6 +37,13 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
     weights <- as.matrix(weights)
     BiasAdj  <- as.real(BiasAdjust)
     sample  <- as.real(sample)
+
+    isna  <- sum(is.na(Y)) + sum(is.na(Tr)) + sum(is.na(X)) + sum(is.na(weights)) + sum(is.na(Z)) + sum(is.na(V))
+    if (isna!=0)
+      {
+        stop("Match(): input includes NAs")
+        return(invisible(NULL))
+      }
 
     if (sum(Tr !=1 & Tr !=0) > 0) {
       stop("Treatment indicator ('Tr') must be a logical variable---i.e., TRUE (1) or FALSE (0)")
@@ -1322,10 +1322,10 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
 #
 # See Rosenbaum and Rubin (1985) and Smith and Todd Rejoinder (JofEconometrics) p.9
 #
-sdiff  <- function(Tr, Co, weights=rep(1,length(Co)),
-                   weights.Tr=rep(1,length(Tr)),
-                   weights.Co=rep(1,length(Co)),
-                   match=FALSE)
+sdiff.pooled  <- function(Tr, Co, weights=rep(1,length(Co)),
+                          weights.Tr=rep(1,length(Tr)),
+                          weights.Co=rep(1,length(Co)),
+                          match=FALSE)
   {
     if (!match)
       {
@@ -1337,33 +1337,93 @@ sdiff  <- function(Tr, Co, weights=rep(1,length(Co)),
         mean.Co <- sum(Co*weights.Co)/obs.Co
         diff  <- mean.Tr - mean.Co
 
-#old        
-#        var.Tr  <- sum( ( (Tr - mean.Tr)^2 )*weights.Tr)/(obs.Tr-1)
-#        var.Co  <- sum( ( (Co - mean.Co)^2 )*weights.Co)/(obs.Co-1)
-#        sdiff <- 100*diff/sqrt( (var.Tr+var.Co)/2 )
-
 #match Rubin
         mean.total <- sum(Tr*weights.Tr)/obs.total + sum(Co*weights.Co)/obs.total
         var.total  <- sum( ( (Tr - mean.total)^2 )*weights.Tr)/(obs.total-1) +
           sum( ( (Co - mean.total)^2 )*weights.Co)/(obs.total-1)
-        sdiff <- diff/sqrt( var.total )
+
+        if(var.total==0 & diff==0)
+          {
+            sdiff <- O
+          } else {
+            sdiff <- 100*diff/sqrt( var.total/2 )
+          }
         
       } else{
         diff  <- sum( (Tr-Co)*weights ) /sum(weights)
         mean.Tr <- sum(Tr*weights)/sum(weights)
         mean.Co <- sum(Co*weights)/sum(weights)
 
-#old        
-#        var.Tr  <- sum( ( (Tr - mean.Tr)^2 )*weights)/(sum(weights)-1)
-#        var.Co  <- sum( ( (Co - mean.Co)^2 )*weights)/(sum(weights)-1)
-#        sdiff  <- 100*diff/sqrt( (var.Tr+var.Co)/2 )
-
 #match Rubin
         obs <- sum(weights)*2
         mean.total <- (mean.Tr + mean.Co)/2
         var.total  <- sum( ( (Tr - mean.total)^2 )*weights)/(obs-1) +
           sum( ( (Co - mean.total)^2 )*weights)/(obs-1)
-        sdiff <- diff/sqrt(var.total)
+
+        if(var.total==0 & diff==0)
+          {
+            sdiff <- O
+          } else {
+            sdiff <- 100*diff/sqrt(var.total/2)
+          }        
+      }
+
+    return(sdiff)
+  }
+
+
+#
+# STANDARDIZED BY THE VARIANCE OF THE TREATMENT GROUP
+# See sdiff.rubin for Rosenbaum and Rubin (1985) and Smith and Todd Rejoinder (JofEconometrics) p.9
+#
+sdiff  <- function(Tr, Co, weights=rep(1,length(Co)),
+                   weights.Tr=rep(1,length(Tr)),
+                   weights.Co=rep(1,length(Co)),
+                   match=FALSE,
+                   estimand="ATT")
+
+  {
+    if (!match)
+      {
+        obs.Tr <- sum(weights.Tr)
+        obs.Co <- sum(weights.Co)
+        obs.total <- obs.Tr+obs.Co
+        
+        mean.Tr <- sum(Tr*weights.Tr)/obs.Tr
+        mean.Co <- sum(Co*weights.Co)/obs.Co
+        diff  <- mean.Tr - mean.Co
+
+        if(estimand=="ATC")
+          {
+            var  <- sum( ( (Co - mean.Co)^2 )*weights.Co)/(obs.Co-1)
+          } else {
+            var  <- sum( ( (Tr - mean.Tr)^2 )*weights.Tr)/(obs.Tr-1)
+          }
+
+        if(var==0 & diff==0)
+          {
+            sdiff=0
+          } else {
+            sdiff <- 100*diff/sqrt( (var) )
+          }
+      } else{
+        mean.Tr <- sum(Tr*weights)/sum(weights)
+        mean.Co <- sum(Co*weights)/sum(weights)
+        diff  <- mean.Tr - mean.Co
+
+        if(estimand=="ATC")
+          {
+            var  <- sum( ( (Co - mean.Co)^2 )*weights)/(sum(weights)-1)
+          } else {
+            var  <- sum( ( (Tr - mean.Tr)^2 )*weights)/(sum(weights)-1)
+          }
+
+        if(var==0 & diff==0)
+          {
+            sdiff <- 0
+          } else {
+            sdiff <- 100*diff/sqrt( (var) )
+          }        
       }
 
     return(sdiff)
@@ -1373,16 +1433,23 @@ sdiff  <- function(Tr, Co, weights=rep(1,length(Co)),
 #
 balanceUV  <- function(Tr, Co, weights=rep(1,length(Co)), exact=FALSE, ks=FALSE, nboots=1000,
                        paired=TRUE, match=FALSE,
-                       weights.Tr=rep(1,length(Tr)), weights.Co=rep(1,length(Co)))
+                       weights.Tr=rep(1,length(Tr)), weights.Co=rep(1,length(Co)),
+                       estimand="ATT")
   {
     ks.out  <- NULL
 
     if (!match)
       {
-        sbalance  <- sdiff(Tr=Tr, Co=Co,
-                           weights.Tr=weights.Tr,
-                           weights.Co=weights.Co,
-                           match=FALSE)
+        sbalance.pooled  <- sdiff.pooled(Tr=Tr, Co=Co,
+                                       weights.Tr=weights.Tr,
+                                       weights.Co=weights.Co,
+                                       match=FALSE)
+
+        sbalance.constvar  <- sdiff(Tr=Tr, Co=Co,
+                                    weights.Tr=weights.Tr,
+                                    weights.Co=weights.Co,
+                                    match=FALSE,
+                                    estimand=estimand)        
 
         obs.Tr <- sum(weights.Tr)
         obs.Co <- sum(weights.Co)        
@@ -1403,7 +1470,8 @@ balanceUV  <- function(Tr, Co, weights=rep(1,length(Co)), exact=FALSE, ks=FALSE,
         if (ks)
           ks.out <- ks.boot(Tr, Co,nboots=nboots)
       } else {
-        sbalance  <- sdiff(Tr=Tr, Co=Co, weights=weights, match=TRUE)
+        sbalance.pooled  <- sdiff(Tr=Tr, Co=Co, weights=weights, match=TRUE)
+        sbalance.constvar  <- sdiff(Tr=Tr, Co=Co, weights=weights, match=TRUE, estimand=estimand)
         
         mean.Tr  <- sum(Tr*weights)/sum(weights);
         mean.Co  <- sum(Co*weights)/sum(weights);
@@ -1425,7 +1493,9 @@ balanceUV  <- function(Tr, Co, weights=rep(1,length(Co)), exact=FALSE, ks=FALSE,
           ks.out  <- ks.boot(Tr, Co, nboots=nboots)
       }        
 
-    ret  <- list(sdiff=sbalance,mean.Tr=mean.Tr,mean.Co=mean.Co,
+    ret  <- list(sdiff=sbalance.constvar,
+                 sdiff.pooled=sbalance.pooled,
+                 mean.Tr=mean.Tr,mean.Co=mean.Co,
                  var.Tr=var.Tr,var.Co=var.Co, p.value=tt$p.value,
                  var.ratio=var.ratio,
                  ks=ks.out, tt=tt,
@@ -1445,17 +1515,17 @@ summary.balanceUV  <- function(object, ..., digits=5)
     }
 
     cat("mean treatment........", format(object$mean.Tr, digits=digits),"\n")
-    cat("mean control..........", format(object$mean.Co, digits=digits),"\n\n")
-
-    cat("mean std eQQ diff.....", format(object$qqsummary$meandiff, digits=digits),"\n")
-    cat("med  std eQQ diff.....", format(object$qqsummary$mediandiff, digits=digits),"\n")
-    cat("max  std eQQ diff ....", format(object$qqsummary$maxdiff, digits=digits),"\n\n")
+    cat("mean control..........", format(object$mean.Co, digits=digits),"\n")
+    cat("std mean diff.........", format(object$sdiff, digits=digits),"\n\n")    
 
     cat("mean raw eQQ diff.....", format(object$qqsummary.raw$meandiff, digits=digits),"\n")
     cat("med  raw eQQ diff.....", format(object$qqsummary.raw$mediandiff, digits=digits),"\n")
     cat("max  raw eQQ diff.....", format(object$qqsummary.raw$maxdiff, digits=digits),"\n\n")
-    
-#       cat("sdiff.................", format(object$sdiff, digits=digits),"\n")            
+
+    cat("mean eCDF diff........", format(object$qqsummary$meandiff, digits=digits),"\n")
+    cat("med  eCDF diff........", format(object$qqsummary$mediandiff, digits=digits),"\n")
+    cat("max  eCDF diff........", format(object$qqsummary$maxdiff, digits=digits),"\n\n")
+
     cat("var ratio (Tr/Co).....", format(object$var.ratio, digits=digits),"\n")
     cat("T-test p-value........", format.pval(object$tt$p.value,digits=digits), "\n")            
     if (!is.null(object$ks))
@@ -1494,16 +1564,9 @@ PrintBalanceUV  <- function(BeforeBalance, AfterBalance, ..., digits=5)
         "\n")
     cat("mean control..........", format(BeforeBalance$mean.Co, digits=digits, width=space.size), "\t \t",
         format(AfterBalance$mean.Co, digits=digits, width=space.size),
-        "\n\n")
-    
-    cat("mean std eQQ diff.....", format(BeforeBalance$qqsummary$meandiff, digits=digits, width=space.size), "\t \t",
-        format(AfterBalance$qqsummary$meandiff, digits=digits, width=space.size),
         "\n")
-    cat("med  std eQQ diff.....", format(BeforeBalance$qqsummary$mediandiff, digits=digits, width=space.size), "\t \t",
-        format(AfterBalance$qqsummary$mediandiff, digits=digits, width=space.size),
-        "\n")
-    cat("max  std eQQ diff ....", format(BeforeBalance$qqsummary$maxdiff, digits=digits, width=space.size), "\t \t",
-        format(AfterBalance$qqsummary$maxdiff, digits=digits, width=space.size),
+    cat("std mean diff.........", format(BeforeBalance$sdiff, digits=digits, width=space.size), "\t \t",
+        format(AfterBalance$sdiff, digits=digits, width=space.size),
         "\n\n")
     
     cat("mean raw eQQ diff.....", format(BeforeBalance$qqsummary.raw$meandiff, digits=digits, width=space.size), "\t \t",
@@ -1515,7 +1578,17 @@ PrintBalanceUV  <- function(BeforeBalance, AfterBalance, ..., digits=5)
     cat("max  raw eQQ diff.....", format(BeforeBalance$qqsummary.raw$maxdiff, digits=digits, width=space.size), "\t \t",
         format(AfterBalance$qqsummary.raw$maxdiff, digits=digits, width=space.size),
         "\n\n")
-    
+
+    cat("mean eCDF diff........", format(BeforeBalance$qqsummary$meandiff, digits=digits, width=space.size), "\t \t",
+        format(AfterBalance$qqsummary$meandiff, digits=digits, width=space.size),
+        "\n")
+    cat("med  eCDF diff........", format(BeforeBalance$qqsummary$mediandiff, digits=digits, width=space.size), "\t \t",
+        format(AfterBalance$qqsummary$mediandiff, digits=digits, width=space.size),
+        "\n")
+    cat("max  eCDF diff........", format(BeforeBalance$qqsummary$maxdiff, digits=digits, width=space.size), "\t \t",
+        format(AfterBalance$qqsummary$maxdiff, digits=digits, width=space.size),
+        "\n\n")
+
     cat("var ratio (Tr/Co).....", format(BeforeBalance$var.ratio, digits=digits, width=space.size), "\t \t",
         format(AfterBalance$var.ratio, digits=digits, width=space.size),
         "\n")
@@ -1905,8 +1978,8 @@ Mt.test.unpaired  <- function(Tr, Co,
 
 MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE, 
                          nboots=500, nmc=nboots, 
-                         maxit=1000, weights=rep(1,nrow(data)),
-                         digits=5, verbose=1, paired=TRUE, ...)
+                         maxit=1000, weights=NULL,
+                         digits=5, paired=TRUE, print.level=1, ...)
   {
     if(!is.list(match.out) & !is.null(match.out)) {
       warning("'Match' object contains no valid matches")
@@ -1919,56 +1992,51 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
     }
 
     orig.na.action <- as.character(options("na.action"))
+    options("na.action"=na.pass)            
     if (is.null(data))
       {
-        datain <- NULL
-
-        options("na.action"=na.pass)        
         xdata <- as.data.frame(get.xdata(formul,datafr=environment(formul)))
-        ydata <- as.data.frame(get.ydata(formul,datafr=environment(formul)))
-        options("na.action"=orig.na.action)
+        Tr <- as.real(get.ydata(formul,datafr=environment(formul)))
 
-        if( sum(is.na(xdata))!=0 | sum(is.na(ydata))!=0)
-           {
-             if(orig.na.action!="na.omit" & orig.na.action!="na.exclude" & orig.na.action!="na.fail")
-               warning("'na.action' should be set to 'na.omit', 'na.exclude' or 'na.fail' see 'help(na.action)'")
-
-             warning("NA's found in data input.  IT IS HIGHLY RECOMMENDED THAT YOU TEST IF THE MISSING VALUES ARE BALANCED INSTEAD OF JUST DELETING THEM.")
-             xdata <- as.data.frame(get.xdata(formul,datafr=environment(formul)))
-             ydata <- as.data.frame(get.ydata(formul,datafr=environment(formul)))
-           }
-        Tr    <- ydata
-        data  <- cbind(ydata,xdata)        
       } else {
         data  <- as.data.frame(data)
-        datain <- data
+
         xdata  <- as.data.frame(get.xdata(formul, data))
-        Tr  <- get.ydata(formul, data)        
+        Tr  <- as.real(get.ydata(formul, data))
       }
-    if (sum(is.na(data)!=0) & !is.null(datain))
+    options("na.action"=orig.na.action)
+
+    if (is.null(weights))
+      weights <- rep(1,length(Tr))
+
+    if(!is.numeric(weights))
+      stop("'weights' must be a numeric vector")
+
+    if (mv)
+      orig.weights <- weights
+
+    if( sum(is.na(xdata))!=0 | sum(is.na(Tr))!=0)
       {
-        warning("NA's found in data input.  IT IS HIGHLY RECOMMENDED THAT YOU TEST IF THE MISSING VALUES ARE BALANCED INSTEAD OF JUST DELETING THEM.")        
-        if(orig.na.action=="na.omit" | orig.na.action=="na.exclude")
+
+        if(orig.na.action!="na.omit" & orig.na.action!="na.exclude" & orig.na.action!="na.fail")
+          warning("'na.action' should be set to 'na.omit', 'na.exclude' or 'na.fail' see 'help(na.action)'")
+
+        if (orig.na.action=="na.fail")
           {
-            #Tr and xdata already have na.action on them
-            indx1 <- apply(is.na(data),1,sum)==0
-            weights <- weights[indx1]
-            data <- data[indx1,]
-            datain <- datain[indx1,]
-          } else if (orig.na.action=="na.pass")
-            {
-              stop("'na.pass' is not a valid action for missing values")
-            } else {
-              na.fail(xdata)
-              na.fail(Tr)
-            }
-      }#end of NA
+            stop("NA's found in data input.")            
+          } else {
+            warning("NA's found in data input.  IT IS HIGHLY RECOMMENDED THAT YOU TEST IF THE MISSING VALUES ARE BALANCED INSTEAD OF JUST DELETING THEM.")
+          }
+
+        indx1 <- apply(is.na(xdata),1,sum)==0 & is.na(Tr)==0
+        Tr <- Tr[indx1]
+        xdata = xdata[indx1,]
+        weights <- weights[indx1]
+      } #end of na
 
     if (sum(Tr !=1 & Tr !=0) > 0) {
       stop("Treatment indicator must be a logical variable---i.e., TRUE (1) or FALSE (0)")
     }
-
-    formul <- formula(formul)
 
     nvars  <- ncol(xdata)
     names.xdata  <- names(xdata)
@@ -1979,9 +2047,6 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
         findx  <- 2
       }
 
-#    if(nboots < 10)
-#      ks <- FALSE
-    
     if(nboots < 10 & nboots > 0)
       nboots <- 10
     
@@ -2003,73 +2068,185 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
                                           nboots=nboots)
           }
       } 
+
+    BeforeMatchingBalance <- list()
+    AfterMatchingBalance <- list()
+
+    BMsmallest.p.value <- 1
+    BMsmallest.number <- 1
+    BMsmallest.name <- names.xdata[findx]
+
+    AMsmallest.p.value <- NULL
+    AMsmallest.number <- NULL
+    AMsmallest.name <- NULL
     
-    if (verbose > 0)
+    if (!is.null(match.out))
       {
-        for( i in findx:nvars)
-          {
-            count <- i-findx+1
-            cat("\n***** (V",count,") ", names.xdata[i]," *****\n",sep="")
+        AMsmallest.p.value <- 1
+        AMsmallest.number <- 1
+        AMsmallest.name <- names.xdata[findx]        
+      }
 
-            ks.do  <- FALSE
-            is.dummy  <- length(unique( xdata[,i] )) < 3
-            if (ks & !is.dummy)
-              ks.do  <- TRUE
-
-            BeforeBalance  <-  balanceUV(xdata[,i][Tr==1], xdata[,i][Tr==0], nboots=0,
-                               weights.Tr=weights[Tr==1], weights.Co=weights[Tr==0],
-                               match=FALSE)
-            if (ks.do)
-              {
-              BeforeBalance$ks <- list()
-              if (nboots > 0)
-                {
-                  BeforeBalance$ks$ks.boot.pvalue <- ks.bm$ks.boot.pval[count]
-                } else {
-                  BeforeBalance$ks$ks.boot.pvalue <- NA
-                }
-              BeforeBalance$ks$ks <- list()
-              BeforeBalance$ks$ks$p.value <- ks.bm$ks.naive.pval[count]
-              BeforeBalance$ks$ks$statistic <- ks.bm$ks.stat[count]
-            } else {
-              BeforeBalance$ks <- NULL
-            }
-#            summary(BeforeBalance, digits=digits)
-            
-            if (!is.null(match.out))
-              {
-#                cat("after  matching:\n")
-                AfterBalance  <- balanceUV(xdata[,i][match.out$index.treated],
-                                  xdata[,i][match.out$index.control],
-                                  weights=match.out$weights, nboots=0,
-                                  paired=paired, match=TRUE)
-
-                if (ks.do)
-                  {                
-                    AfterBalance$ks <- list()
-                    if (nboots > 0)
-                      {
-                        AfterBalance$ks$ks.boot.pvalue <- ks.am$ks.boot.pval[count]
-                      } else {
-                        AfterBalance$ks$ks.boot.pvalue <- NA
-                      }                    
-                    AfterBalance$ks$ks <- list()
-                    AfterBalance$ks$ks$p.value <- ks.am$ks.naive.pval[count]
-                    AfterBalance$ks$ks$statistic <- ks.am$ks.stat[count]
-                  } else {
-                    AfterBalance$ks <- NULL
-                  }
-#                summary(AfterBalance, digits=digits)
-                PrintBalanceUV(BeforeBalance, AfterBalance, digits=digits)
-                foo <- AfterBalance
-              } else {
-                cat("before matching:\n")
-                summary(BeforeBalance, digits=digits)
-                foo <- BeforeBalance
-              } #end of if match.out
-          } #end of for
+    for( i in findx:nvars)
+      {
+        count <- i-findx+1
+        if(print.level > 0)
+          cat("\n***** (V",count,") ", names.xdata[i]," *****\n",sep="")
         
-        if (mv)  {
+        ks.do  <- FALSE
+        is.dummy  <- length(unique( xdata[,i] )) < 3
+        if (ks & !is.dummy)
+          ks.do  <- TRUE
+
+        BeforeMatchingBalance[[count]]  <-  balanceUV(xdata[,i][Tr==1], xdata[,i][Tr==0], nboots=0,
+                                                      weights.Tr=weights[Tr==1], weights.Co=weights[Tr==0],
+                                                      match=FALSE)
+        
+        if (BeforeMatchingBalance[[count]]$tt$p.value < BMsmallest.p.value)
+          {
+            BMsmallest.p.value <- BeforeMatchingBalance[[count]]$tt$p.value
+            BMsmallest.number <- count
+            BMsmallest.name <- names.xdata[i]            
+          } else if (BeforeMatchingBalance[[count]]$tt$p.value == BMsmallest.p.value)
+            {
+              BMsmallest.number <- c(BMsmallest.number,count)
+              BMsmallest.name <- c(BMsmallest.name,names.xdata[i])
+            }
+        
+        if (ks.do)
+          {
+            BeforeMatchingBalance[[count]]$ks <- list()
+            BeforeMatchingBalance[[count]]$ks$ks <- list()
+            BeforeMatchingBalance[[count]]$ks$ks$p.value <- ks.bm$ks.naive.pval[count]
+            BeforeMatchingBalance[[count]]$ks$ks$statistic <- ks.bm$ks.stat[count]              
+            if (nboots > 0)
+              {
+                BeforeMatchingBalance[[count]]$ks$ks.boot.pvalue <- ks.bm$ks.boot.pval[count]
+
+                if (ks.bm$ks.boot.pval[count] < BMsmallest.p.value)
+                  {
+                    BMsmallest.p.value <- ks.bm$ks.boot.pval[count]
+                    BM.ttest <- FALSE
+                    BMsmallest.number <- count
+                    BMsmallest.name <- names.xdata[i]            
+                  } else if ( (ks.bm$ks.boot.pval[count] == BMsmallest.p.value) & (sum(BMsmallest.number==count)==0) )
+                    {
+                      BMsmallest.number <- c(BMsmallest.number,count)
+                      BMsmallest.name <- c(BMsmallest.name,names.xdata[i])
+                    }
+              } else {
+                BeforeMatchingBalance[[count]]$ks$ks.boot.pvalue <- NA
+
+                if (ks.bm$ks.naive.pval[count] < BMsmallest.p.value)
+                  {
+                    BMsmallest.p.value <- ks.bm$ks.naive.pval[count]
+                    BM.ttest <- FALSE
+                    BMsmallest.number <- count
+                    BMsmallest.name <- names.xdata[i]            
+                  } else if ( (ks.bm$ks.naive.pval[count] == BMsmallest.p.value) & (sum(BMsmallest.number==count)==0) )
+                    {
+                      BMsmallest.number <- c(BMsmallest.number,count)
+                      BMsmallest.name <- c(BMsmallest.name,names.xdata[i])
+                    }              
+              }
+            
+          } else {
+            BeforeMatchingBalance[[count]]$ks <- NULL
+          }
+        
+        if (!is.null(match.out))
+          {
+            AfterMatchingBalance[[count]]  <- balanceUV(xdata[,i][match.out$index.treated],
+                                                        xdata[,i][match.out$index.control],
+                                                        weights=match.out$weights, nboots=0,
+                                                        paired=paired, match=TRUE)
+            
+            if (AfterMatchingBalance[[count]]$tt$p.value < AMsmallest.p.value)
+              {
+                AMsmallest.p.value <- AfterMatchingBalance[[count]]$tt$p.value
+                AMsmallest.number <- count
+                AMsmallest.name <- names.xdata[i]            
+              } else if ( (AfterMatchingBalance[[count]]$tt$p.value == AMsmallest.p.value) & (sum(AMsmallest.number==count)==0) )
+                    {
+                      AMsmallest.number <- c(AMsmallest.number,count)
+                      AMsmallest.name <- c(AMsmallest.name,names.xdata[i])
+                    }
+            
+            if (ks.do)
+              {                
+                AfterMatchingBalance[[count]]$ks <- list()
+                AfterMatchingBalance[[count]]$ks$ks <- list()
+                AfterMatchingBalance[[count]]$ks$ks$p.value <- ks.am$ks.naive.pval[count]
+                AfterMatchingBalance[[count]]$ks$ks$statistic <- ks.am$ks.stat[count]
+                if (nboots > 0)
+                  {
+                    AfterMatchingBalance[[count]]$ks$ks.boot.pvalue <- ks.am$ks.boot.pval[count]
+
+                    if (ks.am$ks.boot.pval[count] < AMsmallest.p.value)
+                      {
+                        AMsmallest.p.value <- ks.am$ks.boot.pval[count]
+                        AMsmallest.number <- count
+                        AMsmallest.name <- names.xdata[i]            
+                      } else if ( (ks.am$ks.boot.pval[count] == AMsmallest.p.value) & (sum(AMsmallest.number==count)==0) )
+                        {
+                          AMsmallest.number <- c(AMsmallest.number,count)
+                          AMsmallest.name <- c(AMsmallest.name,names.xdata[i])
+                        }
+                  } else {
+                    AfterMatchingBalance[[count]]$ks$ks.boot.pvalue <- NA
+
+                    if (ks.am$ks.naive.pval[count] < AMsmallest.p.value)
+                      {
+                        AMsmallest.p.value <- ks.am$ks.naive.pval[count]
+                        AMsmallest.number <- count
+                        AMsmallest.name <- names.xdata[i]            
+                      } else if ( (ks.am$ks.naive.pval[count] == AMsmallest.p.value) & (sum(AMsmallest.number==count)==0) )
+                        {
+                          AMsmallest.number <- c(AMsmallest.number,count)
+                          AMsmallest.name <- c(AMsmallest.name,names.xdata[i])
+                        }              
+                  }                    
+              } else {
+                AfterMatchingBalance[[count]]$ks <- NULL
+              }
+            if(print.level > 0)
+              PrintBalanceUV(BeforeMatchingBalance[[count]], AfterMatchingBalance[[count]], digits=digits)
+          } else {
+            if(print.level > 0)
+              {
+                cat("before matching:\n")
+                summary(BeforeMatchingBalance[[count]], digits=digits)
+              }
+          } #end of if match.out
+      } #end of for loop
+    
+    if(print.level & ( (nvars-findx+1) > 1))
+      {
+        cat("\n")
+
+        if (BMsmallest.p.value < 1)
+          {
+            cat("Before Matching Minimum p.value:", format.pval(BMsmallest.p.value, digits=digits),"\n")
+            cat("Variable Name(s):",BMsmallest.name, " Number(s):",BMsmallest.number,"\n\n")
+          } else {
+            cat("Before Matching Minimum p.value: 1\n\n")
+          }
+
+        if (!is.null(match.out))
+          {
+            if(AMsmallest.p.value < 1)
+              {
+                cat("After Matching Minimum p.value:", format.pval(AMsmallest.p.value, digits=digits),"\n")
+                cat("Variable Name(s):",AMsmallest.name, " Number(s):",AMsmallest.number,"\n\n")
+              } else {
+                cat("After Matching Minimum p.value: 1\n\n")
+              }
+          } #end of !is.null(match.out)
+      }#end of print.level & (nvars > 1)
+  
+    if (mv)  {
+      if(print.level > 0)
+        {
           cat("...estimating Kolmogorov-Smirnov tests...\n")
           if (nboots > 0)
             cat("  ",nboots,"bootstraps are being run (see the 'nboots' option) \n")
@@ -2081,52 +2258,31 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
               cat("  ","be set equal to at least 500 (preferably 1000).\n")              
             }
           cat("\n")
-          
-          ml  <- balanceMV(formul=formul, data=datain, match.out=match.out,
-                           maxit=maxit, weights=weights, nboots=nboots, nmc=nmc,
-                           verbose=verbose, ...)
-          summary.balanceMV(ml, digits=digits)
-        }  else  {
-          ml  <- NULL
         }
-      } else {
-        for( i in findx:nvars)
-          {
-            ks.do  <- FALSE
-            is.dummy  <- length(unique( xdata[,i] )) < 3
-            if (ks & !is.dummy)
-              ks.do  <- TRUE
 
-            if (!is.null(match.out))
-              {
-                AfterBalance  <- balanceUV(xdata[,i][match.out$index.treated],
-                                           xdata[,i][match.out$index.control],
-                                           weights=match.out$weights, nboots=0,
-                                           paired=paired, match=TRUE)
-                foo <- AfterBalance
-              } else {
-                BeforeBalance  <-  balanceUV(xdata[,i][Tr==1], xdata[,i][Tr==0], nboots=0,
-                                            weights.Tr=weights[Tr==1], weights.Co=weights[Tr==0],
-                                            match=FALSE)
-                foo <- BeforeBalance
-              }
-          }
-        
-        if (mv)  {
-          ml  <- balanceMV(formul=formul, data=datain, match.out=match.out,
-                           maxit=maxit, weights=weights, nboots=nboots, nmc=nmc,
-                           verbose=verbose, ...)
-        }  else  {
-          ml  <- NULL
-        }        
-      }#verbose end
+      ml  <- balanceMV(formul=formul, data=data, match.out=match.out,
+                       maxit=maxit, weights=orig.weights, nboots=nboots, nmc=nmc,
+                       print.level=print.level, ...)
+      if(print.level > 0)
+        summary.balanceMV(ml, digits=digits)
+    }  else  {
+      ml  <- NULL
+    }
 
-    return(invisible(list(mv=ml,uv=foo)))
+    return(invisible(list(BeforeMatching=BeforeMatchingBalance,
+                          AfterMatching=AfterMatchingBalance,
+                          BMsmallest.p.value=BMsmallest.p.value,
+                          BMsmallestVarName=BMsmallest.name,
+                          BMsmallestVarNumber=BMsmallest.number,
+                          AMsmallest.p.value=AMsmallest.p.value,
+                          AMsmallestVarName=AMsmallest.name,
+                          AMsmallestVarNumber=AMsmallest.number,                          
+                          mv=ml)))
   } #end of MatchBalance
 
 
 balanceMV  <- function(formul, data=NULL, match.out=NULL, maxit=1000, weights=rep(1,nrow(data)),
-                       nboots=100, nmc=nboots, verbose=0, ...)
+                       nboots=100, nmc=nboots, print.level=0, ...)
   {
 
     tol <- .Machine$double.eps*100
@@ -2227,7 +2383,7 @@ balanceMV  <- function(formul, data=NULL, match.out=NULL, maxit=1000, weights=re
     if (nboots > 0)
       {
         bcount <- 0
-        if (verbose > 1)
+        if (print.level > 1)
           cat("unmatched bootstraps:\n")
 
         na.indx   <- is.na(t1$coeff)
@@ -2239,7 +2395,7 @@ balanceMV  <- function(formul, data=NULL, match.out=NULL, maxit=1000, weights=re
           
         for (s in 1:nboots)
           {
-            if (verbose > 1)
+            if (print.level > 1)
               cat("s: ",s,"\n")
 
             mu <- Xs %*% as.matrix(parms.s[s,])
@@ -2357,7 +2513,7 @@ balanceMV  <- function(formul, data=NULL, match.out=NULL, maxit=1000, weights=re
           {
             bcount <- 0
             
-            if (verbose > 1)
+            if (print.level > 1)
               cat("matched bootstraps:\n")
 
             na.indx   <- is.na(Mt1$coeff)
@@ -2369,7 +2525,7 @@ balanceMV  <- function(formul, data=NULL, match.out=NULL, maxit=1000, weights=re
           
             for (s in 1:nboots)
               {
-                if (verbose > 1)
+                if (print.level > 1)
                   cat("s: ",s,"\n")
                 
                 mu <- Xs %*% as.matrix(parms.s[s,])
@@ -2524,7 +2680,7 @@ get.ydata <- function(formul, datafr) {
 # bootstrap ks test implemented.  Fast version
 #
 
-ks.boot  <- function(Tr, Co, nboots=1000, alternative = c("two.sided", "less", "greater"), verbose=0)
+ks.boot  <- function(Tr, Co, nboots=1000, alternative = c("two.sided", "less", "greater"), print.level=0)
   {
     alternative <- match.arg(alternative)
     tol <- .Machine$double.eps*100
@@ -2552,7 +2708,7 @@ ks.boot  <- function(Tr, Co, nboots=1000, alternative = c("two.sided", "less", "
 
     for (bb in 1:nboots)
       {
-        if (verbose > 1)
+        if (print.level > 1)
           cat("s:", bb, "\n")
         
         sindx  <- sample(1:obs, obs, replace=TRUE)
@@ -2648,6 +2804,7 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
 # I.b. determine sample and covariate vector sizes
     N  <- nrow(X)
     Kx <- ncol(X)
+    xvars <- Kx
     Kz <- ncol(Z)
 
 # K covariates
@@ -2728,9 +2885,6 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
 #        Sig.X <- rbind(Sig.X, matrix(1, nrow(Sig.V), 1))
 #      } #end of exact
 
-    Nx <- nrow(X)
-    Kx <- ncol(X)
-
     if ( min(eigen(Weight.matrix, only.values=TRUE, EISPACK = TRUE)$values) < ccc )
       Weight.matrix <- Weight.matrix + diag(Kx)*ccc
 
@@ -2745,6 +2899,14 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
         use.ecaliper <- s1$ecaliper
       }
 
+    #if we have a diagonal matrix we can void cblas_dgemm
+    if (Kx > 1)
+      {
+        DiagWeightMatrixFlag <- as.real(sum( (Weight.matrix!=diag(diag(Weight.matrix))) )==0)
+      } else {
+        DiagWeightMatrixFlag <- 1
+      }
+
     if(is.null(MatchLoopC.indx))
       {
     #indx:
@@ -2756,13 +2918,15 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
                                           ww=ww, Tr=s1$Tr, Xmod=s1$X,
                                           weights=weight,
                                           CaliperVec=use.ecaliper, Xorig=X.orig,
-                                          restrict.trigger=restrict.trigger, restrict=restrict)
+                                          restrict.trigger=restrict.trigger, restrict=restrict,
+                                          DiagWeightMatrixFlag=DiagWeightMatrixFlag)
           } else {
             MatchLoopC.indx <- MatchLoopCfast(N=s1$N, xvars=Kx, All=s1$All, M=s1$M,
                                               cdd=cdd, caliperflag=caliperflag, replace=replace, ties=ties,
                                               ww=ww, Tr=s1$Tr, Xmod=s1$X,
                                               CaliperVec=use.ecaliper, Xorig=X.orig,
-                                              restrict.trigger=restrict.trigger, restrict=restrict)
+                                              restrict.trigger=restrict.trigger, restrict=restrict,
+                                              DiagWeightMatrixFlag=DiagWeightMatrixFlag)
           }
       }
 
@@ -2998,7 +3162,6 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
             # add intercept        
             ZZt <- cbind(rep(1, NNt), Z)
             # number of covariates
-            Nx <- nrow(ZZt)
             Kx <- ncol(ZZt)
             xw <- ZZt*(sqrt(Tr*Kcount) %*% t(as.matrix(rep(1,Kx))))
             
@@ -3041,7 +3204,6 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
         # III.b.  Controls
         NNc <- nrow(Z)
         ZZc <- cbind(matrix(1, nrow=NNc, ncol=1),Z)
-        Nx <- nrow(ZZc)
         Kx <- ncol(ZZc)
         
         xw <- ZZc*(sqrt((1-Tr)*Kcount) %*% matrix(1, nrow=1, ncol=Kx))
@@ -3103,9 +3265,6 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
     # III. If conditional variance is needed, initialize variance vector
     # and loop through all observations
 
-    Nx <- nrow(X)
-    Kx <- ncol(X)
-
 #   ww <- chol(Weight.matrix)
 #   NN <- as.matrix(1:N)
     if (Var.calc>0)
@@ -3123,8 +3282,8 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
             POTMAT <- (Tr==TREATi)
             POTMAT[i,1] <- 0
             weightPOT <- as.matrix(weight[POTMAT==1,1])
-            DX <- (X - matrix(1, Nx,1) %*% xx) %*% t(ww)
-            if (Kx>1)
+            DX <- (X - matrix(1, N,1) %*% xx) %*% t(ww)
+            if (xvars>1)
               {
                 foo <- apply(t(DX*DX), 2, sum)
                 Dist <- as.matrix(foo)
@@ -3238,7 +3397,7 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
   }# end of RmatchLoop
 
 MatchLoopC <- function(N, xvars, All, M, cdd, caliperflag, replace, ties, ww, Tr, Xmod, weights, CaliperVec, Xorig,
-                       restrict.trigger, restrict)
+                       restrict.trigger, restrict, DiagWeightMatrixFlag)
   {
 
     if(restrict.trigger)
@@ -3253,12 +3412,13 @@ MatchLoopC <- function(N, xvars, All, M, cdd, caliperflag, replace, ties, ww, Tr
                  as.real(ww), as.real(Tr),
                  as.real(Xmod), as.real(weights), as.real(CaliperVec), as.real(Xorig),
                  as.integer(restrict.trigger), as.integer(restrict.nrow), as.real(restrict),
+                 as.real(DiagWeightMatrixFlag),
                  PACKAGE="Matching")
     return(ret)
   } #end of MatchLoopC
 
 MatchLoopCfast <- function(N, xvars, All, M, cdd, caliperflag, replace, ties, ww, Tr, Xmod, CaliperVec,
-                           Xorig, restrict.trigger, restrict)
+                           Xorig, restrict.trigger, restrict, DiagWeightMatrixFlag)
   {
 
     if(restrict.trigger)
@@ -3273,6 +3433,7 @@ MatchLoopCfast <- function(N, xvars, All, M, cdd, caliperflag, replace, ties, ww
                  as.real(ww), as.real(Tr),
                  as.real(Xmod), as.real(CaliperVec), as.real(Xorig),
                  as.integer(restrict.trigger), as.integer(restrict.nrow), as.real(restrict),
+                 as.real(DiagWeightMatrixFlag),
                  PACKAGE="Matching")
     return(ret)
   } #end of MatchLoopCfast

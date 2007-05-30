@@ -3,7 +3,10 @@
 
 #define DOUBLE_XMAX_CHECK DOUBLE_XMAX/1000 - 1000
 
-/* Use CBLAS and Nate Optimizations */
+/* Use CBLAS and Nate Optimizations. Note that uses of BLAS in
+   FasterMatchC() and FastMatchC() also requires that
+   __GenMatchBLAS__ is also defined in matching.cc
+*/
 #define __NBLAS__
 
 // my function declarations
@@ -21,7 +24,6 @@ Matrix LessEqualTestScalar(Matrix a, double s);
 Matrix VectorAnd(Matrix a, Matrix b);
 Matrix cumsum(Matrix a);
 void display(Matrix A);
-
 
 
 

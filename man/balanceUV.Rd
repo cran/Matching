@@ -9,7 +9,8 @@
 \usage{
 balanceUV(Tr, Co, weights = rep(1, length(Co)), exact = FALSE, ks=FALSE,
           nboots = 1000, paired=TRUE, match=FALSE,
-          weights.Tr=rep(1,length(Tr)), weights.Co=rep(1,length(Co)))
+          weights.Tr=rep(1,length(Tr)), weights.Co=rep(1,length(Co)),
+          estimand="ATT")
 }
 \arguments{
   \item{Tr}{A vector containing the treatment observations.}
@@ -37,11 +38,25 @@ balanceUV(Tr, Co, weights = rep(1, length(Co)), exact = FALSE, ks=FALSE,
     of a call to \code{\link{Match}}.}
   \item{weights.Tr}{A vector of weights for the treated observations.}
   \item{weights.Co}{A vector of weights for the control observations.}
+  \item{estimand}{This determines if the standardized mean difference
+    returned by the \code{sdiff} object is standardized by the variance of
+    the treatment observations (which is done if the estimand is either
+    "ATE" or "ATT") or by the variance of the control observations (which
+    is done if the estimand is "ATC").}
 }
 \value{
   \item{sdiff}{This is the standardized difference between the treated
-    and control units.  That is, the mean difference between treatment
-    and control units divided by the pooled standard deviation.}
+    and control units multiplied by 100.  That is, 100 times the mean
+    difference  between treatment and control units divided by the standard
+    deviation of the treatment
+    observations alone if the estimand is either \code{ATT} or
+    \code{ATE}.  The variance of the control observations are used if
+    the estimand is \code{ATC}.}
+  \item{sdiff.pooled}{This is the standardized difference between the
+    treated and control units multiplied by 100 using the pooled
+    variance.  That is, 100 times the mean
+    difference between treatment and control units divided by the pooled standard deviation as in
+    Rosenbaum and Rubin (1985).}
   \item{mean.Tr}{The mean of the treatment group.}
   \item{mean.Co}{The mean of the control group.}
   \item{var.Tr}{The variance of the treatment group.}
@@ -52,9 +67,12 @@ balanceUV(Tr, Co, weights = rep(1, length(Co)), exact = FALSE, ks=FALSE,
   \item{tt}{The object returned by two-sided weighted
     \code{\link{t.test}}.}
   \item{qqsummary}{The return object from a call to
-    \code{\link{qqstats}} with standardization.}
+    \code{\link{qqstats}} with standardization---i.e., balance test
+    based on the empirical CDF.}
   \item{qqsummary.raw}{The return object from a call to
-    \code{\link{qqstats}} without standardization.}
+    \code{\link{qqstats}} without standardization--i.e., balance tests
+    based on the empirical QQ-plot which retain the scale of the
+    variable.}
 }
 \author{
   Jasjeet S. Sekhon, UC Berkeley, \email{sekhon@berkeley.edu},
@@ -68,6 +86,10 @@ balanceUV(Tr, Co, weights = rep(1, length(Co)), exact = FALSE, ks=FALSE,
   Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias
   Reduction in Matching Methods for Causal Inference.''  Working Paper.
   \url{http://sekhon.berkeley.edu/papers/SekhonBalanceMetrics.pdf}
+
+  Rosenbaum, Paul R. and Donald B. Rubin. 1985. ``Constructing a Control
+  Group Using Multivariate Matched Sampling Methods That Incorporate the
+  Propensity Score.'' \emph{The American Statistician} 39:1 33-38.
 
   Hollander, Myles and Douglas A. Wolfe. 1973. \emph{Nonparametric
     statistical inference}. New York: John Wiley & Sons.

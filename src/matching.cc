@@ -19,14 +19,22 @@ using namespace std;
 #include <math.h>
 #include <R.h>
 
+#include "matching.h"
+
+#ifdef __NBLAS__
 #if defined(__darwin__) || defined(__APPLE__)
 #include <vecLib/cblas.h>
 #else
 #define INTERNAL_CBLAS
 #include <R_ext/Applic.h>
 #endif
+#endif
 
-#include "matching.h"
+#ifdef __NBLAS__
+#if !defined(__darwin__) & !defined(__APPLE__)
+#define __GenMatchBLAS__
+#endif
+#endif
 
 extern "C"
 {
@@ -40,6 +48,11 @@ extern "C"
 		   const int K, const double alpha, const double  *A,
 		   const int lda, const double  *B, const int ldb,
 		   const double beta, double  *C, const int ldc);
+
+  void cblas_dscal( const int N, const double alpha, double *X, 
+		    const int incX);
+
+  double cblas_dasum( const int N, const double *X, const int incX);
 #endif
 
 /*---------------------------------------------------------------------------
@@ -226,11 +239,11 @@ extern "C"
 		    SEXP I_ww, SEXP I_Tr, SEXP I_X)
   {
     SEXP ret;
-    
+
     long N, xvars, All, M; 
     double cdd, Distmax, Wi_ratio;;
     
-    long i, j, k, r, c;
+    long i, j, k;
     
     N = asInteger(I_N);
     xvars = asInteger(I_xvars);
@@ -238,12 +251,7 @@ extern "C"
     M = asInteger(I_M);
     cdd = asReal(I_cdd);
     
-    //    struct timeval tv1, tv2;	// Required "timeval" structures (see man pg.)
-    //    struct timezone tz1, tz2;	// Required "timezone" structures (see man pg.)
-    //    long tret = gettimeofday(&tv1,&tz1);
-    
     Matrix ww = Matrix(xvars, xvars);
-
     Matrix Tr = Matrix(N, 1);
     Matrix X = Matrix(N, xvars);
     
@@ -279,42 +287,27 @@ extern "C"
     Matrix INN = seqa(1, 1, N);
     // TT is just equal to INN
 
-#ifdef __NBLAS__
-    Matrix DX(N, xvars), ZX(N, xvars), Dist(N, xvars);
+#ifdef __GenMatchBLAS__
+    Matrix ZX(N, xvars), Dist(N, 1);
 #else
-    Matrix index_onesN = ones(N, 1);
-    Matrix xx;
-    Matrix DX, Dist;
+    Matrix DX(xvars, N), ZX(N, xvars), Dist(N, 1);
 #endif
-
-    Matrix foo1;
-    Matrix foo2;
 
     /* set misc */
     int TREATi = 0;
     
-    Matrix DistPot, tt, xmat, I, IM, W;
+    Matrix DistPot, tt, xmat;
     Matrix ACTMAT, POTMAT;
 
-    // Temporary size for these matrices to avoid rbind
+    // Matrices to avoid rbind
     int NM = N*M*100;
-    Matrix tI  = Matrix(NM,1);
-    Matrix tIM = Matrix(NM,1);
-    Matrix tW  = Matrix(NM,1);
-    
-    //    tret = gettimeofday(&tv2,&tz2);
-    //    long secs = tv2.tv_sec - tv1.tv_sec;
-    //    long msecs = tv2.tv_usec - tv1.tv_usec;
-    //    double actual = ((double) secs*1000000+ (double) msecs)/1000000;
-    //    printf("actual: %lf, secs: %d, msecs: %d\n", actual, secs, msecs);
+    Matrix I  = Matrix(NM,1);
+    Matrix IM = Matrix(NM,1);
+    Matrix W  = Matrix(NM,1);
     
     //These are larger than needed; it is just easier this way
     int *order_DistPot = (int *) malloc(N*sizeof(int));  
     //double *S = (double *) malloc(N*sizeof(double));  
-    
-    // struct timeval tv1, tv2;	// Required "timeval" structures (see man pg.)
-    // struct timezone tz1, tz2;	// Required "timezone" structures (see man pg.)
-    // long tret = gettimeofday(&tv1,&tz1);
     
     int MatchCount=0;
     int MCindx=0;
@@ -328,9 +321,10 @@ extern "C"
       // but only with treated observations if All=0        
       if ( (TREATi==1 & All!=1) | All==1 )
       {
-#ifdef __NBLAS__
+
         // this loop is equivalent to the matrix X less the matrix A, which is
         // the product of N rows by 1 column of 1.0 and row R of X.
+	// I.E.,         xx = X(i,_); DX = (X - (index_onesN * xx)) 
         double *dest = ZX.data;
         double *src  = X.data;
         double *row  = X.data + (i * xvars);
@@ -339,74 +333,39 @@ extern "C"
             *dest = *src - row[kk];
           }
         }
-        
-        if (xvars>1)
+
+#ifdef __GenMatchBLAS__
+	//JSS, dgemm is slower and I assume that dtrmm and dsymm are also
+
+	//http://docs.sun.com/source/819-3691/dscal.html
+	for (int kk=0; kk < xvars; kk++)
 	  {
-	    //JSS
-	    // do the second multiplication with dgemm, multiplying the matrix
-	    // above, D, by the transpose of matrix W.
+	    cblas_dscal(N, ww.data[M(kk,kk,xvars)], ZX.data+kk, xvars);
+	  }
 
-	    cblas_dgemm(CblasRowMajor,// column major
-			CblasNoTrans, // A not transposed
-			CblasTrans,   // B transposed
-			xvars,        // M
-			N,            // N
-			xvars,        // K
-			1.0,          // alpha, (alpha * A * B)
-			ww.data,      // A
-			xvars,        // leading dimension for A
-			ZX.data,      // B
-			xvars,        // leading dimension for B
-			0.0,          // beta, (beta * C)
-			DX.data,      // C
-			N);           // leading dimension for C
+	ZX.multi_scalar(ZX);
 
-          DX.multi_scalar(DX);
-          std::swap(DX.colsize, DX.rowsize);
-          
-          Dist = sumc(DX);
-
-          std::swap(Dist.colsize, Dist.rowsize); // transpose 1 x N -> N x 1
-          std::swap(DX.colsize, DX.rowsize);
-        } else {
-          // do the second multiplication with dgemm, multiplying the matrix
-          // above, D, by the transpose of matrix W.
-          cblas_dgemm(CblasRowMajor, // column major
-                      CblasNoTrans, // A not transposed
-                      CblasTrans,   // B transposed
-                      N,            // M
-                      xvars,        // N
-                      xvars,        // K
-                      1.0,          // alpha, (alpha * A * B)
-                      ZX.data,      // A
-                      xvars,        // leading dimension for A
-                      ww.data,      // B
-                      xvars,        // leading dimension for B
-                      0.0,          // beta, (beta * C)
-                      DX.data,      // C
-                      xvars);       // leading dimension for C
-          
-          DX.multi_scalar(DX);
-          Dist = DX;
-        } // end of xvars
+	//http://docs.sun.com/source/819-3691/dasum.html 
+	for (int jj=0; jj < N; jj++)
+	  {
+	    Dist.data[jj] = cblas_dasum(xvars, ZX.data+M(jj, 0, xvars), 1);
+	  }
 #else
-        // covariate value for observation to be matched                        
-        xx = X(i,_);
-        
-        DX = (X - (index_onesN * xx)) * t(ww);
-        
-        if (xvars>1)
-        {
-          //JSS
-          foo1 = t(multi_scalar(DX, DX));
-          Dist = t(sumc(foo1));
-          
-	      } 
-        else 
+	// No BLAS version from Matching 197 
+	double dfoo, dfoo2;
+	for (int kk=0; kk < xvars; kk++)
+	  {
+	    dfoo2 = ww.data[M(kk,kk,xvars)];
+	    for (int jj=0; jj < N; jj++)
 	      {
-          Dist = multi_scalar(DX, DX);
-	      } // end of xvars
-#endif /* end __NBLAS__ */
+		dfoo  = ZX.data[M(jj,kk,xvars)] * dfoo2;
+		DX.data[M(kk,jj,N)] = dfoo*dfoo;
+	      }
+	  }
+
+	Dist = sumc(DX);
+	std::swap(Dist.colsize, Dist.rowsize); // transpose 1 x N -> N x 1
+#endif /* end __GenMatchBLAS__ */
         
         // Dist distance to observation to be matched
         // is N by 1 vector	    
@@ -458,14 +417,19 @@ extern "C"
 	    Matrix tI_tmp  = Matrix(NM,1);
 	    Matrix tIM_tmp = Matrix(NM,1);
 	    Matrix tW_tmp  = Matrix(NM,1);
-	    
-	    memcpy(tI_tmp.data, tI.data, OldMatchCount*sizeof(double));
-	    memcpy(tIM_tmp.data, tIM.data, OldMatchCount*sizeof(double));
-	    memcpy(tW_tmp.data, tW.data, OldMatchCount*sizeof(double));
-	    
-	    tI = tI_tmp;
-	    tIM = tIM_tmp;
-	    tW = tW_tmp;
+
+	    memcpy(tI_tmp.data, I.data, OldMatchCount*sizeof(double));
+	    memcpy(tIM_tmp.data, IM.data, OldMatchCount*sizeof(double));
+	    memcpy(tW_tmp.data, W.data, OldMatchCount*sizeof(double));
+	    /*
+	    cblas_dcopy(OldMatchCount, I.data, 0, tI_tmp.data, 0);
+	    cblas_dcopy(OldMatchCount, IM.data, 0, tIM_tmp.data, 0);
+	    cblas_dcopy(OldMatchCount, W.data, 0, tW_tmp.data, 0);
+	    */
+
+	    I = tI_tmp;
+	    IM = tIM_tmp;
+	    W = tW_tmp;
 	  }
 	
 	//foo1 = ones(ACTMATsum, 1)*(i+1);
@@ -474,20 +438,16 @@ extern "C"
 	
 	for (j=0; j < (int) Mi; j++)
 	  {
-	    tI.data[MCindx+j] = i+1;
-	    tW.data[MCindx+j] = Wi_ratio;
+	    I.data[MCindx+j] = i+1;
+	    W.data[MCindx+j] = Wi_ratio;
 	  }
-	
-	//foo1 = selif(INN, ACTMAT);
-	//memcpy(tIM.data+MCindx, foo1.data, foo1.size*sizeof(double));
-	//MCindx = MCindx+foo1.size;
 	
 	k=0;
 	for (j=0; j<N; j++)
 	  {
 	    if(ACTMAT.data[j] > (1-TOL))
 	      {
-		tIM.data[MCindx+k] = j+1;
+		IM.data[MCindx+k] = j+1;
 		k++;
 	      }
 	  }
@@ -496,15 +456,15 @@ extern "C"
     } //END OF i MASTER LOOP!
 
     // subset matrices to get back to the right dims
+    long orig_rowsize = I.rowsize;
     if (MatchCount > 0)
       {
-	I=Matrix(MatchCount, 1);
-	IM=Matrix(MatchCount, 1);
-	W=Matrix(MatchCount, 1);
-
-	memcpy(I.data, tI.data, MatchCount*sizeof(double));
-	memcpy(IM.data, tIM.data, MatchCount*sizeof(double));
-	memcpy(W.data, tW.data, MatchCount*sizeof(double));
+	if (orig_rowsize != MatchCount)
+	  {
+	    I.rowsize = MatchCount;
+	    IM.rowsize = MatchCount;
+	    W.rowsize = MatchCount;
+	  }
       }
     else
       {
@@ -512,18 +472,12 @@ extern "C"
 	IM=Matrix(1, 1);
 	W=Matrix(1, 1);
       }
-    
-    // tret = gettimeofday(&tv2,&tz2);
-    // long secs = tv2.tv_sec - tv1.tv_sec;
-    // long msecs = tv2.tv_usec - tv1.tv_usec;
-    // double actual = ((double) secs*1000000+ (double) msecs)/1000000;
-    // printf("actual: %lf, secs: %d, msecs: %d\n", actual, secs, msecs);
-    
+
     /*ATT is okay already */
     /* ATE*/
     if(All==1)
     {
-      long tl  = rows(I);
+      long tl  = MatchCount;
       Matrix I2  = zeros(tl, 1);
       Matrix IM2 = zeros(tl, 1);
       Matrix trt = zeros(tl, 1);
@@ -537,56 +491,60 @@ extern "C"
       for (i=0; i<tl; i++)
       {
         if (trt[i]==1)
-	      {
-          I2[i] = I[i];
-          IM2[i] = IM[i];
-	      } 
+	  {
+	    I2[i] = I[i];
+	    IM2[i] = IM[i];
+	  } 
         else
-	      {
-          I2[i] = IM[i];
-          IM2[i] = I[i];		
-	      }
+	  {
+	    I2[i] = IM[i];
+	    IM2[i] = I[i];		
+	  }
       }
       
       I = I2;
       IM = IM2;
     } 
     else if(All==2)     /* ATC */
-    {
-      Matrix Itmp = I;
-      Matrix IMtmp = IM;
-      
-      I = IMtmp;
-      IM = Itmp;
-    }
-    
-    Matrix rr = cbind(I, IM);
-    rr = cbind(rr, W);
-    
-    // display(rr);
+      {
+	Matrix Itmp = I;
+	Matrix IMtmp = IM;
+	
+	I = IMtmp;
+	IM = Itmp;
+      }
     
     /* Free Memory */
     //free(S);
     free(order_DistPot);
+
+    //Do we need to readjust to free memory?.  Don't think so.  Check for memory leaks.
+    /*
+    if (orig_rowsize != MatchCount)
+      {
+	I.rowsize = orig_rowsize*1000;
+	IM.rowsize = orig_rowsize*1000;
+	W.rowsize = orig_rowsize*1000;
+      }
+    */
     
-    r = rows(rr);
-    c = cols(rr);
-    
-    PROTECT(ret=allocMatrix(REALSXP, r, c));
+    PROTECT(ret=allocMatrix(REALSXP, MatchCount, 3));
     /* Loop through the data and display the same in matrix format */
     k = 0;
-    for( i = 0; i < c; i++ )
-    {
-      for( j = 0; j < r; j++ )
+    for( j = 0; j < MatchCount; j++, k++)
       {
-        // REAL(ret)[k] = rr(j,i);
-        // REAL(ret)[k] = rr[j*c+i];
-        /* Use Macro to Index */
-        REAL(ret)[k] = rr[M(j, i, c)];
-        k++;
+        REAL(ret)[k] = I[j];
       }
-    }
+    for( j = 0; j < MatchCount; j++, k++)
+      {
+        REAL(ret)[k] = IM[j];
+      }
+    for( j = 0; j < MatchCount; j++, k++)
+      {
+        REAL(ret)[k] = W[j];
+      }
     UNPROTECT(1);
+
     return(ret);    
   } //end of FasterMatchC
 
@@ -599,17 +557,13 @@ extern "C"
     long N, xvars, All, M; 
     double cdd;
     
-    long i, j, k, r, c;
+    long i, j, k;
     
     N = asInteger(I_N);
     xvars = asInteger(I_xvars);
     All = asInteger(I_All);
     M = asInteger(I_M);
     cdd = asReal(I_cdd);
-    
-    //    struct timeval tv1, tv2;	// Required "timeval" structures (see man pg.)
-    //    struct timezone tz1, tz2;	// Required "timezone" structures (see man pg.)
-    //    long tret = gettimeofday(&tv1,&tz1);
     
     Matrix ww = Matrix(xvars, xvars);
 
@@ -654,12 +608,10 @@ extern "C"
     Matrix INN = seqa(1, 1, N);
     // TT is just equal to INN
 
-#ifdef __NBLAS__
-    Matrix DX(N, xvars), ZX(N, xvars);
+#ifdef __GenMatchBLAS__
+    Matrix ZX(N, xvars), Dist(N, 1);
 #else
-    Matrix index_onesN = ones(N, 1);
-    Matrix xx;
-    Matrix DX;
+    Matrix DX(xvars, N), ZX(N, xvars), Dist(N, 1);
 #endif
 
     Matrix foo1;
@@ -668,23 +620,13 @@ extern "C"
     /* set misc */
     int TREATi = 0, ACTMATsum = 0;
     
-    Matrix Dist, DistPot, weightPot, tt, 
+    Matrix DistPot, weightPot, tt, 
       weightPot_sort, weightPot_sum, Wi, xmat, I, IM, W;
     Matrix ACTMAT, POTMAT;
-    
-    //    tret = gettimeofday(&tv2,&tz2);
-    //    long secs = tv2.tv_sec - tv1.tv_sec;
-    //    long msecs = tv2.tv_usec - tv1.tv_usec;
-    //    double actual = ((double) secs*1000000+ (double) msecs)/1000000;
-    //    printf("actual: %lf, secs: %d, msecs: %d\n", actual, secs, msecs);
     
     //These are larger than needed; it is just easier this way
     int *order_DistPot = (int *) malloc(N*sizeof(int));  
     double *S = (double *) malloc(N*sizeof(double));  
-    
-    // struct timeval tv1, tv2;	// Required "timeval" structures (see man pg.)
-    // struct timezone tz1, tz2;	// Required "timezone" structures (see man pg.)
-    // long tret = gettimeofday(&tv1,&tz1);
     
     int first=1;
     for(i=0; i < N; i++)
@@ -696,9 +638,10 @@ extern "C"
       // but only with treated observations if All=0        
       if ( (TREATi==1 & All!=1) | All==1 )
       {
-#ifdef __NBLAS__
+
         // this loop is equivalent to the matrix X less the matrix A, which is
         // the product of N rows by 1 column of 1.0 and row R of X.
+	// I.E.,         xx = X(i,_); DX = (X - (index_onesN * xx)) 
         double *dest = ZX.data;
         double *src  = X.data;
         double *row  = X.data + (i * xvars);
@@ -707,74 +650,39 @@ extern "C"
             *dest = *src - row[kk];
           }
         }
-        
-        if (xvars>1)
+
+#ifdef __GenMatchBLAS__
+	//JSS, dgemm is slower and I assume that dtrmm and dsymm are also
+
+	//http://docs.sun.com/source/819-3691/dscal.html
+	for (int kk=0; kk < xvars; kk++)
 	  {
-	    //JSS
-	    // do the second multiplication with dgemm, multiplying the matrix
-	    // above, D, by the transpose of matrix W.
+	    cblas_dscal(N, ww.data[M(kk,kk,xvars)], ZX.data+kk, xvars);
+	  }
 
-	    cblas_dgemm(CblasRowMajor,// column major
-			CblasNoTrans, // A not transposed
-			CblasTrans,   // B transposed
-			xvars,        // M
-			N,            // N
-			xvars,        // K
-			1.0,          // alpha, (alpha * A * B)
-			ww.data,      // A
-			xvars,        // leading dimension for A
-			ZX.data,      // B
-			xvars,        // leading dimension for B
-			0.0,          // beta, (beta * C)
-			DX.data,      // C
-			N);           // leading dimension for C
+	ZX.multi_scalar(ZX);
 
-          DX.multi_scalar(DX);
-          std::swap(DX.colsize, DX.rowsize);
-          
-          Dist = sumc(DX);
-
-          std::swap(Dist.colsize, Dist.rowsize); // transpose 1 x N -> N x 1
-          std::swap(DX.colsize, DX.rowsize);
-        } else {
-          // do the second multiplication with dgemm, multiplying the matrix
-          // above, D, by the transpose of matrix W.
-          cblas_dgemm(CblasRowMajor, // column major
-                      CblasNoTrans, // A not transposed
-                      CblasTrans,   // B transposed
-                      N,            // M
-                      xvars,        // N
-                      xvars,        // K
-                      1.0,          // alpha, (alpha * A * B)
-                      ZX.data,      // A
-                      xvars,        // leading dimension for A
-                      ww.data,      // B
-                      xvars,        // leading dimension for B
-                      0.0,          // beta, (beta * C)
-                      DX.data,      // C
-                      xvars);       // leading dimension for C
-          
-          DX.multi_scalar(DX);
-          Dist = DX;
-        } // end of xvars
+	//http://docs.sun.com/source/819-3691/dasum.html 
+	for (int jj=0; jj < N; jj++)
+	  {
+	    Dist.data[jj] = cblas_dasum(xvars, ZX.data+M(jj, 0, xvars), 1);
+	  }
 #else
-        // covariate value for observation to be matched                        
-        xx = X(i,_);
-        
-        DX = (X - (index_onesN * xx)) * t(ww);
-        
-        if (xvars>1)
-        {
-          //JSS
-          foo1 = t(multi_scalar(DX, DX));
-          Dist = t(sumc(foo1));
-          
-	      } 
-        else 
+	// No BLAS version from Matching 197 
+	double dfoo, dfoo2;
+	for (int kk=0; kk < xvars; kk++)
+	  {
+	    dfoo2 = ww.data[M(kk,kk,xvars)];
+	    for (int jj=0; jj < N; jj++)
 	      {
-          Dist = multi_scalar(DX, DX);
-	      } // end of xvars
-#endif /* end __NBLAS__ */
+		dfoo  = ZX.data[M(jj,kk,xvars)] * dfoo2;
+		DX.data[M(kk,jj,N)] = dfoo*dfoo;
+	      }
+	  }
+
+	Dist = sumc(DX);
+	std::swap(Dist.colsize, Dist.rowsize); // transpose 1 x N -> N x 1
+#endif /* end __GenMatchBLAS__ */
         
         // Dist distance to observation to be matched
         // is N by 1 vector	    
@@ -790,19 +698,19 @@ extern "C"
         long weightPot_size = size(weightPot);
         
         for(j=0; j< weightPot_size; j++)
-	      {
-          // assume that weightPot_size = size(DistPot)
-          order_DistPot[j] = j;
-          S[j] = (double) DistPot[j];
-	      }
+	  {
+	    // assume that weightPot_size = size(DistPot)
+	    order_DistPot[j] = j;
+	    S[j] = (double) DistPot[j];
+	  }
         
         rsort_with_index (S, order_DistPot, weightPot_size);
         
         weightPot_sort = Matrix(weightPot_size, 1);
         for(j=0; j < weightPot_size; j++)
-	      {
-          weightPot_sort[j] = weightPot[order_DistPot[j]];
-	      }
+	  {
+	    weightPot_sort[j] = weightPot[order_DistPot[j]];
+	  }
         weightPot_sum = cumsum(weightPot_sort);
         
         tt = seqa(1, 1, rows(weightPot_sum));
@@ -826,15 +734,11 @@ extern "C"
         // counts how many times each observation is matched.
         double Mi = sum(multi_scalar(weight, ACTMAT));
         
-#ifdef __NBLAS__
+	//previously in a __NBLAS__ wrapper, but it should always be used
         foo1 = weight;
         foo1.multi_scalar(weight);
         foo1.multi_scalar(ACTMAT);
-#else
-        foo1 = multi_scalar(weight, weight);
-        foo1 = multi_scalar(foo1, ACTMAT);
-#endif
-        
+	
         Wi = selif(weight, ACTMAT);
         Wi = weight[i]*Wi/Mi;
         
@@ -856,13 +760,7 @@ extern "C"
 	  } // end of i else
         
       } // end of (TREATi==1 & All!=1) | All==1 )
-      } //END OF i MASTER LOOP!
-    
-    // tret = gettimeofday(&tv2,&tz2);
-    // long secs = tv2.tv_sec - tv1.tv_sec;
-    // long msecs = tv2.tv_usec - tv1.tv_usec;
-    // double actual = ((double) secs*1000000+ (double) msecs)/1000000;
-    // printf("actual: %lf, secs: %d, msecs: %d\n", actual, secs, msecs);
+    } //END OF i MASTER LOOP!
     
     /*ATT is okay already */
     /* ATE*/
@@ -905,33 +803,28 @@ extern "C"
       IM = Itmp;
     }
     
-    Matrix rr = cbind(I, IM);
-    rr = cbind(rr, W);
-    
-    // display(rr);
-    
     /* Free Memory */
     free(S);
     free(order_DistPot);
-    
-    r = rows(rr);
-    c = cols(rr);
-    
-    PROTECT(ret=allocMatrix(REALSXP, r, c));
+
+    i = I.rowsize;
+    PROTECT(ret=allocMatrix(REALSXP, i, 3));
     /* Loop through the data and display the same in matrix format */
     k = 0;
-    for( i = 0; i < c; i++ )
-    {
-      for( j = 0; j < r; j++ )
+    for( j = 0; j < i; j++, k++)
       {
-        // REAL(ret)[k] = rr(j,i);
-        // REAL(ret)[k] = rr[j*c+i];
-        /* Use Macro to Index */
-        REAL(ret)[k] = rr[M(j, i, c)];
-        k++;
+        REAL(ret)[k] = I[j];
       }
-    }
+    for( j = 0; j < i; j++, k++)
+      {
+        REAL(ret)[k] = IM[j];
+      }
+    for( j = 0; j < i; j++, k++)
+      {
+        REAL(ret)[k] = W[j];
+      }
     UNPROTECT(1);
+
     return(ret);    
   } //end of FastMatchC
 
@@ -940,12 +833,13 @@ extern "C"
                   SEXP I_caliper, SEXP I_replace, SEXP I_ties,
                   SEXP I_ww, SEXP I_Tr, SEXP I_X, SEXP I_weight,
                   SEXP I_CaliperVec, SEXP I_Xorig,
-                  SEXP I_restrict_trigger, SEXP I_restrict_nrow, SEXP I_restrict)
+                  SEXP I_restrict_trigger, SEXP I_restrict_nrow, SEXP I_restrict,
+		  SEXP I_DiagWeightMatrixFlag)
   {
     SEXP ret;
     
-    long N, xvars, All, M, caliper, replace, ties, restrict_trigger, restrict_nrow, sum_caliper_drops=0,
-      replace_count=0;
+    long N, xvars, All, M, caliper, replace, ties, restrict_trigger, restrict_nrow, DiagWeightMatrixFlag,
+      sum_caliper_drops=0, replace_count=0;
     double cdd, diff;
     
     long i, j, k, r, c;
@@ -960,10 +854,7 @@ extern "C"
     ties = asInteger(I_ties);
     restrict_nrow = asInteger(I_restrict_nrow);
     restrict_trigger = asInteger(I_restrict_trigger);
-    
-    //    struct timeval tv1, tv2;	// Required "timeval" structures (see man pg.)
-    //    struct timezone tz1, tz2;	// Required "timezone" structures (see man pg.)
-    //    long tret = gettimeofday(&tv1,&tz1);
+    DiagWeightMatrixFlag = asInteger(I_DiagWeightMatrixFlag);
     
     Matrix ww = Matrix(xvars, xvars);
     Matrix Tr = Matrix(N, 1);
@@ -1061,7 +952,17 @@ extern "C"
     // TT is just equal to INN
 
 #ifdef __NBLAS__
-    Matrix DX(N, xvars), ZX(N, xvars);
+    Matrix DX, ZX(N, xvars), Dist(N, 1);
+    if (DiagWeightMatrixFlag!=1) {
+      /* ctor zeros data so this does not add any computational time and maintains the dims outside 
+	 the scope of this if statement */
+      DX = zeros(N, xvars);
+    }
+#ifndef __GenMatchBLAS__
+    if (DiagWeightMatrixFlag==1) {
+      DX = zeros(xvars, N);
+    }
+#endif /* __GenMatchBLAS__ */
 #else
     Matrix index_onesN = ones(N, 1);
     Matrix xx;
@@ -1076,24 +977,14 @@ extern "C"
     /* set misc */
     int TREATi = 0, ACTMATsum = 0;
 
-    Matrix Dist, DistPot, weightPot, tt, 
+    Matrix DistPot, weightPot, tt, 
       weightPot_sort, weightPot_sum, Wi, xmat, I, IM, IMt, W;
     Matrix ACTMAT, POTMAT(N, 1);
-
-    //    tret = gettimeofday(&tv2,&tz2);
-    //    long secs = tv2.tv_sec - tv1.tv_sec;
-    //    long msecs = tv2.tv_usec - tv1.tv_usec;
-    //    double actual = ((double) secs*1000000+ (double) msecs)/1000000;
-    //    printf("actual: %lf, secs: %d, msecs: %d\n", actual, secs, msecs);
 
     //These are larger than needed; it is just easier this way
     int *order_DistPot = (int *) malloc(N*sizeof(int));  
     double *S = (double *) malloc(N*sizeof(double));  
 
-    // struct timeval tv1, tv2;	// Required "timeval" structures (see man pg.)
-    // struct timezone tz1, tz2;	// Required "timezone" structures (see man pg.)
-    // long tret = gettimeofday(&tv1,&tz1);
-    
     int first=1;
     for(i=0; i < N; i++)
       {
@@ -1115,13 +1006,13 @@ extern "C"
 		*dest = *src - row[kk];
 	      }
 	    }
-	    
-	    if (xvars>1)
+
+	    if (DiagWeightMatrixFlag!=1)
 	      {
+		/* note that xvars must be > 1 */
 		//JSS
 		// do the second multiplication with dgemm, multiplying the matrix
 		// above, D, by the transpose of matrix W.
-		
 		cblas_dgemm(CblasRowMajor,// column major
 			    CblasNoTrans, // A not transposed
 			    CblasTrans,   // B transposed
@@ -1138,33 +1029,46 @@ extern "C"
 			    N);           // leading dimension for C
 		
 		DX.multi_scalar(DX);
-		std::swap(DX.colsize, DX.rowsize);
 		
+		std::swap(DX.colsize, DX.rowsize);
+		    
 		Dist = sumc(DX);
 		
 		std::swap(Dist.colsize, Dist.rowsize); // transpose 1 x N -> N x 1
 		std::swap(DX.colsize, DX.rowsize);
-	      } else {
-	      // do the second multiplication with dgemm, multiplying the matrix
-	      // above, D, by the transpose of matrix W.
-	      cblas_dgemm(CblasRowMajor, // column major
-			  CblasNoTrans, // A not transposed
-			  CblasTrans,   // B transposed
-			  N,            // M
-			  xvars,        // N
-			  xvars,        // K
-			  1.0,          // alpha, (alpha * A * B)
-			  ZX.data,      // A
-			  xvars,        // leading dimension for A
-			  ww.data,      // B
-			  xvars,        // leading dimension for B
-			  0.0,          // beta, (beta * C)
-			  DX.data,      // C
-			  xvars);       // leading dimension for C
-	      
-	      DX.multi_scalar(DX);
-	      Dist = DX;
-	    } // end of xvars
+	      } else 
+	      {
+#ifdef __GenMatchBLAS__
+		//http://docs.sun.com/source/819-3691/dscal.html
+		for (int kk=0; kk < xvars; kk++)
+		  {
+		    cblas_dscal(N, ww.data[M(kk,kk,xvars)], ZX.data+kk, xvars);
+		  }
+		
+		ZX.multi_scalar(ZX);
+		
+		//http://docs.sun.com/source/819-3691/dasum.html 
+		for (int jj=0; jj < N; jj++)
+		  {
+		    Dist.data[jj] = cblas_dasum(xvars, ZX.data+M(jj, 0, xvars), 1);
+		  }
+#else
+		// No BLAS version from Matching 197 
+		double dfoo, dfoo2;
+		for (int kk=0; kk < xvars; kk++)
+		  {
+		    dfoo2 = ww.data[M(kk,kk,xvars)];
+		    for (int jj=0; jj < N; jj++)
+		      {
+			dfoo  = ZX.data[M(jj,kk,xvars)] * dfoo2;
+			// with blas ZX.data[M(jj,kk,xvars)] = dfoo*dfoo;
+			DX.data[M(kk,jj,N)] = dfoo*dfoo;
+		      }
+		  }		
+		Dist = sumc(DX);
+		std::swap(Dist.colsize, Dist.rowsize); // transpose 1 x N -> N x 1		
+#endif /* end of __GenMatchBLAS__ ifdef */
+	      } /* end of if (DiagWeightMatrixFlag!=1) */
 #else
 	    // covariate value for observation to be matched                        
 	    xx = X(i,_);
@@ -1324,14 +1228,10 @@ extern "C"
             Kcount = Kcount + 
 	      weight[i] * multi_scalar(weight, ACTMAT)/Mi;
 	    
-#ifdef __NBLAS__
+	    //previously in a __NBLAS__ wrapper, but it should always be used
 	    foo1 = weight;
 	    foo1.multi_scalar(weight);
 	    foo1.multi_scalar(ACTMAT);
-#else
-	    foo1 = multi_scalar(weight, weight);
-	    foo1 = multi_scalar(foo1, ACTMAT);
-#endif
 	    
 	    KKcount = KKcount + (weight[i]* foo1)/(Mi*Mi);
 	    
@@ -1478,12 +1378,13 @@ extern "C"
 		      SEXP I_caliper, SEXP I_replace, SEXP I_ties,
 		      SEXP I_ww, SEXP I_Tr, SEXP I_X, 
 		      SEXP I_CaliperVec, SEXP I_Xorig,
-		      SEXP I_restrict_trigger, SEXP I_restrict_nrow, SEXP I_restrict)
+		      SEXP I_restrict_trigger, SEXP I_restrict_nrow, SEXP I_restrict,
+		      SEXP I_DiagWeightMatrixFlag)
   {
     SEXP ret;
     
-    long N, xvars, All, M, caliper, replace, ties, restrict_trigger, restrict_nrow, sum_caliper_drops=0,
-      replace_count=0;
+    long N, xvars, All, M, caliper, replace, ties, restrict_trigger, restrict_nrow, DiagWeightMatrixFlag,
+      sum_caliper_drops=0, replace_count=0;
     double cdd, diff, Distmax, Wi_ratio;
     
     long i, j, k, r, c;
@@ -1498,10 +1399,7 @@ extern "C"
     ties = asInteger(I_ties);
     restrict_nrow = asInteger(I_restrict_nrow);
     restrict_trigger = asInteger(I_restrict_trigger);
-    
-    //    struct timeval tv1, tv2;	// Required "timeval" structures (see man pg.)
-    //    struct timezone tz1, tz2;	// Required "timezone" structures (see man pg.)
-    //    long tret = gettimeofday(&tv1,&tz1);
+    DiagWeightMatrixFlag = asInteger(I_DiagWeightMatrixFlag);
     
     Matrix ww = Matrix(xvars, xvars);
     Matrix Tr = Matrix(N, 1);
@@ -1593,20 +1491,29 @@ extern "C"
     // TT is just equal to INN
 
 #ifdef __NBLAS__
-    Matrix DX(N, xvars), ZX(N, xvars), Dist(N, xvars);
+    Matrix DX, ZX(N, xvars), Dist(N, 1);
+    if (DiagWeightMatrixFlag!=1) {
+      /* ctor zeros data so this does not add any computational time and maintains the dims outside 
+	 the scope of this if statement */
+      DX = zeros(N, xvars);
+    }
+#ifndef __GenMatchBLAS__
+    if (DiagWeightMatrixFlag==1) {
+      DX = zeros(xvars, N);
+    }
+#endif /* __GenMatchBLAS__ */
 #else
     Matrix index_onesN = ones(N, 1);
     Matrix xx;
     Matrix DX, Dist;
-#endif
 
     Matrix foo1;
-    Matrix foo2;
+#endif
 
     /* set misc */
     int TREATi = 0;
 
-    Matrix tt, xmat, I, IM,  IMt, W;
+    Matrix tt, xmat, IMt;
     Matrix ACTMAT, POTMAT(N, 1);
 
     // Temporary size for these matrices to avoid rbind
@@ -1614,28 +1521,19 @@ extern "C"
     if (ties==0)
       NM = N*M;
 
-    Matrix tI  = Matrix(NM,1);
-    Matrix tIM = Matrix(NM,1);
-    Matrix tW  = Matrix(NM,1);
-
-    //    tret = gettimeofday(&tv2,&tz2);
-    //    long secs = tv2.tv_sec - tv1.tv_sec;
-    //    long msecs = tv2.tv_usec - tv1.tv_usec;
-    //    double actual = ((double) secs*1000000+ (double) msecs)/1000000;
-    //    printf("actual: %lf, secs: %d, msecs: %d\n", actual, secs, msecs);
+    Matrix I  = Matrix(NM,1);
+    Matrix IM = Matrix(NM,1);
+    Matrix W  = Matrix(NM,1);
 
     //These are larger than needed; it is just easier this way
     int *order_DistPot = (int *) malloc(N*sizeof(int));  
     //double *S = (double *) malloc(N*sizeof(double));  
     Matrix DistPot=Matrix(N, 1);
 
-    // struct timeval tv1, tv2;	// Required "timeval" structures (see man pg.)
-    // struct timezone tz1, tz2;	// Required "timezone" structures (see man pg.)
-    // long tret = gettimeofday(&tv1,&tz1);
-    
     int MatchCount=0;
     int MCindx=0;
     int overFirstNM=1;
+
     for(i=0; i < N; i++)
       {
 	// treatment indicator for observation to be matched        
@@ -1657,12 +1555,12 @@ extern "C"
 	      }
 	    }
 
-	    if (xvars>1)
+	    if (DiagWeightMatrixFlag!=1)
 	      {
+		/* note that xvars must be > 1 */
 		//JSS
 		// do the second multiplication with dgemm, multiplying the matrix
 		// above, D, by the transpose of matrix W.
-		
 		cblas_dgemm(CblasRowMajor,// column major
 			    CblasNoTrans, // A not transposed
 			    CblasTrans,   // B transposed
@@ -1679,33 +1577,46 @@ extern "C"
 			    N);           // leading dimension for C
 		
 		DX.multi_scalar(DX);
-		std::swap(DX.colsize, DX.rowsize);
 		
+		std::swap(DX.colsize, DX.rowsize);
+		    
 		Dist = sumc(DX);
 		
 		std::swap(Dist.colsize, Dist.rowsize); // transpose 1 x N -> N x 1
 		std::swap(DX.colsize, DX.rowsize);
-	      } else {
-	      // do the second multiplication with dgemm, multiplying the matrix
-	      // above, D, by the transpose of matrix W.
-	      cblas_dgemm(CblasRowMajor, // column major
-			  CblasNoTrans, // A not transposed
-			  CblasTrans,   // B transposed
-			  N,            // M
-			  xvars,        // N
-			  xvars,        // K
-			  1.0,          // alpha, (alpha * A * B)
-			  ZX.data,      // A
-			  xvars,        // leading dimension for A
-			  ww.data,      // B
-			  xvars,        // leading dimension for B
-			  0.0,          // beta, (beta * C)
-			  DX.data,      // C
-			  xvars);       // leading dimension for C
-
-	      DX.multi_scalar(DX);
-	      Dist = DX;
-	    } // end of xvars
+	      } else 
+	      {
+#ifdef __GenMatchBLAS__
+		//http://docs.sun.com/source/819-3691/dscal.html
+		for (int kk=0; kk < xvars; kk++)
+		  {
+		    cblas_dscal(N, ww.data[M(kk,kk,xvars)], ZX.data+kk, xvars);
+		  }
+		
+		ZX.multi_scalar(ZX);
+		
+		//http://docs.sun.com/source/819-3691/dasum.html 
+		for (int jj=0; jj < N; jj++)
+		  {
+		    Dist.data[jj] = cblas_dasum(xvars, ZX.data+M(jj, 0, xvars), 1);
+		  }
+#else
+		// No BLAS version from Matching 197 
+		double dfoo, dfoo2;
+		for (int kk=0; kk < xvars; kk++)
+		  {
+		    dfoo2 = ww.data[M(kk,kk,xvars)];
+		    for (int jj=0; jj < N; jj++)
+		      {
+			dfoo  = ZX.data[M(jj,kk,xvars)] * dfoo2;
+			// with blas ZX.data[M(jj,kk,xvars)] = dfoo*dfoo;
+			DX.data[M(kk,jj,N)] = dfoo*dfoo;
+		      }
+		  }		
+		Dist = sumc(DX);
+		std::swap(Dist.colsize, Dist.rowsize); // transpose 1 x N -> N x 1
+#endif /* end of __GenMatchBLAS__ ifdef */
+	      } /* end of if (DiagWeightMatrixFlag!=1) */
 #else
 	    // covariate value for observation to be matched                        
 	    xx = X(i,_);
@@ -1859,14 +1770,6 @@ extern "C"
 	    // collect results
 	    MatchCount = MatchCount + (int) Mi;
 
-	    /*
-	    if (MatchCount > NM)
-	      {
-		MatchCount = MatchCount - (int) Mi;
-		continue;
-	      }
-	    */
-
 	    if(MatchCount > NM)
 	      {
 		
@@ -1889,46 +1792,34 @@ extern "C"
 		Matrix tIM_tmp = Matrix(NM,1);
 		Matrix tW_tmp  = Matrix(NM,1);
 		
-		memcpy(tI_tmp.data, tI.data, OldMatchCount*sizeof(double));
-		memcpy(tIM_tmp.data, tIM.data, OldMatchCount*sizeof(double));
-		memcpy(tW_tmp.data, tW.data, OldMatchCount*sizeof(double));
+		memcpy(tI_tmp.data, I.data, OldMatchCount*sizeof(double));
+		memcpy(tIM_tmp.data, IM.data, OldMatchCount*sizeof(double));
+		memcpy(tW_tmp.data, W.data, OldMatchCount*sizeof(double));
 		
-		tI = tI_tmp;
-		tIM = tIM_tmp;
-		tW = tW_tmp;
-
-		/* free(tI_tmp.data);
-		free(tIM_tmp.data);
-		free(tW_tmp.data); */
+		I = tI_tmp;
+		IM = tIM_tmp;
+		W = tW_tmp;
 	      }
-
-	    //foo1 = ones(ACTMATsum, 1)*(i+1);
-	    //memcpy(tI.data+MCindx, foo1.data, foo1.size*sizeof(double));
-	    //memcpy(tW.data+MCindx, Wi.data, Wi.size*sizeof(double));
 
 	    for (j=0; j < (int) Mi; j++)
 	      {
-		tI.data[MCindx+j] = i+1;
-		tW.data[MCindx+j] = Wi_ratio;
+		I.data[MCindx+j] = i+1;
+		W.data[MCindx+j] = Wi_ratio;
 	      }
 	    
 	    if(replace==0)
 	      {
-		memcpy(tIM.data+MCindx, IMt.data, IMt.size*sizeof(double));
+		memcpy(IM.data+MCindx, IMt.data, IMt.size*sizeof(double));
 		MCindx = MCindx+IMt.size;
 	      }
 	    else
 	      {
-		//foo1 = selif(INN, ACTMAT);
-		//memcpy(tIM.data+MCindx, foo1.data, foo1.size*sizeof(double));
-		//MCindx = MCindx+foo1.size;
-		
 		k=0;
 		for (j=0; j<N; j++)
 		  {
 		    if(ACTMAT.data[j] > (1-TOL))
 		      {
-			tIM.data[MCindx+k] = j+1;
+			IM.data[MCindx+k] = j+1;
 			k++;
 		      }
 		  }
@@ -1942,15 +1833,15 @@ extern "C"
       PutRNGstate();
 
     // subset matrices to get back to the right dims
+    long orig_rowsize = I.rowsize;
     if (MatchCount > 0)
       {
-	I=Matrix(MatchCount, 1);
-	IM=Matrix(MatchCount, 1);
-	W=Matrix(MatchCount, 1);
-
-	memcpy(I.data, tI.data, MatchCount*sizeof(double));
-	memcpy(IM.data, tIM.data, MatchCount*sizeof(double));
-	memcpy(W.data, tW.data, MatchCount*sizeof(double));
+	if (orig_rowsize != MatchCount)
+	  {
+	    I.rowsize = MatchCount;
+	    IM.rowsize = MatchCount;
+	    W.rowsize = MatchCount;
+	  }
       }
     else
       {
@@ -1958,36 +1849,6 @@ extern "C"
 	IM=Matrix(1, 1);
 	W=Matrix(1, 1);
       }
-
-#if defined(NERVERDEF)
-    printf("I.rowsize %d\n", I.rowsize);
-    printf("tI.rowsize %d\n", tI.rowsize);
-
-    printf("IM.rowsize %d\n", IM.rowsize);
-    printf("tIM.rowsize %d\n", tIM.rowsize);
-
-    printf("W.rowsize %d\n", W.rowsize);
-    printf("tW.rowsize %d\n", tW.rowsize);
-
-    printf("NM: %d\n", NM);
-    printf("display\n");
-    fflush(stdout);
-
-    for(i=0; i<I.rowsize; i++)
-      {
-	printf("%d %d: %lf %lf %lf\n", i, i+1, 
-	       I[i], 
-	       IM[i],
-	       W[i]); 
-    	fflush(stdout);
-      }
-#endif
-
-    // tret = gettimeofday(&tv2,&tz2);
-    // long secs = tv2.tv_sec - tv1.tv_sec;
-    // long msecs = tv2.tv_usec - tv1.tv_usec;
-    // double actual = ((double) secs*1000000+ (double) msecs)/1000000;
-    // printf("actual: %lf, secs: %d, msecs: %d\n", actual, secs, msecs);
 
     Matrix rr = cbind(I, IM);
     rr = cbind(rr, W);
@@ -2093,115 +1954,32 @@ double max_scalar (double a, double b)
   return(b);
 } // end of max_scalar
 
-#ifdef __NBLAS__
-Matrix multi_scalar (Matrix a, Matrix b)
-{
-  a.multi_scalar(b);
-  return a;
-} // multi_scalar
-#else
-Matrix multi_scalar (Matrix a, Matrix b)
-{
-  Matrix ret = a;
-  long nrows = rows(a);
-  long ncols = cols(a);
-
-  for (long i = 0; i < nrows; i++) 
-    {
-      for (long j = 0; j < ncols; j++) 
-	{
-	  //ret(i, j) = a(i, j) * b(i, j);
-	  ret[M(i, j, ncols)] = a[M(i, j, ncols)] * b[M(i, j, ncols)];
-	}
-    }
-
-  return(ret);
-} // multi_scalar
-#endif
-
-#ifdef __NBLAS__
+//previously in a __NBLAS__ wrapper, but it should always be used
 Matrix EqualityTestScalar(Matrix a, double s)
 {
   for (long i = 0; i < a.size; ++i)
     a.data[i] = (a.data[i] < (s+TOL)) && (a.data[i] > (s-TOL)) ? 1 : 0;
   return a;
 } //end of EqualityTestScalar
-#else
-Matrix EqualityTestScalar(Matrix a, double s)
-{
-  long nrows = rows(a);
-  long ncols = cols(a);
-  Matrix ret =  zeros(nrows, ncols);
 
-  for (long i =0; i< nrows; i++)
-    {
-      for (long j =0; j< ncols; j++)
-	{
-	  if( (a[M(i, j, ncols)] < (s+TOL)) && (a[M(i, j, ncols)] > (s-TOL)) )
-	    {
-	      ret[M(i, j, ncols)] = 1;
-	    }
-	}
-    }
-  return(ret);
-} //end of EqualityTestScalar
-#endif
 
-#ifdef __NBLAS__
+//previously in a __NBLAS__ wrapper, but it should always be used
 Matrix GreaterEqualTestScalar(Matrix a, long s)
 {
   for (long i = 0; i < a.size; ++i)
     a.data[i] = (a.data[i] >= (s-TOL)) ? 1 : 0;
   return a;
 } //end of GreaterEqualTestScalar
-#else
-Matrix GreaterEqualTestScalar(Matrix a, long s)
-{
-  long nrows = rows(a);
-  long ncols = cols(a);
-  Matrix ret =  zeros(nrows, ncols);
-  
-  for (long i =0; i< nrows; i++)
-  {
-    for (long j =0; j< ncols; j++)
-    {
-      if( (a[M(i, j, ncols)] >= (s-TOL)) )
-	    {
-	      ret[M(i, j, ncols)] = 1;
-	    }
-    }
-  }
-  return(ret);
-} //end of GreaterEqualTestScalar
-#endif
 
-#ifdef __NBLAS__
+
+//previously in a __NBLAS__ wrapper, but it should always be used
 Matrix LessEqualTestScalar(Matrix a, double s)
 {
   for (long i = 0; i < a.size; ++i)
     a.data[i] = (a.data[i] <= (s+TOL)) ? 1 : 0;
   return a;
 } //end of LessEqualTestScalar
-#else
-Matrix LessEqualTestScalar(Matrix a, double s)
-{
-  long nrows = rows(a);
-  long ncols = cols(a);
-  Matrix ret =  zeros(nrows, ncols);
-  
-  for (long i =0; i< nrows; i++)
-  {
-    for (long j =0; j< ncols; j++)
-    {
-      if( (a[M(i, j, ncols)] <= (s+TOL)) )
-	    {
-	      ret[M(i, j, ncols)] = 1;
-	    }
-    }
-  }
-  return(ret);
-} //end of LessEqualTestScalar
-#endif
+
 
 Matrix VectorAnd(Matrix a, Matrix b)
 {
@@ -2318,4 +2096,9 @@ void display(Matrix A)
   printf("\n");
 }
 
-
+//previously in a __NBLAS__ wrapper, but it should always be used
+Matrix multi_scalar (Matrix a, Matrix b)
+{
+  a.multi_scalar(b);
+  return a;
+} 

@@ -21,7 +21,7 @@
 }
 \usage{
 GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1, weights=NULL,
-         pop.size = 50, max.generations=100,
+         pop.size = 100, max.generations=100,
          wait.generations=4, hard.generation.limit=FALSE,
          starting.values=rep(1,ncol(X)),
          fit.func="pvals",
@@ -388,31 +388,34 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1, weights=NULL,
   \code{\link{ks.boot}}, \code{\link{GerberGreenImai}}, \code{\link{lalonde}}
 } 
 \examples{
-set.seed(38913)
-
 data(lalonde)
 attach(lalonde)
 
 #The covariates we want to match on
-X = cbind(age, educ, black, hisp, married, nodegr, u74, u75, re75, re74);
+X = cbind(age, educ, black, hisp, married, nodegr, u74, u75, re75, re74)
 
 #The covariates we want to obtain balance on
 BalanceMat <- cbind(age, educ, black, hisp, married, nodegr, u74, u75, re75, re74,
-                    I(re74*re75));
+                    I(re74*re75))
 
+#
 #Let's call GenMatch() to find the optimal weight to give each
 #covariate in 'X' so as we have achieved balance on the covariates in
 #'BalanceMat'. This is only an example so we want GenMatch to be quick
-#to the population size has been set to be only 15 via the 'pop.size'
-#option.  
+#so the population size has been set to be only 16 via the 'pop.size'
+#option. This is *WAY* too small for actual problems.
+#For details see http://sekhon.berkeley.edu/papers/MatchingJSS.pdf.
+#
 genout <- GenMatch(Tr=treat, X=X, BalanceMatrix=BalanceMat, estimand="ATE", M=1,
                    pop.size=16, max.generations=10, wait.generations=1)
 
 #The outcome variable
-Y=re78/1000;
+Y=re78/1000
 
+#
 # Now that GenMatch() has found the optimal weights, let's estimate
 # our causal effect of interest using those weights
+#
 mout <- Match(Y=Y, Tr=treat, X=X, estimand="ATE", Weight.matrix=genout)
 summary(mout)
 

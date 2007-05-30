@@ -9,7 +9,7 @@
   test.
 }
 \usage{
-ks.boot(Tr, Co, nboots=1000, alternative = c("two.sided", "less", "greater"), verbose=0)
+ks.boot(Tr, Co, nboots=1000, alternative = c("two.sided", "less", "greater"), print.level=0)
 }
 \arguments{
   \item{Tr}{A vector containing the treatment observations.}
@@ -20,7 +20,7 @@ ks.boot(Tr, Co, nboots=1000, alternative = c("two.sided", "less", "greater"), ve
   \item{alternative}{indicates the alternative hypothesis and must be one of
     '"two.sided"' (default), '"less"', or '"greater"'.  You can
     specify just the initial letter.  See \code{\link{ks.test}} for details.}
-  \item{verbose}{If this is greater than 1, then the simulation count is
+  \item{print.level}{If this is greater than 1, then the simulation count is
     printed out while the simulations are being done.}
 }
 \value{
