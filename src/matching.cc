@@ -30,11 +30,14 @@ using namespace std;
 #endif
 #endif
 
+/* 
+   __GenMatchBLAS_ needlessly calculates Distance for observations who were assigned to the same treatment
 #ifdef __NBLAS__
 #if !defined(__darwin__) & !defined(__APPLE__)
 #define __GenMatchBLAS__
 #endif
 #endif
+*/
 
 extern "C"
 {
@@ -241,7 +244,7 @@ extern "C"
     SEXP ret;
 
     long N, xvars, All, M; 
-    double cdd, Distmax, Wi_ratio;;
+    double cdd, Distmax, Wi_ratio, dfoo;
     
     long i, j, k;
     
@@ -287,11 +290,7 @@ extern "C"
     Matrix INN = seqa(1, 1, N);
     // TT is just equal to INN
 
-#ifdef __GenMatchBLAS__
     Matrix ZX(N, xvars), Dist(N, 1);
-#else
-    Matrix DX(xvars, N), ZX(N, xvars), Dist(N, 1);
-#endif
 
     /* set misc */
     int TREATi = 0;
@@ -322,6 +321,7 @@ extern "C"
       if ( (TREATi==1 & All!=1) | All==1 )
       {
 
+#ifdef __GenMatchBLAS__
         // this loop is equivalent to the matrix X less the matrix A, which is
         // the product of N rows by 1 column of 1.0 and row R of X.
 	// I.E.,         xx = X(i,_); DX = (X - (index_onesN * xx)) 
@@ -334,9 +334,7 @@ extern "C"
           }
         }
 
-#ifdef __GenMatchBLAS__
 	//JSS, dgemm is slower and I assume that dtrmm and dsymm are also
-
 	//http://docs.sun.com/source/819-3691/dscal.html
 	for (int kk=0; kk < xvars; kk++)
 	  {
@@ -350,21 +348,22 @@ extern "C"
 	  {
 	    Dist.data[jj] = cblas_dasum(xvars, ZX.data+M(jj, 0, xvars), 1);
 	  }
-#else
-	// No BLAS version from Matching 197 
-	double dfoo, dfoo2;
-	for (int kk=0; kk < xvars; kk++)
-	  {
-	    dfoo2 = ww.data[M(kk,kk,xvars)];
-	    for (int jj=0; jj < N; jj++)
-	      {
-		dfoo  = ZX.data[M(jj,kk,xvars)] * dfoo2;
-		DX.data[M(kk,jj,N)] = dfoo*dfoo;
-	      }
-	  }
 
-	Dist = sumc(DX);
-	std::swap(Dist.colsize, Dist.rowsize); // transpose 1 x N -> N x 1
+#else
+	// Don't calculate Distance for observations with of the same treatment assignment
+	// Original No BLAS version from Matching 197, this version from 4.4-52
+        for (int jj = 0; jj < N; jj++) {
+	  if( abs(TREATi-Tr[jj]) > TOL )
+	    {
+	      Dist.data[jj] = 0.0;
+	      for (int kk=0; kk < xvars; kk++)
+		{
+		  ZX.data[M(jj,kk,xvars)] = X.data[M(jj,kk,xvars)] - X.data[M(i,kk,xvars)];
+		  dfoo  = ZX.data[M(jj,kk,xvars)] * ww.data[M(kk,kk,xvars)];
+		  Dist.data[jj] += dfoo*dfoo;
+		}
+	    } // if TR
+	} //end of jj loop
 #endif /* end __GenMatchBLAS__ */
         
         // Dist distance to observation to be matched
@@ -555,7 +554,7 @@ extern "C"
     SEXP ret;
     
     long N, xvars, All, M; 
-    double cdd;
+    double cdd, dfoo;
     
     long i, j, k;
     
@@ -608,11 +607,7 @@ extern "C"
     Matrix INN = seqa(1, 1, N);
     // TT is just equal to INN
 
-#ifdef __GenMatchBLAS__
     Matrix ZX(N, xvars), Dist(N, 1);
-#else
-    Matrix DX(xvars, N), ZX(N, xvars), Dist(N, 1);
-#endif
 
     Matrix foo1;
     Matrix foo2;
@@ -638,7 +633,7 @@ extern "C"
       // but only with treated observations if All=0        
       if ( (TREATi==1 & All!=1) | All==1 )
       {
-
+#ifdef __GenMatchBLAS__
         // this loop is equivalent to the matrix X less the matrix A, which is
         // the product of N rows by 1 column of 1.0 and row R of X.
 	// I.E.,         xx = X(i,_); DX = (X - (index_onesN * xx)) 
@@ -651,9 +646,7 @@ extern "C"
           }
         }
 
-#ifdef __GenMatchBLAS__
 	//JSS, dgemm is slower and I assume that dtrmm and dsymm are also
-
 	//http://docs.sun.com/source/819-3691/dscal.html
 	for (int kk=0; kk < xvars; kk++)
 	  {
@@ -668,20 +661,20 @@ extern "C"
 	    Dist.data[jj] = cblas_dasum(xvars, ZX.data+M(jj, 0, xvars), 1);
 	  }
 #else
-	// No BLAS version from Matching 197 
-	double dfoo, dfoo2;
-	for (int kk=0; kk < xvars; kk++)
-	  {
-	    dfoo2 = ww.data[M(kk,kk,xvars)];
-	    for (int jj=0; jj < N; jj++)
-	      {
-		dfoo  = ZX.data[M(jj,kk,xvars)] * dfoo2;
-		DX.data[M(kk,jj,N)] = dfoo*dfoo;
-	      }
-	  }
-
-	Dist = sumc(DX);
-	std::swap(Dist.colsize, Dist.rowsize); // transpose 1 x N -> N x 1
+	// Don't calculate Distance for observations with of the same treatment assignment
+	// Original No BLAS version from Matching 197, this version from 4.4-52
+        for (int jj = 0; jj < N; jj++) {
+	  if( abs(TREATi-Tr[jj]) > TOL )
+	    {
+	      Dist.data[jj] = 0.0;
+	      for (int kk=0; kk < xvars; kk++)
+		{
+		  ZX.data[M(jj,kk,xvars)] = X.data[M(jj,kk,xvars)] - X.data[M(i,kk,xvars)];
+		  dfoo  = ZX.data[M(jj,kk,xvars)] * ww.data[M(kk,kk,xvars)];
+		  Dist.data[jj] += dfoo*dfoo;
+		}
+	    } // if TR
+	} //end of jj loop
 #endif /* end __GenMatchBLAS__ */
         
         // Dist distance to observation to be matched
@@ -840,7 +833,7 @@ extern "C"
     
     long N, xvars, All, M, caliper, replace, ties, restrict_trigger, restrict_nrow, DiagWeightMatrixFlag,
       sum_caliper_drops=0, replace_count=0;
-    double cdd, diff;
+    double cdd, diff, dfoo;
     
     long i, j, k, r, c;
     
@@ -958,11 +951,6 @@ extern "C"
 	 the scope of this if statement */
       DX = zeros(N, xvars);
     }
-#ifndef __GenMatchBLAS__
-    if (DiagWeightMatrixFlag==1) {
-      DX = zeros(xvars, N);
-    }
-#endif /* __GenMatchBLAS__ */
 #else
     Matrix index_onesN = ones(N, 1);
     Matrix xx;
@@ -996,19 +984,19 @@ extern "C"
 	if ( (TREATi==1 & All!=1) | All==1 )
 	  {
 #ifdef __NBLAS__
-	    // this loop is equivalent to the matrix X less the matrix A, which is
-	    // the product of N rows by 1 column of 1.0 and row R of X.
-	    double *dest = ZX.data;
-	    double *src  = X.data;
-	    double *row  = X.data + (i * xvars);
-	    for (int jj = 0; jj < N; ++jj) {
-	      for (int kk = 0; kk < xvars; ++kk, ++dest, ++src) {
-		*dest = *src - row[kk];
-	      }
-	    }
-
 	    if (DiagWeightMatrixFlag!=1)
 	      {
+		// this loop is equivalent to the matrix X less the matrix A, which is
+		// the product of N rows by 1 column of 1.0 and row R of X.
+		double *dest = ZX.data;
+		double *src  = X.data;
+		double *row  = X.data + (i * xvars);
+		for (int jj = 0; jj < N; ++jj) {
+		  for (int kk = 0; kk < xvars; ++kk, ++dest, ++src) {
+		    *dest = *src - row[kk];
+		  }
+		}
+
 		/* note that xvars must be > 1 */
 		//JSS
 		// do the second multiplication with dgemm, multiplying the matrix
@@ -1039,6 +1027,17 @@ extern "C"
 	      } else 
 	      {
 #ifdef __GenMatchBLAS__
+		// this loop is equivalent to the matrix X less the matrix A, which is
+		// the product of N rows by 1 column of 1.0 and row R of X.
+		double *dest = ZX.data;
+		double *src  = X.data;
+		double *row  = X.data + (i * xvars);
+		for (int jj = 0; jj < N; ++jj) {
+		  for (int kk = 0; kk < xvars; ++kk, ++dest, ++src) {
+		    *dest = *src - row[kk];
+		  }
+		}
+
 		//http://docs.sun.com/source/819-3691/dscal.html
 		for (int kk=0; kk < xvars; kk++)
 		  {
@@ -1053,20 +1052,20 @@ extern "C"
 		    Dist.data[jj] = cblas_dasum(xvars, ZX.data+M(jj, 0, xvars), 1);
 		  }
 #else
-		// No BLAS version from Matching 197 
-		double dfoo, dfoo2;
-		for (int kk=0; kk < xvars; kk++)
-		  {
-		    dfoo2 = ww.data[M(kk,kk,xvars)];
-		    for (int jj=0; jj < N; jj++)
-		      {
-			dfoo  = ZX.data[M(jj,kk,xvars)] * dfoo2;
-			// with blas ZX.data[M(jj,kk,xvars)] = dfoo*dfoo;
-			DX.data[M(kk,jj,N)] = dfoo*dfoo;
-		      }
-		  }		
-		Dist = sumc(DX);
-		std::swap(Dist.colsize, Dist.rowsize); // transpose 1 x N -> N x 1		
+		// Don't calculate Distance for observations with of the same treatment assignment
+		// Original No BLAS version from Matching 197, this version from 4.4-52
+		for (int jj = 0; jj < N; jj++) {
+		  if( abs(TREATi-Tr[jj]) > TOL )
+		    {
+		      Dist.data[jj] = 0.0;
+		      for (int kk=0; kk < xvars; kk++)
+			{
+			  ZX.data[M(jj,kk,xvars)] = X.data[M(jj,kk,xvars)] - X.data[M(i,kk,xvars)];
+			  dfoo  = ZX.data[M(jj,kk,xvars)] * ww.data[M(kk,kk,xvars)];
+			  Dist.data[jj] += dfoo*dfoo;
+			}
+		    } // if TR
+		} //end of jj loop
 #endif /* end of __GenMatchBLAS__ ifdef */
 	      } /* end of if (DiagWeightMatrixFlag!=1) */
 #else
@@ -1385,7 +1384,7 @@ extern "C"
     
     long N, xvars, All, M, caliper, replace, ties, restrict_trigger, restrict_nrow, DiagWeightMatrixFlag,
       sum_caliper_drops=0, replace_count=0;
-    double cdd, diff, Distmax, Wi_ratio;
+    double cdd, diff, Distmax, Wi_ratio, dfoo;
     
     long i, j, k, r, c;
     
@@ -1497,11 +1496,6 @@ extern "C"
 	 the scope of this if statement */
       DX = zeros(N, xvars);
     }
-#ifndef __GenMatchBLAS__
-    if (DiagWeightMatrixFlag==1) {
-      DX = zeros(xvars, N);
-    }
-#endif /* __GenMatchBLAS__ */
 #else
     Matrix index_onesN = ones(N, 1);
     Matrix xx;
@@ -1544,19 +1538,19 @@ extern "C"
 	if ( (TREATi==1 & All!=1) | All==1 )
 	  {
 #ifdef __NBLAS__
-	    // this loop is equivalent to the matrix X less the matrix A, which is
-	    // the product of N rows by 1 column of 1.0 and row R of X.
-	    double *dest = ZX.data;
-	    double *src  = X.data;
-	    double *row  = X.data + (i * xvars);
-	    for (int jj = 0; jj < N; ++jj) {
-	      for (int kk = 0; kk < xvars; ++kk, ++dest, ++src) {
-		*dest = *src - row[kk];
-	      }
-	    }
-
 	    if (DiagWeightMatrixFlag!=1)
 	      {
+		// this loop is equivalent to the matrix X less the matrix A, which is
+		// the product of N rows by 1 column of 1.0 and row R of X.
+		double *dest = ZX.data;
+		double *src  = X.data;
+		double *row  = X.data + (i * xvars);
+		for (int jj = 0; jj < N; ++jj) {
+		  for (int kk = 0; kk < xvars; ++kk, ++dest, ++src) {
+		    *dest = *src - row[kk];
+		  }
+		}
+
 		/* note that xvars must be > 1 */
 		//JSS
 		// do the second multiplication with dgemm, multiplying the matrix
@@ -1587,6 +1581,17 @@ extern "C"
 	      } else 
 	      {
 #ifdef __GenMatchBLAS__
+		// this loop is equivalent to the matrix X less the matrix A, which is
+		// the product of N rows by 1 column of 1.0 and row R of X.
+		double *dest = ZX.data;
+		double *src  = X.data;
+		double *row  = X.data + (i * xvars);
+		for (int jj = 0; jj < N; ++jj) {
+		  for (int kk = 0; kk < xvars; ++kk, ++dest, ++src) {
+		    *dest = *src - row[kk];
+		  }
+		}
+
 		//http://docs.sun.com/source/819-3691/dscal.html
 		for (int kk=0; kk < xvars; kk++)
 		  {
@@ -1601,20 +1606,20 @@ extern "C"
 		    Dist.data[jj] = cblas_dasum(xvars, ZX.data+M(jj, 0, xvars), 1);
 		  }
 #else
-		// No BLAS version from Matching 197 
-		double dfoo, dfoo2;
-		for (int kk=0; kk < xvars; kk++)
-		  {
-		    dfoo2 = ww.data[M(kk,kk,xvars)];
-		    for (int jj=0; jj < N; jj++)
-		      {
-			dfoo  = ZX.data[M(jj,kk,xvars)] * dfoo2;
-			// with blas ZX.data[M(jj,kk,xvars)] = dfoo*dfoo;
-			DX.data[M(kk,jj,N)] = dfoo*dfoo;
-		      }
-		  }		
-		Dist = sumc(DX);
-		std::swap(Dist.colsize, Dist.rowsize); // transpose 1 x N -> N x 1
+		// Don't calculate Distance for observations with of the same treatment assignment
+		// Original No BLAS version from Matching 197, this version from 4.4-52
+		for (int jj = 0; jj < N; jj++) {
+		  if( abs(TREATi-Tr[jj]) > TOL )
+		    {
+		      Dist.data[jj] = 0.0;
+		      for (int kk=0; kk < xvars; kk++)
+			{
+			  ZX.data[M(jj,kk,xvars)] = X.data[M(jj,kk,xvars)] - X.data[M(i,kk,xvars)];
+			  dfoo  = ZX.data[M(jj,kk,xvars)] * ww.data[M(kk,kk,xvars)];
+			  Dist.data[jj] += dfoo*dfoo;
+			}
+		    } // if TR
+		} //end of jj loop
 #endif /* end of __GenMatchBLAS__ ifdef */
 	      } /* end of if (DiagWeightMatrixFlag!=1) */
 #else

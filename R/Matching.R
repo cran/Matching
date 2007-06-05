@@ -1344,7 +1344,7 @@ sdiff.pooled  <- function(Tr, Co, weights=rep(1,length(Co)),
 
         if(var.total==0 & diff==0)
           {
-            sdiff <- O
+            sdiff <- 0
           } else {
             sdiff <- 100*diff/sqrt( var.total/2 )
           }
@@ -1362,7 +1362,7 @@ sdiff.pooled  <- function(Tr, Co, weights=rep(1,length(Co)),
 
         if(var.total==0 & diff==0)
           {
-            sdiff <- O
+            sdiff <- 0
           } else {
             sdiff <- 100*diff/sqrt(var.total/2)
           }        
@@ -1387,7 +1387,6 @@ sdiff  <- function(Tr, Co, weights=rep(1,length(Co)),
       {
         obs.Tr <- sum(weights.Tr)
         obs.Co <- sum(weights.Co)
-        obs.total <- obs.Tr+obs.Co
         
         mean.Tr <- sum(Tr*weights.Tr)/obs.Tr
         mean.Co <- sum(Co*weights.Co)/obs.Co
@@ -2126,7 +2125,6 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
                 if (ks.bm$ks.boot.pval[count] < BMsmallest.p.value)
                   {
                     BMsmallest.p.value <- ks.bm$ks.boot.pval[count]
-                    BM.ttest <- FALSE
                     BMsmallest.number <- count
                     BMsmallest.name <- names.xdata[i]            
                   } else if ( (ks.bm$ks.boot.pval[count] == BMsmallest.p.value) & (sum(BMsmallest.number==count)==0) )
@@ -2140,7 +2138,6 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
                 if (ks.bm$ks.naive.pval[count] < BMsmallest.p.value)
                   {
                     BMsmallest.p.value <- ks.bm$ks.naive.pval[count]
-                    BM.ttest <- FALSE
                     BMsmallest.number <- count
                     BMsmallest.name <- names.xdata[i]            
                   } else if ( (ks.bm$ks.naive.pval[count] == BMsmallest.p.value) & (sum(BMsmallest.number==count)==0) )

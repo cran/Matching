@@ -10,7 +10,6 @@ Matchby  <- function(Y, Tr, X, by, estimand="ATT", M=1, ties=FALSE, replace=TRUE
 
     #index for raw obs
     nobs  <- length(Tr)
-    nl  <- 1:nobs
 
     orig.treated.nobs  <- sum(Tr==1)
     t.dta  <- cbind(Y, Tr, X)
