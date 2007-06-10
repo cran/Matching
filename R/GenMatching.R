@@ -1018,7 +1018,8 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                            replace=replace, ties=ties,
                            ww=ww, Tr=s1.Tr, Xmod=s1.X, weights=weights,
                            CaliperVec=CaliperVec, Xorig=Xorig,
-                           restrict.trigger=restrict.trigger, restrict=restrict)
+                           restrict.trigger=restrict.trigger, restrict=restrict,
+                           DiagWeightMatrixFlag=1)
 
         #no matches
         if(mout[1,1]==0) {
