@@ -19,7 +19,10 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
 
     #we don't need to use a Y
     if (is.null(Y))
-      Y = rep(0, length(Tr))
+      {
+        Y = rep(0, length(Tr))
+        version <- "fast"
+      }
     
     if (is.null(weights))
       {
@@ -182,18 +185,28 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
       return(invisible(NULL))
     }
 
-    if( orig.nobs != nrow(X))
+    orig.tr.nobs <- length(Tr)
+    if (orig.tr.nobs != orig.nobs)
+      {
+        stop("length(Y) != length(Tr)")
+      }
+    if( orig.tr.nobs != nrow(X))
       {
         stop("length(Tr) != nrow(X)")
+      }    
+    
+    if( orig.nobs != nrow(X))
+      {
+        stop("length(Y) != nrow(X)")
       }
     if( orig.nobs != nrow(V))
       {
-        stop("length(Tr) != nrow(V)")
+        stop("length(Y) != nrow(V)")
       }
     if( orig.nobs != nrow(Z))
       {
-        stop("length(Tr) != nrow(Z)")
-      }                   
+        stop("length(Y) != nrow(Z)")
+      }
 
     ccc  <- tolerance
     cdd  <- distance.tolerance
