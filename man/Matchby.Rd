@@ -160,8 +160,9 @@ Matchby(Y, Tr, X, by, estimand = "ATT", M = 1, ties=FALSE, replace=TRUE,
   \item{version}{The version of \code{\link{Match}} which was used.}
 }
 \references{
-  Sekhon, Jasjeet S. 2007.  ``Multivariate and Propensity Score Matching
-  Software with Automated Balance Optimization.''  Working Paper.
+  Sekhon, Jasjeet S. 2007.  ``Multivariate and Propensity Score
+  Matching Software with Automated Balance Optimization.''
+  \emph{Journal of Statistical Software}.
   \url{http://sekhon.berkeley.edu/papers/MatchingJSS.pdf}
 
   Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias

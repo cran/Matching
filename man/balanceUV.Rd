@@ -79,8 +79,9 @@ balanceUV(Tr, Co, weights = rep(1, length(Co)), exact = FALSE, ks=FALSE,
   \url{http://sekhon.berkeley.edu/}.  
 }
 \references{
-  Sekhon, Jasjeet S. 2007.  ``Multivariate and Propensity Score Matching
-  Software with Automated Balance Optimization.''  Working Paper.
+  Sekhon, Jasjeet S. 2007.  ``Multivariate and Propensity Score
+  Matching Software with Automated Balance Optimization.''
+  \emph{Journal of Statistical Software}.
   \url{http://sekhon.berkeley.edu/papers/MatchingJSS.pdf}
   
   Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias

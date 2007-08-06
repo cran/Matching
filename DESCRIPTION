@@ -1,6 +1,6 @@
 Package: Matching
-Version: 4.4-10
-Date: 2007/07/27
+Version: 4.4-14
+Date: 2007/08/06
 Title: Multivariate and Propensity Score Matching with Balance Optimization
 Author: Jasjeet Singh Sekhon <sekhon@berkeley.edu>
 Maintainer: Jasjeet Singh Sekhon <sekhon@berkeley.edu>
@@ -12,4 +12,4 @@ Depends: R (>= 2.0.0), rgenoud (>= 2.12), MASS (>= 7.2-1), graphics, grDevices, 
 Suggests: snow (>= 0.2-1)
 License: GPL3 as long as authorship of this code is made clear
 URL: http://sekhon.berkeley.edu/matching
-Packaged: Fri Jul 27 15:46:38 2007; sekhon
+Packaged: Mon Aug  6 00:04:44 2007; sekhon

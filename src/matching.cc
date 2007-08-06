@@ -1,13 +1,82 @@
 /*  
-Jasjeet S. Sekhon <sekhon@berkeley.edu>
-HTTP://sekhon.berkeley.edu/
-UC Berkeley
+    Jasjeet S. Sekhon <sekhon@berkeley.edu>
+    HTTP://sekhon.berkeley.edu/
+    UC Berkeley
+    
+    2007/08/04
+    Under the GNU Public License Version 3
 
-2006/10/24
-Under the GNU Public License Version 2
+    A *lot* of work and trail-and-error has gone into these functions
+    to ensure that they are reliable and fast when run either serially
+    or in parallel.  Parallel execution is especially tricky because
+    an algorithm which may be fast in serial mode can cause odd
+    bottlenecks when run in parallel (such as a cache-bottleneck when
+    executing SSE3 instructions via BLAS).  Also, the loops and other
+    structures in these functions have been written so that g++ does a
+    good job of optimizing them.  Indeed, for these functions icc is
+    no faster than g++.
+
+    Details of individuals function are provided right before they are
+    defined, but a general description of them is offered here.
+
+    'EstFuncC': This function is directly called from R (by the
+    est.func() function in Match().  And it estimates the causal
+    effect and properly weights the observations by the number of ties
+    (and the weights on input).
+
+    There are *four* different function to perform the actual
+    matching.  There are four versions because of speed
+    considerations.  That is, they make use of special cases (such as
+    the absence of observational specific weights), to make speed
+    gains.  And for clarity of code it was determined to make them
+    four separate functions instead of adding a lot of if-then
+    statements in one big function.  These functions are long, but it
+    was generally found to be faster to do it this way.  Odd things
+    occur with the optimizations algorithms in various compilers when
+    cross-function optimizations are requested---some optimizations
+    are performed and some are not.  It appears to significantly help
+    gcc to not breakup the functions (at least not to break them up
+    the way I was doing do).
+
+    The core matching functions (note that the slow R equivalent is
+    RmatchLoop() which is located in the Matching.R file.
+
+    'FasterMatchC': for GenMatch(), when there are *no* observation
+    specific weights, we are matching with replacement, keeping ties
+    and are using no caliper, no exact matching and no restriction
+    matrix.  Also note that GenMatch() assumes that the Weight.matrix
+    is a diagonal matrix.  Note that this is the most commonly used
+    matching function for GenMatch, and the fastest.  This function
+    cannot be used with Match(), because it does not reorder the
+    indexes at the end so to be usable to actually estimate causal
+    effects.  This makes the function faster than its equivalent which
+    is called from Match(), 'MatchLoopCfast'.
+
+    'FastMatchC': for GenMatch(), when there are observation specific
+    weights, but we are matching with replacement, keeping ties and
+    are using no caliper, no exact matching and no restriction matrix.
+    Also note that GenMatch() assumes that the Weight.matrix is a
+    diagonal matrix.  This function cannot be used with Match(),
+    because it does not reorder the indexes at the end so to be usable
+    to actually estimate causal effects.  This makes the function
+    faster than its equivalent which is called from Match(),
+    'MatchLoopC'.
+
+    'MatchLoopC': This is the most featured matching function.  It is
+    called by Match() when we have observational specific weights, and
+    by GenMatch() when there are observational specific weights and
+    one or more of no replacement, no ties, exact matching, caliper
+    matching or use of the restriction matrix.
+
+    'MatchLoopCfast': This function is called by Match() when there
+    are no observation specific weights, and by GenMatch() when there
+    are no observational specific weights but one or more of no
+    replacement, no ties, exact matching, caliper matching or use of
+    the restriction matrix.
 */
 
-/* We are using the include cblas header which will direct to the central R BLAS */
+/* Note: We are using the include cblas header which will direct to the
+   central R BLAS */
 
 #include "scythematrix.h"
 
@@ -16,8 +85,10 @@ using namespace std;
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
+#include <cmath>
+#include <vector>
 #include <R.h>
+#include <Rdefines.h>
 
 #include "matching.h"
 
@@ -41,8 +112,6 @@ using namespace std;
 
 extern "C"
 {
-#include <Rdefines.h>
-
 #ifdef INTERNAL_CBLAS
 #include "cblas.h"
 
@@ -103,8 +172,41 @@ extern "C"
     }
     return a[k] ;
   } // end of kth_smallest
+
+
+/*---------------------------------------------------------------------------
+   Function : EstFuncC
+
+   IN       : I_N: the number of observations
+
+              I_All: what we are estimating---i.e.,the 'estmand' argument to Match()
+
+              I_length: the number of matched pairs which were found by Match()
+
+              I_Y: the outcome---i.e,. the 'Y' argument to Match()
+
+              I_Tr: the treatment indicator--i.e., the 'Tr' argument to Match()
+
+              I_weight: the observation specific weights---i.e, the 'weight' argument 
+                        to Match()
+
+              I_indx: the return object from one of the core Match()
+                      functions such as 'RmatchLoop', 'FasterMatchC', 'FastMatchC', 
+                      'MatchLoopC', and 'MatchLoopCfast'.
+
+
+   OUT      : A matrix of Yobs by 3 or 4 (if bias correction is being done).  
+              The first column is the causal effect ('YCAUS').
+	       If BiasAdjustment==TRUE, the second column will be the
+	       BiasAdjustment adjusted yby the weights.  And the next
+	       two columns are the weights ('Kcount' and 'KKcount').
+
+   JOB      : To estimate the causal effect and to properly weight the
+              observations by the number of ties (and the weights on input).  
+	       This function is directly called from R (by the est.func() function 
+	       in Match().
+ ---------------------------------------------------------------------------*/
   
-  //Est Func
   SEXP EstFuncC (SEXP I_N, SEXP I_All, SEXP I_length, SEXP I_Y, SEXP I_Tr, SEXP I_weight, SEXP I_indx)
 	      
   {
@@ -237,6 +339,47 @@ extern "C"
     UNPROTECT(1);
     return(ret); 
   } //end of EstFuncC
+
+
+/*---------------------------------------------------------------------------
+   Function : FasterMatchC
+
+   In       : I_N: the number of observations
+
+              I_xvars: the number of columns in the 'X' matrix---i.e.,
+                       the number of variables to match on.
+
+              I_All: what we are estimating---i.e.,the 'estmand' argument to GenMatch()
+
+              I_M: 1-to-M matching---i.e., this is the 'M' option to GenMatch()
+
+	       I_cdd: Distance tolerance
+
+              I_ww: Weight.matrix, GenMatch assumes that it is diagonal
+
+              I_Tr: the treatment indicator--i.e., the 'Tr' argument to GenMatch()
+
+              I_X: The matrix containing the variable we are going to
+              match on, the 'X' option to GenMatch().
+
+
+   OUT: A matrix of number of matches rows and 3 columns. The first
+   column contains the treatment observations being matched, the
+   second the control observations and the third the weights (adjusted
+   for ties).
+
+   JOB: For GenMatch(), when there are *no* observation specific
+   weights, we are matching with replacement, keeping ties and are
+   using no caliper, no exact matching and no restriction matrix.
+   Also note that GenMatch() assumes that the Weight.matrix is a
+   diagonal matrix.  Note that this is the most commonly used matching
+   function for GenMatch, and the fastest.  This function cannot be
+   used with Match(), because it does not reorder the indexes at the
+   end so to be usable to actually estimate causal effects.  This
+   makes the function faster than its equivalent which is called from
+   Match(), 'MatchLoopCfast'.
+
+ ---------------------------------------------------------------------------*/
 
   SEXP FasterMatchC(SEXP I_N, SEXP I_xvars, SEXP I_All, SEXP I_M, SEXP I_cdd,
 		    SEXP I_ww, SEXP I_Tr, SEXP I_X)
@@ -548,6 +691,48 @@ extern "C"
   } //end of FasterMatchC
 
 
+/*---------------------------------------------------------------------------
+   Function : FastMatchC
+
+   In       : I_N: the number of observations
+
+              I_xvars: the number of columns in the 'X' matrix---i.e.,
+                       the number of variables to match on.
+
+              I_All: what we are estimating---i.e.,the 'estmand' argument to GenMatch()
+
+              I_M: 1-to-M matching---i.e., this is the 'M' option to GenMatch()
+
+	       I_cdd: Distance tolerance
+
+              I_ww: Weight.matrix, GenMatch assumes that it is diagonal
+
+              I_Tr: the treatment indicator--i.e., the 'Tr' argument to GenMatch()
+
+              I_X: The matrix containing the variable we are going to
+              match on, the 'X' option to GenMatch().
+
+              I_weight: the observation specific weights---i.e, the 'weight' argument 
+                        to GenMatch()
+
+
+   OUT: A matrix of number of matches rows and 3 columns. The first
+   column contains the treatment observations being matched, the
+   second the control observations and the third the weights (adjusted
+   for ties).
+
+   JOB: For GenMatch(), when there are observation specific weights,
+   but we are matching with replacement, keeping ties and are using no
+   caliper, no exact matching and no restriction matrix.  Also note
+   that GenMatch() assumes that the Weight.matrix is a diagonal
+   matrix.  This function cannot be used with Match(), because it does
+   not reorder the indexes at the end so to be usable to actually
+   estimate causal effects.  This makes the function faster than its
+   equivalent which is called from Match(), 'MatchLoopC'.
+
+ ---------------------------------------------------------------------------*/
+
+
   SEXP FastMatchC(SEXP I_N, SEXP I_xvars, SEXP I_All, SEXP I_M, SEXP I_cdd,
                   SEXP I_ww, SEXP I_Tr, SEXP I_X, SEXP I_weight)
   {
@@ -821,6 +1006,62 @@ extern "C"
     return(ret);    
   } //end of FastMatchC
 
+
+/*---------------------------------------------------------------------------
+   Function : MatchLoopC
+
+   In       : I_N: the number of observations
+
+              I_xvars: the number of columns in the 'X' matrix---i.e.,
+                       the number of variables to match on.
+
+              I_All: what we are estimating---i.e.,the 'estmand' argument to GenMatch()
+
+              I_M: 1-to-M matching---i.e., this is the 'M' option to GenMatch()
+
+	       I_cdd: Distance tolerance
+
+	       I_caliper: indicator for if we are using a caliper
+
+	       I_replace: indicator for if we doing matching with replacement?
+
+	       I_ties: indicator for if are we ignoring ties?
+
+              I_ww: Weight.matrix, GenMatch assumes that it is diagonal
+
+              I_Tr: the treatment indicator--i.e., the 'Tr' argument to GenMatch()
+
+              I_X: The matrix containing the variable we are going to
+              match on, the 'X' option to GenMatch().
+
+              I_weight: the observation specific weights---i.e, the 'weight' argument 
+                        to GenMatch()
+
+	       I_CaliperVec: A vector which contains the caliper which we must fit in
+            
+              I_Xorig: The X matrix unscaled (we need this to make caliper comparisons)
+
+              I_restrict_trigger: an indicator for if we are using the restriction matrix
+
+              I_restrict_nrow: the number of restriction we have
+
+              I_restrict: the actual restriction matrix
+
+              I_DaigWeightMatrixFlag: is our I_ww matrix diagonal?
+
+
+   OUT: A matrix of number of matches rows and 5 columns. The first
+   column contains the treatment observations being matched, the
+   second the control observations and the third the weights (adjusted
+   for ties).
+
+   JOB: This is the most featured matching function.  It is called by
+   Match() when we have observational specific weights, and by
+   GenMatch() when there are observational specific weights and one or
+   more of no replacement, no ties, exact matching, caliper matching
+   or use of the restriction matrix.
+
+ ---------------------------------------------------------------------------*/
   
   SEXP MatchLoopC(SEXP I_N, SEXP I_xvars, SEXP I_All, SEXP I_M, SEXP I_cdd,
                   SEXP I_caliper, SEXP I_replace, SEXP I_ties,
@@ -1372,6 +1613,63 @@ extern "C"
     UNPROTECT(1);
     return(ret);    
   } //end of MatchLoopC
+
+
+/*---------------------------------------------------------------------------
+   Function : MatchLoopCfast
+
+   In       : I_N: the number of observations
+
+              I_xvars: the number of columns in the 'X' matrix---i.e.,
+                       the number of variables to match on.
+
+              I_All: what we are estimating---i.e.,the 'estmand' argument to GenMatch()
+
+              I_M: 1-to-M matching---i.e., this is the 'M' option to GenMatch()
+
+	       I_cdd: Distance tolerance
+
+	       I_caliper: indicator for if we are using a caliper
+
+	       I_replace: indicator for if we doing matching with replacement?
+
+	       I_ties: indicator for if are we ignoring ties?
+
+              I_ww: Weight.matrix, GenMatch assumes that it is diagonal
+
+              I_Tr: the treatment indicator--i.e., the 'Tr' argument to GenMatch()
+
+              I_X: The matrix containing the variable we are going to
+              match on, the 'X' option to GenMatch().
+
+              I_weight: the observation specific weights---i.e, the 'weight' argument 
+                        to GenMatch()
+
+	       I_CaliperVec: A vector which contains the caliper which we must fit in
+            
+              I_Xorig: The X matrix unscaled (we need this to make caliper comparisons)
+
+              I_restrict_trigger: an indicator for if we are using the restriction matrix
+
+              I_restrict_nrow: the number of restriction we have
+
+              I_restrict: the actual restriction matrix
+
+              I_DaigWeightMatrixFlag: is our I_ww matrix diagonal?
+
+
+   OUT: A matrix of number of matches rows and 5 columns. The first
+   column contains the treatment observations being matched, the
+   second the control observations and the third the weights (adjusted
+   for ties).
+
+   JOB: This function is called by Match() when there are no
+   observation specific weights, and by GenMatch() when there are no
+   observational specific weights but one or more of no replacement,
+   no ties, exact matching, caliper matching or use of the restriction
+   matrix.
+
+ ---------------------------------------------------------------------------*/
 
   SEXP MatchLoopCfast(SEXP I_N, SEXP I_xvars, SEXP I_All, SEXP I_M, SEXP I_cdd,
 		      SEXP I_caliper, SEXP I_replace, SEXP I_ties,
