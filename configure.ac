@@ -1,7 +1,14 @@
 
 dnl Jasjeet S. Sekhon <sekhon@berkeley.edu> http://sekhon.berkeley.edu
-dnl 2006-09-17
+dnl Current version: 2007-08-04
+dnl First version: 2006-09-17
 dnl Process this file with autoconf to produce a configure script.
+
+dnl Note: to manually switch the compiler and link options one can use
+dnl MAKEFLAGS="CC=icc" R CMD SHLIB *.c* amongst other ways.  This 
+dnl script handles gcc well.  For the Intel compilers see makefile.icc
+dnl in the "extras" directory, and for Sun Studio 12 see makefile.sun.
+dnl Modify these makefiles for your environment.
 
 dnl Matching Version 3.6-0+ we switched to configure.ac instead of the
 dnl configure hack.

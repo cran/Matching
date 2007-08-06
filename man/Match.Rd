@@ -295,8 +295,9 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     caliper or exact matching.}  
 }
 \references{
-  Sekhon, Jasjeet S. 2007.  ``Multivariate and Propensity Score Matching
-  Software with Automated Balance Optimization.''  Working Paper.
+  Sekhon, Jasjeet S. 2007.  ``Multivariate and Propensity Score
+  Matching Software with Automated Balance Optimization.''
+  \emph{Journal of Statistical Software}.
   \url{http://sekhon.berkeley.edu/papers/MatchingJSS.pdf}
 
   Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias

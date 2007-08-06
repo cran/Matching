@@ -360,8 +360,9 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1, weights=NULL,
   
   }
 \references{
-  Sekhon, Jasjeet S. 2007.  ``Multivariate and Propensity Score Matching
-  Software with Automated Balance Optimization.''  Working Paper.
+  Sekhon, Jasjeet S. 2007.  ``Multivariate and Propensity Score
+  Matching Software with Automated Balance Optimization.''
+  \emph{Journal of Statistical Software}.
   \url{http://sekhon.berkeley.edu/papers/MatchingJSS.pdf}
   
   Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias

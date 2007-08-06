@@ -3459,7 +3459,8 @@ MatchLoopCfast <- function(N, xvars, All, M, cdd, caliperflag, replace, ties, ww
   cat("##  See http://sekhon.berkeley.edu/matching for additional documentation.\n",
       "##  Please cite software as:\n",
       "##   Jasjeet S. Sekhon. 2007. ``Multivariate and Propensity Score Matching\n",
-      "##   Software with Automated Balance Optimization: The Matching package for R.''\n##\n",
+      "##   Software with Automated Balance Optimization: The Matching package for R.''\n",
+      "##   Journal of Statistical Software. \n##\n",
       sep="")
 }
 

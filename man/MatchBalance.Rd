@@ -140,8 +140,9 @@ MatchBalance(formul, data = NULL, match.out = NULL, ks = TRUE, mv = FALSE,
   one should check to make sure that missingness is balanced.
   }
   \references{
-  Sekhon, Jasjeet S. 2007.  ``Multivariate and Propensity Score Matching
-  Software with Automated Balance Optimization.''  Working Paper.
+  Sekhon, Jasjeet S. 2007.  ``Multivariate and Propensity Score
+  Matching Software with Automated Balance Optimization.''
+  \emph{Journal of Statistical Software}.
   \url{http://sekhon.berkeley.edu/papers/MatchingJSS.pdf}
 
   Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias
