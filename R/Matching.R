@@ -12,9 +12,9 @@
 Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
                    BiasAdjust=FALSE,exact=NULL,caliper=NULL, replace=TRUE, ties=TRUE,
                    CommonSupport=FALSE,Weight=1,Weight.matrix=NULL, weights=NULL,
-                   Var.calc=0, sample=FALSE, tolerance=0.00001,
-                   distance.tolerance=0.00001, restrict=NULL,
-                   match.out=NULL, version="standard")
+                   Var.calc=0, sample=FALSE, restrict=NULL, match.out=NULL,
+                   distance.tolerance=0.00001, tolerance=sqrt(.Machine$double.eps),
+                   version="standard")
   {
 
     #we don't need to use a Y
@@ -135,11 +135,27 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
         warning("User set 'Weight' to an illegal value.  Resetting to the default which is 1.")        
         Weight <- 1
       }
-    if (version!="fast" & version != "standard" & version != "legacy")
+    if (version!="fast" & version != "standard" & version != "legacy" & version != "Matchby" & version != "MatchbyAI")
       {
         warning("User set 'version' to an illegal value.  Resetting to the default which is 'standard'.")        
         version <- "standard"
       }
+
+    if(version=="Matchby")
+      {
+        version <- "fast"
+        Matchby.call <- TRUE
+        MatchbyAI <- FALSE
+      } else if(version=="MatchbyAI")
+      {
+        version <- "standard"
+        Matchby.call <- TRUE
+        MatchbyAI <- TRUE
+      } else {
+        Matchby.call <- FALSE
+        MatchbyAI <- FALSE
+      }
+
     if (Var.calc !=0 & version=="fast")
       {
         warning("Var.calc cannot be estimate when version=='fast'")
@@ -211,31 +227,11 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
     ccc  <- tolerance
     cdd  <- distance.tolerance
 
-    ###########################
-    # BEGIN: produce an error if some column of X has zero variance
-    #
-
-    apply.Xvar <- apply(X, 2, var)
-    X.var <- (apply.Xvar <= tolerance)
-    Xadjust <- sum(X.var)
-    if(Xadjust > 0)
-      {
-        #which variables have no variance?
-        Xadjust.variables <- order(X.var==TRUE)[(xvars-Xadjust+1):xvars]
-
-        foo <- paste("The following column of 'X' has zero variance (within 'tolerance') and needs to be removed before proceeding: ",Xadjust.variables,"\n")
-        stop(foo)
-        return(invisible(NULL))            
-      }
-
-    # 
-    # END: produce and error if some column of X has zero variance   
-    ###########################
-
     orig.treated.nobs  <- sum(Tr==1)
     orig.control.nobs  <- sum(Tr==0)
     orig.wnobs  <- sum(weights)
-    orig.weighted.treated.nobs <- sum( weights[Tr==1] )    
+    orig.weighted.treated.nobs <- sum( weights[Tr==1] )
+    orig.weighted.control.nobs <- sum( weights[Tr==0] )    
     weights.orig  <- as.matrix(weights)
     zvars <- ncol(Z);
 
@@ -289,17 +285,20 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
         Weight.matrix <- dim(X)[2]
       }
 
-    if(Var.calc >= orig.treated.nobs)
+    if(Var.calc > orig.weighted.treated.nobs)
       {
-        warning("'Var.calc' >= the number of treated obs: 'Var.calc' reset to 0")
-        Var.calc=0
+        warning("'Var.calc' > the number of treated obs: 'Var.calc' reset to ",
+                orig.weighted.treated.nobs, immediate.=Matchby.call)
+        Var.calc <- orig.weighted.treated.nobs
       }
-    if(Var.calc >= orig.control.nobs)
+    if(Var.calc > orig.weighted.control.nobs)
       {
-        warning("'Var.calc' >= the number of control obs: 'Var.calc' reset to 0")
-        Var.calc=0
+        warning("'Var.calc' > the number of control obs: 'Var.calc' reset to ",
+                orig.weighted.control.nobs,  immediate.=Matchby.call)
+        Var.calc <- orig.weighted.control.nobs
       }
-    if(orig.nobs > 20000 & version!="fast")
+    
+    if(orig.nobs > 20000 & version!="fast" & !Matchby.call)
       {
         warning("The version='fast' option is recommended for large datasets if speed is desired.  For additional speed, you may also consider using the ties=FALSE option.", immediate.=TRUE)
       }
@@ -423,14 +422,14 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
                               ecaliper=ecaliper, exact=exact, caliper=caliper,
                               restrict=restrict, MatchLoopC.indx=match.out$MatchLoopC,
                               weights.flag=weights.flag,  replace=replace, ties=ties,
-                              version=version)
+                              version=version, MatchbyAI=MatchbyAI)
           } else {
             ret <- RmatchLoop(Y=Y, Tr=Tr, X=X, Z=Z, V=V, All=estimand, M=M, BiasAdj=BiasAdj,
                               Weight=Weight, Weight.matrix=Weight.matrix, Var.calc=Var.calc,
                               weight=weights, SAMPLE=sample, ccc=ccc, cdd=cdd,
                               ecaliper=ecaliper, exact=exact, caliper=caliper,
                               restrict=restrict, weights.flag=weights.flag,  replace=replace, ties=ties,
-                              version=version)   
+                              version=version, MatchbyAI=MatchbyAI)   
           }
       } else {
         ret <- Rmatch(Y=Y, Tr=Tr, X=X, Z=Z, V=V, All=estimand, M=M, BiasAdj=BiasAdj,
@@ -441,20 +440,23 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
 
     if(is.null(ret$est))
       {
-        if(ret$valid < 1)
+        if(!Matchby.call)
           {
-            if (ret$sum.caliper.drops > 0) {
-              warning("'Match' object contains no valid matches (probably because of the caliper or the exact option).") 
-            } else {
-              warning("'Match' object contains no valid matches")
-            }
-          } else {
-            if (ret$sum.caliper.drops > 0) {
-              warning("'Match' object contains only 1 valid match (probably because of the caliper or the exact option).") 
-            } else {
-              warning("'Match' object contains only one valid match")
-            }            
-          }
+            if(ret$valid < 1)
+              {
+                if (ret$sum.caliper.drops > 0) {
+                  warning("'Match' object contains no valid matches (probably because of the caliper or the exact option).") 
+                } else {
+                  warning("'Match' object contains no valid matches")
+                }
+              } else {
+                if (ret$sum.caliper.drops > 0) {
+                  warning("'Match' object contains only 1 valid match (probably because of the caliper or the exact option).") 
+                } else {
+                  warning("'Match' object contains only one valid match")
+                }            
+              }
+          } #endof if(!Matchby.call)
 
         z <- NA
         class(z)  <- "Match"    
@@ -548,7 +550,6 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
         index.dropped <- matched.index[matched]  #obs not matched
       } #end of sum.caliper.drops > 0
             
-
     z  <- list(est=ret$est, se=ret$se, est.noadj=mest, se.standard=se.standard,
                se.cond=ret$se.cond, 
                mdata=mdata, 
@@ -560,6 +561,15 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
                ndrops=actual.drops, ndrops.matches=sum.caliper.drops, 
                MatchLoopC=ret$MatchLoopC, version=version,
                estimand=estimand.orig)
+
+    if(MatchbyAI)
+      {
+        z$YCAUS   <- ret$YCAUS
+        z$ZCAUS   <- ret$ZCAUS
+        z$Kcount  <- ret$Kcount
+        z$KKcount <- ret$KKcount
+        z$Sigs    <- ret$Sigs
+      }
 
     class(z)  <- "Match"    
     return(z)
@@ -714,6 +724,8 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
         eps <- X[,k]-Mu.X[k,1]
         Sig.X[k,1] <- sqrt(sum(X[,k]*X[,k]*weight)/sum(weight)-Mu.X[k,1]^2)
         Sig.X[k,1] <- Sig.X[k,1]*sqrt(N/(N-1))
+        if(Sig.X[k,1] < ccc)
+          Sig.X[k,1] <- ccc
         X[,k]=eps/Sig.X[k,1]
 #        AA[k,k]=Sig.X[k,1]
       } #end of k loop
@@ -1998,7 +2010,7 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
       match.out  <- NULL
     }
 
-    if ( (class(match.out) != "Match") & (!is.null(match.out)) ) {
+    if ( (class(match.out) != "Match") & (class(match.out) != "Matchby") & (!is.null(match.out)) ) {
       warning("Object not of class 'Match'")
       match.out  <- NULL
     }
@@ -2295,14 +2307,14 @@ balanceMV  <- function(formul, data=NULL, match.out=NULL, maxit=1000, weights=re
                        nboots=100, nmc=nboots, print.level=0, ...)
   {
 
-    tol <- .Machine$double.eps*100
+    tol <- sqrt(.Machine$double.eps)
     
     if(!is.list(match.out) & (!is.null(match.out))) {
       warning("'Match' object contains no valid matches")
       match.out  <- NULL
     }
 
-    if ( (class(match.out) != "Match") & (!is.null(match.out)) ) {
+    if ( (class(match.out) != "Match") & (class(match.out) != "Matchby") & (!is.null(match.out)) ) {
       warning("Object not of class 'Match'")
       match.out  <- NULL
     }
@@ -2491,8 +2503,8 @@ balanceMV  <- function(formul, data=NULL, match.out=NULL, maxit=1000, weights=re
 	ddata$Tr.matched <- MTr        
 	ddata$weights.matched <- Mdata$weight37172
 	ddata$weights <- match.out$weights
-        ddata$index.treated.indata  <- match.out$index.treated.indata
-        ddata$index.control.indata  <- match.out$index.control.indata
+        ddata$index.treated.indata  <- match.out$index.treated
+        ddata$index.control.indata  <- match.out$index.control
 
         #Monte Carlo Estimates for the full sample before matching ks.test
         Ys <- Mt1$fitted
@@ -2693,7 +2705,7 @@ get.ydata <- function(formul, datafr) {
 ks.boot  <- function(Tr, Co, nboots=1000, alternative = c("two.sided", "less", "greater"), print.level=0)
   {
     alternative <- match.arg(alternative)
-    tol <- .Machine$double.eps*100
+    tol <- sqrt(.Machine$double.eps)
     Tr <- Tr[!is.na(Tr)]
     Co <- Co[!is.na(Co)]
 
@@ -2763,11 +2775,13 @@ summary.ks.boot <- function(object, ..., digits=5)
 
 RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.calc, weight,
                        SAMPLE, ccc, cdd, ecaliper=NULL, exact=NULL, caliper=NULL, restrict=NULL,
-                       MatchLoopC.indx=NULL, weights.flag, replace=TRUE, ties=TRUE, version="standard")
+                       MatchLoopC.indx=NULL, weights.flag, replace=TRUE, ties=TRUE,
+                       version="standard", MatchbyAI=FALSE)
   {
     s1 <- MatchGenoudStage1caliper(Tr=Tr, X=X, All=All, M=M, weights=weight,
                                    exact=exact, caliper=caliper,
-                                   distance.tolerance=cdd);
+                                   distance.tolerance=cdd,
+                                   tolerance=ccc)
 
     sum.caliper.drops <- 0
     X.orig <- X
@@ -2814,7 +2828,6 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
 # I.b. determine sample and covariate vector sizes
     N  <- nrow(X)
     Kx <- ncol(X)
-    xvars <- Kx
     Kz <- ncol(Z)
 
 # K covariates
@@ -2839,6 +2852,8 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
         eps <- X[,k]-Mu.X[k,1]
         Sig.X[k,1] <- sqrt(sum(X[,k]*X[,k]*weight)/sum(weight)-Mu.X[k,1]^2)
         Sig.X[k,1] <- Sig.X[k,1]*sqrt(N/(N-1))
+        if(Sig.X[k,1] < ccc)
+          Sig.X[k,1] <- ccc        
         X[,k]=eps/Sig.X[k,1]
 #        AA[k,k]=Sig.X[k,1]
       } #end of k loop
@@ -3018,25 +3033,6 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
         Zc <- Z[indx[,5],]
       }
 
-    # transform matched covariates back for artificial data set
-#    Xt.u <- Xt
-#    Xc.u <- Xc
-#    IX.u <- IX
-#    for (k in 1:Kx)
-#      {
-#        Xt.u[,k] <- Mu.X[k,1]+Sig.X[k,1] * Xt.u[,k]
-#        Xc.u[,k] <- Mu.X[k,1]+Sig.X[k,1] * Xc.u[,k]
-#        IX.u[,k] <- Mu.X[k,1]+Sig.X[k,1] * IX.u[,k]
-#      }
-
-    #reset Var.Calc if >= the sum of weights
-    if(Var.calc >= sum(W))
-      {
-        warning("'Var.calc' >= the number of matches: 'Var.calc' reset to 0")
-        Var.calc=0
-      }
-    
-
     est.func <- function(N, All, Tr, indx, weight, BiasAdj, Kz)
       {
         Kcount <- as.matrix(rep(0, N))    
@@ -3116,7 +3112,8 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
       {
         ret <- .Call("EstFuncC", as.integer(N), as.integer(All), as.integer(nrow(indx)),
                      as.real(Y), as.real(Tr),
-                     as.real(weight), as.real(indx))
+                     as.real(weight), as.real(indx),
+                     PACKAGE="Matching")
         YCAUS <- ret[,1];
         Kcount <- ret[,2];
         KKcount <- ret[,3];
@@ -3266,7 +3263,6 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
       } else {
         Yc.adj <- Yc
         Yt.adj <- Yt
-        Yt.adj <- Yt
         Tau.i <- Yt.adj - Yc.adj        
       }
        
@@ -3275,69 +3271,19 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
     # III. If conditional variance is needed, initialize variance vector
     # and loop through all observations
 
-#   ww <- chol(Weight.matrix)
-#   NN <- as.matrix(1:N)
     if (Var.calc>0)
       {
-        Sig <- matrix(0, nrow=N, ncol=1)
-        # overall standard deviation of outcome
-        # std <- sd(Y)
-        for (i in 1:N)
-          {
-            # treatment indicator observation to be matched
-            TREATi <- Tr[i,1]
-            # covariate value for observation to be matched
-            xx <- X[i,]
-            # potential matches are all observations with the same treatment value
-            POTMAT <- (Tr==TREATi)
-            POTMAT[i,1] <- 0
-            weightPOT <- as.matrix(weight[POTMAT==1,1])
-            DX <- (X - matrix(1, N,1) %*% xx) %*% t(ww)
-            if (xvars>1)
-              {
-                foo <- apply(t(DX*DX), 2, sum)
-                Dist <- as.matrix(foo)
-              } else {
-                Dist <- DX*DX
-              }
-
-            # distance to observation to be matched
-
-            # Distance vector only for potential matches
-            DistPot <- Dist[POTMAT==1,1]
-            # sorted distance of potential matches
-            S <- sort(DistPot)
-            L <- order(DistPot)
-            weightPOT.sort <- weightPOT[L,1]
-            weightPOT.sum <- cumsum(weightPOT.sort)
-            tt <-  1:(length(weightPOT.sum))
-            MMM <- min(tt[weightPOT.sum >= Var.calc])
-            MMM <- min(MMM,length(S))
-            Distmax=S[MMM]
-
-            # distance of Var_calc-th closest match
-            ACTMAT <- (POTMAT==1) & (Dist<= (Distmax+ccc))
-
-            # indicator for actual matches, that is all potential
-            # matches closer than, or as close as the Var_calc-th
-            # closest
-
-            Yactmat <- as.matrix(c(Y[i,1], Y[ACTMAT,1]))
-            weightactmat <- as.matrix(c(weight[i,1], weight[ACTMAT,1]))
-            fm <- t(Yactmat) %*% weightactmat/sum(weightactmat)
-            sm <- sum(Yactmat*Yactmat*weightactmat)/sum(weightactmat)
-            sigsig <- (sm-fm %*% fm)*sum(weightactmat)/(sum(weightactmat)-1)
-            
-            # standard deviation of actual matches
-            Sig[i,1] <- sqrt(sigsig)
-          }# end of i loop
-        #variance estimate 
-        Sigs <- Sig*Sig
+        #For R version of this function see Matching version < 4.5-0008
+        Sigs <- VarCalcMatchC(N=N, xvars=ncol(X), Var.calc=Var.calc,
+                              cdd=cdd, caliperflag=caliperflag, 
+                              ww=ww, Tr=Tr, Xmod=s1$X,
+                              CaliperVec=use.ecaliper, Xorig=X.orig,
+                              restrict.trigger=restrict.trigger, restrict=restrict,
+                              DiagWeightMatrixFlag=DiagWeightMatrixFlag,
+                              Y=Y, weightFlag=weights.flag, weight=weight)            
       } #end of var.calc > 0
-       
+
     est <- t(W) %*% Tau.i/sum(W) # matching estimator
-#    est.t <- sum((iot.t*Tr+iot.c*Kcount*Tr)*Y)/sum(iot.t*Tr+iot.c*Kcount*Tr)
-#    est.c <- sum((iot.t*(1-Tr)+iot.c*Kcount*(1-Tr))*Y)/sum(iot.t*(1-Tr)+iot.c*Kcount*(1-Tr))
 
     if(version=="standard")
       {
@@ -3371,7 +3317,7 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
           {
             var <- var.sample
           } else {
-            var <- max(var.sample, var.pop)
+            #var <- max(var.sample, var.pop)
             var <- var.pop
           }
         
@@ -3400,10 +3346,22 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
 #        em[2,1] <- sum(Vdif>0.000001)
 #      }#end of exact==1
 
-    return(list(est=est, se=se, se.cond=se.cond, W=W,
-                sum.caliper.drops=sum.caliper.drops,
-                art.data=art.data, 
-                MatchLoopC=MatchLoopC.indx))
+    if(!MatchbyAI)
+      {
+        return(list(est=est, se=se, se.cond=se.cond, W=W,
+                    sum.caliper.drops=sum.caliper.drops,
+                    art.data=art.data, 
+                    MatchLoopC=MatchLoopC.indx))
+      } else {
+        if(Var.calc==0)
+          Sigs <- NULL
+        return(list(est=est, se=se, se.cond=se.cond, W=W,
+                    sum.caliper.drops=sum.caliper.drops,
+                    art.data=art.data, 
+                    MatchLoopC=MatchLoopC.indx,
+                    YCAUS=YCAUS, Kcount=Kcount, KKcount=KKcount,
+                    Sigs=Sigs))
+      }
   }# end of RmatchLoop
 
 MatchLoopC <- function(N, xvars, All, M, cdd, caliperflag, replace, ties, ww, Tr, Xmod, weights, CaliperVec, Xorig,
@@ -3447,6 +3405,30 @@ MatchLoopCfast <- function(N, xvars, All, M, cdd, caliperflag, replace, ties, ww
                  PACKAGE="Matching")
     return(ret)
   } #end of MatchLoopCfast
+
+VarCalcMatchC <- function(N, xvars, Var.calc, cdd, caliperflag, ww, Tr, Xmod, CaliperVec,
+                          Xorig, restrict.trigger, restrict, DiagWeightMatrixFlag,
+                          Y, weightFlag, weight)
+  {
+
+    if(restrict.trigger)
+      {
+        restrict.nrow <- nrow(restrict)
+      } else {
+        restrict.nrow <- 0
+      }    
+    
+    ret <- .Call("VarCalcMatchC", as.integer(N), as.integer(xvars), as.integer(Var.calc),
+                 as.double(cdd), as.integer(caliperflag), 
+                 as.real(ww), as.real(Tr),
+                 as.real(Xmod), as.real(CaliperVec), as.real(Xorig),
+                 as.integer(restrict.trigger), as.integer(restrict.nrow), as.real(restrict),
+                 as.real(DiagWeightMatrixFlag),
+                 as.real(Y),
+                 as.integer(weightFlag), as.real(weight),
+                 PACKAGE="Matching")
+    return(ret)
+  } #end of VarCalcMatchC
 
 
 

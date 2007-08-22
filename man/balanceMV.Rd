@@ -74,9 +74,9 @@ balanceMV(formul, data = NULL, match.out=NULL, maxit = 1000,
   \item{data}{A list containing five variables: a treatment indicator
     for the unmatched (\code{Tr}) and the matched data
     (\code{Tr.matched}), weights for the matched data used for the glm
-    models, index.treated.indata, and index.control.indata.
-    The two indexes are defined in \code{\link{Match}}.  The user should
-    never need to examine this object.}
+    models, \code{index.treated}, and \code{index.control}.  The two
+    indexes are defined in \code{\link{Match}}.  The user should never
+    need to examine this object.}
 }
 \details{
   The function can be used to determine if matching was successful in

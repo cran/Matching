@@ -438,7 +438,7 @@ extern "C"
     /* set misc */
     int TREATi = 0;
     
-    Matrix DistPot, tt, xmat;
+    Matrix DistPot;
     Matrix ACTMAT, POTMAT;
 
     // Matrices to avoid rbind
@@ -800,8 +800,8 @@ extern "C"
     /* set misc */
     int TREATi = 0, ACTMATsum = 0;
     
-    Matrix DistPot, weightPot, tt, 
-      weightPot_sort, weightPot_sum, Wi, xmat, I, IM, W;
+    Matrix DistPot, weightPot, tt,
+      weightPot_sort, weightPot_sum, Wi, I, IM, W;
     Matrix ACTMAT, POTMAT;
     
     //These are larger than needed; it is just easier this way
@@ -1125,9 +1125,9 @@ extern "C"
       }
     
     for(i=0;i<N; i++)
-    {
-      weight[i] = REAL(I_weight)[i];
-    }
+      {
+	weight[i] = REAL(I_weight)[i];
+      }
     
     Matrix IMi;
     Matrix Xorig;
@@ -1207,7 +1207,7 @@ extern "C"
     int TREATi = 0, ACTMATsum = 0;
 
     Matrix DistPot, weightPot, tt, 
-      weightPot_sort, weightPot_sum, Wi, xmat, I, IM, IMt, W;
+      weightPot_sort, weightPot_sum, Wi, I, IM, IMt, W;
     Matrix ACTMAT, POTMAT(N, 1);
 
     //These are larger than needed; it is just easier this way
@@ -1805,7 +1805,7 @@ extern "C"
     /* set misc */
     int TREATi = 0;
 
-    Matrix tt, xmat, IMt;
+    Matrix IMt;
     Matrix ACTMAT, POTMAT(N, 1);
 
     // Temporary size for these matrices to avoid rbind
@@ -2238,6 +2238,495 @@ extern "C"
     UNPROTECT(1);
     return(ret);    
   } //end of MatchLoopCfast
+
+
+/*---------------------------------------------------------------------------
+   Function : VarCalcMatchC
+
+   In       : I_N: the number of observations
+
+              I_xvars: the number of columns in the 'X' matrix---i.e.,
+                       the number of variables to match on.
+
+              I_M: 1-to-Var.calc this is the 'Var.calc' option to Match()
+
+	       I_cdd: Distance tolerance
+
+	       I_caliper: indicator for if we are using a caliper
+
+              I_ww: Weight.matrix, GenMatch assumes that it is diagonal
+
+              I_Tr: the treatment indicator--i.e., the 'Tr' argument to GenMatch()
+
+              I_X: The matrix containing the variable we are going to
+              match on, the 'X' option to GenMatch().
+
+              I_weight: the observation specific weights---i.e, the 'weight' argument 
+                        to GenMatch()
+
+	       I_CaliperVec: A vector which contains the caliper which we must fit in
+            
+              I_Xorig: The X matrix unscaled (we need this to make caliper comparisons)
+
+              I_restrict_trigger: an indicator for if we are using the restriction matrix
+
+              I_restrict_nrow: the number of restriction we have
+
+              I_restrict: the actual restriction matrix
+
+              I_DaigWeightMatrixFlag: is our I_ww matrix diagonal?
+
+
+   OUT: Sigs, the key component of the variance estimate for AI SEs when Var.calc > 0
+
+   JOB: This function is modeled after MatchLoopCfast, but it is used
+   to calculated AI SEs when Var.calc > 0. This requires matching treated
+   to treated, and controls to controls.
+
+ ---------------------------------------------------------------------------*/
+
+  SEXP VarCalcMatchC(SEXP I_N, SEXP I_xvars, SEXP I_M, SEXP I_cdd,
+		     SEXP I_caliper, 
+		     SEXP I_ww, SEXP I_Tr, SEXP I_X, 
+		     SEXP I_CaliperVec, SEXP I_Xorig,
+		     SEXP I_restrict_trigger, SEXP I_restrict_nrow, SEXP I_restrict,
+		     SEXP I_DiagWeightMatrixFlag, 
+		     SEXP I_Y, 
+		     SEXP I_weightFlag, SEXP I_weight)
+  {
+    SEXP ret;
+    
+    long N, xvars, M, caliper, restrict_trigger, restrict_nrow, DiagWeightMatrixFlag,
+      sum_caliper_drops=0;
+    double cdd, diff, Distmax, dfoo;
+    
+    long i, j, k;
+    
+    N = asInteger(I_N);
+    xvars = asInteger(I_xvars);
+    M = asInteger(I_M);
+    cdd = asReal(I_cdd);
+    caliper = (long) asReal(I_caliper);
+    restrict_nrow = asInteger(I_restrict_nrow);
+    restrict_trigger = asInteger(I_restrict_trigger);
+    DiagWeightMatrixFlag = asInteger(I_DiagWeightMatrixFlag);
+    
+    Matrix ww = Matrix(xvars, xvars);
+    Matrix Tr = Matrix(N, 1);
+    Matrix X = Matrix(N, xvars);
+    Matrix Y = Matrix(N, 1);
+    
+    k=0;
+    //rows and colums are fliped!! j,i != i,j
+    for(j=0;j<xvars; j++)
+      {
+	for(i=0;i<xvars; i++)
+	  {
+	    //ww(i,j) = REAL(I_ww)[k];
+	    ww[M(i,j,xvars)] = REAL(I_ww)[k];
+	    k++;
+	  }
+      }
+    
+    for(i=0;i<N; i++)
+      {
+	Tr[i] = REAL(I_Tr)[i];
+      }
+    
+    //rows and colums are fliped!! j,i != i,j
+    k=0;
+    for(j=0;j<xvars; j++)
+      {
+	for(i=0;i<N; i++)
+	  {
+	    //X(i,j) = REAL(I_X)[k];
+	    X[M(i,j,xvars)] = REAL(I_X)[k];
+	    k++;
+	  }
+      }
+    
+    Matrix IMi;
+    Matrix Xorig;
+    Matrix CaliperVec;
+    if(caliper==1)
+    {
+      Xorig = Matrix(N, xvars);
+      CaliperVec = Matrix(xvars, 1);
+      
+      for (i=0; i<xvars; i++)
+      {
+        CaliperVec[i] = REAL(I_CaliperVec)[i];
+      }
+      
+      //rows and colums are fliped!! j,i != i,j
+      k=0;
+      for(j=0;j<xvars; j++)
+      {
+        for(i=0;i<N; i++)
+	      {
+          //X(i,j) = REAL(I_X)[k];
+          Xorig[M(i,j,xvars)] = REAL(I_Xorig)[k];
+          k++;
+	      }
+      }	
+    } // end of caliper==1
+    
+    Matrix restrict; 
+    if (restrict_trigger==1)
+    {
+      restrict = Matrix(restrict_nrow, 3);
+      
+      k=0;
+      for(j=0;j<3; j++)
+      {
+        for(i=0;i<restrict_nrow; i++)
+	      {
+		restrict[M(i,j,3)] = REAL(I_restrict)[k];
+		k++;
+	      }
+      }	
+    } /* if (restrict_trigger==1) */
+
+    for(i=0;i<N; i++)
+      {
+	Y.data[i] = REAL(I_Y)[i];
+      }
+
+    Matrix weight, weightPot, tt, weightPot_sort, weightPot_sum, foo1, foo2;
+    int weightFlag = asInteger(I_weightFlag);
+    if(weightFlag==1)
+      {
+	weight = zeros(N, 1);
+
+	for(i=0;i<N; i++)
+	  {
+	    weight.data[i] = REAL(I_weight)[i];
+	  }	
+      }
+
+    Matrix INN = seqa(1, 1, N);
+    // TT is just equal to INN
+
+#ifdef __NBLAS__
+    Matrix DX, ZX(N, xvars), Dist(N, 1);
+    if (DiagWeightMatrixFlag!=1) {
+      /* ctor zeros data so this does not add any computational time and maintains the dims outside 
+	 the scope of this if statement */
+      DX = zeros(N, xvars);
+    }
+#else
+    Matrix index_onesN = ones(N, 1);
+    Matrix xx;
+    Matrix DX, Dist;
+#endif
+
+    /* set misc */
+    int TREATi = 0;
+
+    Matrix IMt;
+    Matrix ACTMAT, POTMAT(N, 1), Sigs(N,1);
+
+    // Temporary size for these matrices to avoid rbind, in the Var.calc case this IS the max
+    int NM = N*M;
+
+    Matrix I  = Matrix(NM,1);
+    Matrix IM = Matrix(NM,1);
+    Matrix W  = Matrix(NM,1);
+
+    //These are larger than needed; it is just easier this way
+    int *order_DistPot = (int *) malloc(N*sizeof(int));  
+    double *S = (double *) malloc(N*sizeof(double));  
+    Matrix DistPot=Matrix(N, 1);
+
+    for(i=0; i < N; i++)
+      {
+	// treatment indicator for observation to be matched        
+	TREATi = (int) Tr[i];
+	
+#ifdef __NBLAS__
+	if (DiagWeightMatrixFlag!=1)
+	  {
+	    // this loop is equivalent to the matrix X less the matrix A, which is
+	    // the product of N rows by 1 column of 1.0 and row R of X.
+	    double *dest = ZX.data;
+	    double *src  = X.data;
+	    double *row  = X.data + (i * xvars);
+	    for (int jj = 0; jj < N; ++jj) {
+	      for (int kk = 0; kk < xvars; ++kk, ++dest, ++src) {
+		*dest = *src - row[kk];
+	      }
+	    }
+	    
+	    /* note that xvars must be > 1 */
+	    //JSS
+	    // do the second multiplication with dgemm, multiplying the matrix
+	    // above, D, by the transpose of matrix W.
+	    cblas_dgemm(CblasRowMajor,// column major
+			CblasNoTrans, // A not transposed
+			CblasTrans,   // B transposed
+			xvars,        // M
+			N,            // N
+			xvars,        // K
+			1.0,          // alpha, (alpha * A * B)
+			ww.data,      // A
+			xvars,        // leading dimension for A
+			ZX.data,      // B
+			xvars,        // leading dimension for B
+			0.0,          // beta, (beta * C)
+			DX.data,      // C
+			N);           // leading dimension for C
+	    
+	    DX.multi_scalar(DX);
+	    
+	    std::swap(DX.colsize, DX.rowsize);
+	    
+	    Dist = sumc(DX);
+	    
+	    std::swap(Dist.colsize, Dist.rowsize); // transpose 1 x N -> N x 1
+	    std::swap(DX.colsize, DX.rowsize);
+	  } else 
+	  {
+#ifdef __GenMatchBLAS__
+	    // this loop is equivalent to the matrix X less the matrix A, which is
+	    // the product of N rows by 1 column of 1.0 and row R of X.
+	    double *dest = ZX.data;
+	    double *src  = X.data;
+	    double *row  = X.data + (i * xvars);
+	    for (int jj = 0; jj < N; ++jj) {
+	      for (int kk = 0; kk < xvars; ++kk, ++dest, ++src) {
+		*dest = *src - row[kk];
+	      }
+	    }
+	    
+	    //http://docs.sun.com/source/819-3691/dscal.html
+	    for (int kk=0; kk < xvars; kk++)
+	      {
+		cblas_dscal(N, ww.data[M(kk,kk,xvars)], ZX.data+kk, xvars);
+	      }
+	    
+	    ZX.multi_scalar(ZX);
+	    
+	    //http://docs.sun.com/source/819-3691/dasum.html 
+	    for (int jj=0; jj < N; jj++)
+	      {
+		Dist.data[jj] = cblas_dasum(xvars, ZX.data+M(jj, 0, xvars), 1);
+	      }
+#else
+	    // Don't calculate Distance for observations with of a 
+	    // DIFFERENT treatment assignment
+	    for (int jj = 0; jj < N; jj++) {
+	      if( abs(TREATi-Tr[jj]) < TOL )
+		{
+		  Dist.data[jj] = 0.0;
+		  for (int kk=0; kk < xvars; kk++)
+		    {
+		      ZX.data[M(jj,kk,xvars)] = X.data[M(jj,kk,xvars)] - X.data[M(i,kk,xvars)];
+		      dfoo  = ZX.data[M(jj,kk,xvars)] * ww.data[M(kk,kk,xvars)];
+		      Dist.data[jj] += dfoo*dfoo;
+		    }
+		} // if TR
+	    } //end of jj loop
+#endif /* end of __GenMatchBLAS__ ifdef */
+	  } /* end of if (DiagWeightMatrixFlag!=1) */
+#else
+	// covariate value for observation to be matched                        
+	xx = X(i,_);
+	
+	
+	DX = (X - (index_onesN * xx)) * t(ww);
+	
+	if (xvars>1)
+	  {
+	    //JSS
+	    foo1 = t(multi_scalar(DX, DX));
+	    Dist = t(sumc(foo1));
+	    
+	  } 
+	else 
+	  {
+	    Dist = multi_scalar(DX, DX);
+	  } // end of xvars
+#endif /* end __NBLAS__ */
+
+	//Remove self as a potential match
+	Dist[i] = DOUBLE_XMAX;
+	
+	// Dist distance to observation to be matched
+	// is N by 1 vector	    
+	if (restrict_trigger==1)
+	  {
+	    for(j=0; j<restrict_nrow; j++)
+	      {
+		if ( ((long) restrict[M(j,0,3)])-1 ==i )
+		  {
+		    
+		    if (restrict[M(j,2,3)] < 0) {
+		      Dist[ ((long) restrict[M(j,1,3)])-1 ] = DOUBLE_XMAX;
+		    }
+		    else {
+		      Dist[ ((long) restrict[M(j,1,3)])-1 ] = restrict[M(j,2,3)];
+		    }
+		  }
+		else if ( ((long) restrict[M(j,1,3)])-1 ==i ) 
+		  {
+		    
+		    if (restrict[M(j,2,3)] < 0) {
+		      Dist[ ((long) restrict[M(j,0,3)])-1 ] = DOUBLE_XMAX;
+		    }
+		    else {
+		      Dist[ ((long) restrict[M(j,0,3)])-1 ] = restrict[M(j,2,3)];
+		    }
+		  }
+	      }
+	  } /* if (restrict_trigger==1) */
+
+        // set of potential matches (all observations with the *SAME* treatment)
+	POTMAT = EqualityTestScalar(Tr, TREATi);
+	
+	if (caliper==1)
+	  {
+	    for (j=0; j<N; j++)
+	      {
+		if((int) POTMAT[j]==1)
+		  {
+		    for (k=0; k<xvars; k++)
+		      {
+			diff = abs(Xorig[M(i, k, xvars)] - Xorig[M(j,k,xvars)]); 
+			if (diff > CaliperVec[k])
+			  {
+			    Dist[j] = DOUBLE_XMAX;
+			    break;
+			  }
+		      }
+		  }
+	      } 
+	  }//end of if caliper
+
+	if(weightFlag==0)
+	  {
+	    // X's for potential matches
+	    DistPot = selif(Dist, POTMAT);
+	    long DistPot_size = size(DistPot);
+	    
+	    Distmax = kth_smallest(DistPot.data, DistPot_size, (M-1));
+	    
+	    if (restrict_trigger==1 | caliper==1)
+	      {
+		if ( (Distmax+cdd) > DOUBLE_XMAX_CHECK)
+		  {
+		    sum_caliper_drops++;
+		    continue;
+		  }
+	      } 
+	    
+	    // selection of actual matches 
+	    // logical index
+	    ACTMAT = LessEqualTestScalar(Dist,  (Distmax+cdd));
+	    ACTMAT = VectorAnd(POTMAT, ACTMAT);
+	    
+	    // counts how many times each observation is matched.
+	    double Mi = sum(ACTMAT);
+
+	    /**********************************************/
+	    /* ESTIMATE Sigs */
+	    double fm=0, sm=0;
+	    double sumweightactmat = Mi + 1.0;
+	    
+	    //Add self back in
+	    ACTMAT.data[i] = 1.0;
+	    for(j=0; j<N; j++)
+	      {
+		if ( abs(ACTMAT.data[j] - 1.0) < TOL)
+		  {
+		    fm += Y.data[j];
+		    sm += (Y.data[j]*Y.data[j]);
+		  }
+	      }
+	    fm = fm/sumweightactmat;
+	    sm = sm/sumweightactmat;
+	    Sigs[i] = (sm - fm * fm)*sumweightactmat/(sumweightactmat-1.0);
+	  } else {
+	  // X's for potential matches
+	  DistPot = selif(Dist, POTMAT);
+	  weightPot = selif(weight, POTMAT);
+
+	  long weightPot_size = size(weightPot);
+	  
+	  for(j=0; j< weightPot_size; j++)
+	    {
+	      // assume that weightPot_size = size(DistPot)
+	      order_DistPot[j] = j;
+	      S[j] = (double) DistPot[j];
+	    }
+
+	  rsort_with_index (S, order_DistPot, weightPot_size);
+	  
+	  weightPot_sort = Matrix(weightPot_size, 1);
+	  for(j=0; j < weightPot_size; j++)
+	    {
+	      weightPot_sort[j] = weightPot[order_DistPot[j]];
+	    }
+	  weightPot_sum = cumsum(weightPot_sort);
+
+	  tt = seqa(1, 1, rows(weightPot_sum));
+	  
+	  foo1 = GreaterEqualTestScalar(weightPot_sum, M);
+	  foo2 = selif(tt, foo1);
+	  
+	  long MMM = (long) min(foo2) - 1;
+	  
+	  // distance at last match
+	  double Distmax = S[MMM];
+	  
+	  if (restrict_trigger==1 | caliper==1)
+	    {
+	      if ( (Distmax+cdd) > DOUBLE_XMAX_CHECK)
+		{
+		  sum_caliper_drops++;
+		  continue;
+		}
+	    } 
+	  
+	  // selection of actual matches 
+	  // logical index
+	  ACTMAT = LessEqualTestScalar(Dist,  (Distmax+cdd));
+	  ACTMAT = VectorAnd(POTMAT, ACTMAT);
+	  
+	  /**********************************************/
+	  /* ESTIMATE Sigs */
+	  double fm=0, sm=0, ws=0;
+	  
+	  //Add self back in
+	  ACTMAT.data[i] = 1.0;
+	  for(j=0; j<N; j++)
+	    {
+	      if ( abs(ACTMAT.data[j] - 1.0) < TOL)
+		{
+		  fm += Y.data[j]*weight[j];
+		  sm += (Y.data[j]*Y.data[j]*weight[j]);
+		  ws += weight[j];
+		}
+	    }
+	  fm = fm/ws;
+	  sm = sm/ws;
+	  Sigs[i] = (sm - fm * fm)*ws/(ws-1.0);
+	} //end of weightFlag
+      } //END OF i MASTER LOOP!
+    
+    /* Free Memory */
+    free(S);
+    free(order_DistPot);
+    
+    PROTECT(ret=allocMatrix(REALSXP, N, 1));
+    /* Loop through the data and display the same in matrix format */
+    for( j = 0; j < N; j++ )
+      {
+	REAL(ret)[j] = Sigs[j];
+      }
+    UNPROTECT(1);
+    return(ret);    
+  } //end of VarCalcMatchC
+
 
 } //end of extern "C"
 

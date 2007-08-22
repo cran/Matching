@@ -7,7 +7,8 @@ FastMatchC <- function(N, xvars, All, M, cdd, ww, Tr, Xmod, weights)
     return(ret)
   }
 
-MatchGenoudStage1 <- function(Tr=Tr, X=X, All=All, M=M, weights=weights)
+MatchGenoudStage1 <- function(Tr=Tr, X=X, All=All, M=M, weights=weights,
+                              tolerance)
   {
     N  <- nrow(X)
     xvars <- ncol(X)
@@ -39,6 +40,8 @@ MatchGenoudStage1 <- function(Tr=Tr, X=X, All=All, M=M, weights=weights)
         eps <- X[,k]-Mu.X[k,1]
         Sig.X[k,1] <- sqrt(sum(X[,k]*X[,k]*weights)/weights.sum-Mu.X[k,1]^2)
         Sig.X[k,1] <- Sig.X[k,1]*sqrt(N/(N-1))
+        if(Sig.X[k,1] < tolerance)
+          Sig.X[k,1] <- tolerance
         X[,k]=eps/Sig.X[k,1]
       } #end of k loop
 
@@ -54,7 +57,7 @@ MatchGenoudStage1 <- function(Tr=Tr, X=X, All=All, M=M, weights=weights)
 
 MatchGenoudStage1caliper <- function(Tr=Tr, X=X, All=All, M=M, weights=weights,
                                      exact=exact, caliper=caliper,
-                                     distance.tolerance)
+                                     distance.tolerance, tolerance)
   {
     N  <- nrow(X)
     xvars <- ncol(X)
@@ -142,6 +145,8 @@ MatchGenoudStage1caliper <- function(Tr=Tr, X=X, All=All, M=M, weights=weights,
         eps <- X[,k]-Mu.X[k,1]
         Sig.X[k,1] <- sqrt(sum(X[,k]*X[,k]*weights)/weights.sum-Mu.X[k,1]^2)
         Sig.X[k,1] <- Sig.X[k,1]*sqrt(N/(N-1))
+        if(Sig.X[k,1] < tolerance)
+          Sig.X[k,1] <- tolerance        
         X[,k]=eps/Sig.X[k,1]
       } #end of k loop
 
@@ -164,8 +169,8 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                      MemoryMatrix=TRUE,
                      exact=NULL, caliper=NULL, replace=TRUE, ties=TRUE,
                      CommonSupport=FALSE,nboots=0, ks=TRUE, verbose=FALSE,
-                     tolerance=0.00001,
-                     distance.tolerance=tolerance,
+                     distance.tolerance=0.00001,
+                     tolerance=sqrt(.Machine$double.eps),
                      min.weight=0,
                      max.weight=1000,
                      Domains=NULL,
@@ -182,8 +187,6 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
     Tr <- as.matrix(Tr)
     X  <- as.matrix(X)
     BalanceMatrix  <- as.matrix(BalanceMatrix)
-
-    xvars <- ncol(X)
 
     if (is.null(weights))
       {
@@ -355,27 +358,6 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         warning("The key tuning parameters for optimization were are all left at their default values.  The 'pop.size' option in particular should probably be increased for optimal results.  For details please see the help page and http://sekhon.berkeley.edu/papers/MatchingJSS.pdf")
       }
 
-    ###########################
-    # BEGIN: produce an error if some column of X has zero variance
-    #
-
-    apply.Xvar <- apply(X, 2, var)
-    X.var <- (apply.Xvar <= tolerance)
-    Xadjust <- sum(X.var)
-    if(Xadjust > 0)
-      {
-        #which variables have no variance?
-        Xadjust.variables <- order(X.var==TRUE)[(xvars-Xadjust+1):xvars]
-
-        foo <- paste("The following column of 'X' has zero variance (within 'tolerance') and needs to be removed before proceeding: ",Xadjust.variables,"\n")
-        stop(foo)
-        return(invisible(NULL))            
-      }
-
-    # 
-    # END: produce and error if some column of X has zero variance   
-    ###########################
-
     #loss function
     if (is.real(loss))
       {
@@ -516,7 +498,8 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
     if(!GenMatchCaliper.trigger)
       {
 
-        s1 <- MatchGenoudStage1(Tr=Tr, X=X, All=All, M=M, weights=weights);
+        s1 <- MatchGenoudStage1(Tr=Tr, X=X, All=All, M=M, weights=weights,
+                                tolerance=tolerance);
         s1.Tr <- s1$Tr
         s1.X <- s1$X
         s1.All <- s1$All
@@ -526,7 +509,8 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
       } else {
         s1 <- MatchGenoudStage1caliper(Tr=Tr, X=X, All=All, M=M, weights=weights,
                                        exact=exact, caliper=caliper,
-                                       distance.tolerance=distance.tolerance)
+                                       distance.tolerance=distance.tolerance,
+                                       tolerance=tolerance)
         s1.Tr <- s1$Tr
         s1.X <- s1$X
         s1.All <- s1$All

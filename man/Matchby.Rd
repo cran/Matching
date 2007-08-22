@@ -9,13 +9,16 @@
   usual matching options.  This function is much faster for large
   datasets than the \code{\link{Match}} function itself.  For additional
   speed, consider doing matching without replacement---see the
-  \code{replace} option.
+  \code{replace} option.  This function is more limited than the
+  \code{\link{Match}} function.  For example, \code{Matchby} cannot be
+  used if the user wishes to provide observation specific weights. 
 }
 
 \usage{
 Matchby(Y, Tr, X, by, estimand = "ATT", M = 1, ties=FALSE, replace=TRUE,
-        exact = NULL, caliper = NULL, Weight = 1, Weight.matrix = NULL, tolerance = 1e-05,
-        distance.tolerance = 1e-05, print.level=1, version="fast", ...)
+        exact = NULL, caliper = NULL, AI=FALSE, Var.calc=0,
+        Weight = 1, Weight.matrix = NULL, distance.tolerance = 1e-05,
+        tolerance = sqrt(.Machine$double.eps), print.level=1, version="Matchby", ...)
 }
 \arguments{
   \item{Y}{ A vector containing the outcome of interest. Missing values are not allowed.}
@@ -77,6 +80,16 @@ Matchby(Y, Tr, X, by, estimand = "ATT", M = 1, ties=FALSE, replace=TRUE,
     example, \code{caliper=.25} means that all matches not equal to or
     within .25 standard deviations of each covariate in \code{X} are
     dropped.}
+  \item{AI}{A logical flag for if the Abadie-Imbens standard error
+    should be calculated. It is computationally expensive to calculate
+    with large datasets. \code{Matchby} can only calculate AI SEs for ATT.
+    To calculate AI errors with other estimands, please use the
+    \code{\link{Match}} function.  See the \code{Var.calc} option if one
+    does not want to assume homoscedasticity.}
+  \item{Var.calc}{A scalar for the variance estimate
+    that should be used.  By default \code{Var.calc=0} which means that
+    homoscedasticity is assumed.  For values of  \code{Var.calc > 0},
+    robust variances are calculated using \code{Var.calc} matches.}  
   \item{Weight}{ A scalar for the type of
     weighting scheme the matching algorithm should use when weighting
     each of the covariates in \code{X}.  The default value of
@@ -107,17 +120,17 @@ Matchby(Y, Tr, X, by, estimand = "ATT", M = 1, ties=FALSE, replace=TRUE,
     inverse of the variances by multiplying the first variable by a 1000
     so that it is highly weighted.  In order to enforce exact matching
     see the \code{exact} and \code{caliper} options.}
-  \item{tolerance}{ This is a scalar which is used to determine
-    numerical tolerances.  This option is used by numerical routines
-    such as those used to determine if a matrix is singular.}
   \item{distance.tolerance}{This is a scalar which is used to determine if distances
     between two observations are different from zero.  Values less than
     \code{distance.tolerance} are deemed to be equal to zero.  This
     option can be used to perform a type of optimal matching}
+  \item{tolerance}{ This is a scalar which is used to determine
+    numerical tolerances.  This option is used by numerical routines
+    such as those used to determine if a matrix is singular.}
   \item{print.level}{The level of printing. Set to '0' to turn off printing.}
-  \item{version}{The version of the code to be used.  The "fast" C/C++
-    version of the code does not calculate Abadie Imbens standard
-    errors.  The end-user should not change this option.}
+  \item{version}{The version of the code to be used.  The "Matchby" C/C++
+    version of the code is the fastest, and the end-user should not
+    change this option.}
   \item{...}{Additional arguments passed on to \code{\link{Match}}.}
 }
 \details{
@@ -131,24 +144,51 @@ Matchby(Y, Tr, X, by, estimand = "ATT", M = 1, ties=FALSE, replace=TRUE,
   is the equivalent to doing exact matching on each factor, and the
   way in which matches are found within each factor is determined by the
   usual matching options. \cr
-  
+
   \emph{Note that by default \code{ties=FALSE} although the default for
     the \code{Match} in \code{GenMatch} functions is \code{TRUE}.  This is
     done because randomly breaking ties in large datasets often results in
     a great speedup.}  For additional speed, consider doing matching
   without replacement which is often much faster when the dataset is
-  large---see the \code{replace} option.
+  large---see the \code{replace} option. \cr
+
+  There will be slight differences in the matches produced by
+  \code{Matchby} and \code{\link{Match}} because of how the covariates
+  are weighted.  When the data is broken up into separate groups (via
+  the \code{by} option), Mahalanobis distance and inverse variance
+  will imply different weights than when the data is taken as whole.
 }
 
 \value{
-  \item{est }{The estimated average causal effect.}
+  \item{est}{The estimated average causal effect.}
   \item{se.standard }{The usual standard error.  This is the standard error
     calculated on the matched data using the usual method of calculating
     the difference of means (between treated and control) weighted so
     that ties are taken into account.}
-  \item{ret}{A matrix with three columns.  The first column contains the
-    outcomes for treated observations, the second the outcomes for
-    control observations, and the third the weight given to each match.}
+  \item{se }{The Abadie-Imbens standard error. This is only calculated
+    if the \code{AI} option is \code{TRUE}. This standard error has
+    correct coverage if \code{X} consists of either covariates or a
+    known propensity score because it takes into account the uncertainty
+    of the matching
+    procedure.  If an estimated propensity score is used, the
+    uncertainty involved in its estimation is not accounted for although the
+    uncertainty of the matching procedure itself still is.}  
+  \item{index.treated }{A vector containing the observation numbers from
+    the original dataset for the treated observations in the
+    matched dataset.  This index in conjunction with \code{index.control}
+    can be used to recover the matched dataset produced by
+    \code{Matchby}.  For example, the \code{X} matrix used by \code{Matchby}
+    can be recovered by
+    \code{rbind(X[index.treated,],X[index.control,])}.}
+  \item{index.control }{A vector containing the observation numbers from
+    the original data for the control observations in the
+    matched data.  This index in conjunction with \code{index.treated}
+    can be used to recover the matched dataset produced by
+    \code{Matchby}.  For example, the \code{Y} matrix for the matched dataset
+    can be recovered by
+    \code{c(Y[index.treated],Y[index.control])}.}
+  \item{weights}{The weights for each observation in the matched
+    dataset.}
   \item{orig.nobs }{The original number of observations in the dataset.}
   \item{nobs }{The number of observations in the matched dataset.}
   \item{wnobs }{The number of weighted observations in the matched dataset.}    
@@ -220,6 +260,14 @@ Tr <- lalonde$treat
 # effect on the treated (the "estimand" option defaults to ATT).
 rr  <- Matchby(Y=Y, Tr=Tr, X=X, by=lalonde$black, M=1);
 summary(rr)
+
+# Let's check the covariate balance
+# 'nboots' is set to small values in the interest of speed.
+# Please increase to at least 500 each for publication quality p-values.  
+mb  <- MatchBalance(treat~age + I(age^2) + educ + I(educ^2) + black +
+                    hisp + married + nodegr + re74  + I(re74^2) + re75 + I(re75^2) +
+                    u74 + u75, data=lalonde, match.out=rr, nboots=10)
+
 }
 \keyword{nonparametric}
 
@@ -229,4 +277,5 @@ summary(rr)
 %  LocalWords:  DehejiaWahba AbadieImbens noadj cond mdata datasets wnobs url
 %  LocalWords:  ndrops Abadie Imbens Econometrica Matlab Stata UC seealso Wahba
 %  LocalWords:  balanceMV balanceUV lalonde Dehejia psid Rajeev Sadek glm hisp
-%  LocalWords:  nodegr rr nboots nmc mb Matchby ret qqstats
+%  LocalWords:  nodegr rr nboots nmc mb Matchby ret qqstats Mahalanobis SEs
+%  LocalWords:  estimands

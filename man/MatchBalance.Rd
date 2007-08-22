@@ -213,13 +213,12 @@ rr  <- Match(Y=Y,Tr=Tr,X=X,M=1);
 #Let's summarize the output
 summary(rr)
 
-#
-# Let's check for balance
-# 'nboots' and 'nmc' are set to small values in the interest of speed.
+# Let's check the covariate balance
+# 'nboots' is set to small values in the interest of speed.
 # Please increase to at least 500 each for publication quality p-values.  
 mb  <- MatchBalance(treat~age + I(age^2) + educ + I(educ^2) + black +
                     hisp + married + nodegr + re74  + I(re74^2) + re75 + I(re75^2) +
-                    u74 + u75, data=lalonde, match.out=rr, nboots=10, nmc=10)
+                    u74 + u75, data=lalonde, match.out=rr, nboots=10)
 }
 \keyword{nonparametric}
 \keyword{htest}

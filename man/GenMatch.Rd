@@ -28,8 +28,8 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1, weights=NULL,
          MemoryMatrix=TRUE,
          exact=NULL, caliper=NULL, replace=TRUE, ties=TRUE,
          CommonSupport=FALSE, nboots=0, ks=TRUE, verbose=FALSE,
-         tolerance = 1e-05,
-         distance.tolerance=tolerance,
+         distance.tolerance=1e-05,
+         tolerance=sqrt(.Machine$double.eps),
          min.weight=0, max.weight=1000,
          Domains=NULL, print.level=2,
          project.path=NULL,
@@ -213,13 +213,13 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1, weights=NULL,
   \item{verbose}{A logical flag for whether details of each
     fitness evaluation should be printed.  Verbose is set to FALSE if
     the \code{cluster} option is used.}
+  \item{distance.tolerance}{This is a scalar which is used to determine
+    if distances between two observations are different from zero.  Values
+    less than \code{distance.tolerance} are deemed to be equal to zero.
+    This option can be used to perform a type of optimal matching.}
   \item{tolerance}{ This is a scalar which is used to determine
     numerical tolerances.  This option is used by numerical routines
     such as those used to determine if a matrix is singular.}
-  \item{distance.tolerance}{This is a scalar which is used to determine if distances
-    between two observations are different from zero.  Values less than
-    \code{distance.tolerance} are deemed to be equal to zero.  This
-    option can be used to perform a type of optimal matching.}
   \item{min.weight}{This is the minimum weight any variable may be
     given.}  
   \item{max.weight}{This is the maximum weight any variable may be
