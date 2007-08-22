@@ -144,7 +144,7 @@ GenBalance <-
     index.control <- rr[,2]
     weights <- rr[,3]
 
-    tol  <- .Machine$double.eps*100  
+    tol  <- sqrt(.Machine$double.eps)
     storage.t <- c(rep(9,nvars))
     storage.k <- c(rep(9,nvars))
     fs.ks     <- matrix(nrow=nvars, ncol=1)
@@ -269,7 +269,7 @@ KSbootBalanceSummary <- function(index.treated, index.control, X,
   X <- as.matrix(X)
   nvars <- ncol(X)
 
-  tol  <- .Machine$double.eps*100  
+  tol  <- sqrt(.Machine$double.eps)
   storage.k <- c(rep(NA,nvars))
   storage.k.naive <- c(rep(NA,nvars))  
   fs.ks     <- matrix(nrow=nvars, ncol=1)

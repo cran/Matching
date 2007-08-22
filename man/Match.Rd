@@ -24,9 +24,9 @@
 Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
       BiasAdjust = FALSE, exact = NULL, caliper = NULL, replace=TRUE, ties=TRUE,
       CommonSupport=FALSE,Weight = 1, Weight.matrix = NULL, weights = NULL,
-      Var.calc = 0, sample = FALSE, tolerance = 1e-05,
-      distance.tolerance = 1e-05, restrict=NULL,
-      match.out = NULL, version="standard")
+      Var.calc = 0, sample = FALSE, restrict=NULL, match.out = NULL,
+      distance.tolerance = 1e-05, tolerance=sqrt(.Machine$double.eps),
+      version="standard")
 }
 \arguments{
   \item{Y}{ A vector containing the outcome of interest.
@@ -151,13 +151,13 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     robust variances are calculated using \code{Var.calc} matches. }
   \item{sample}{ A logical flag for whether the population or sample
     variance is returned. }
+  \item{distance.tolerance}{This is a scalar which is used to determine
+    if distances between two observations are different from zero.  Values
+    less than \code{distance.tolerance} are deemed to be equal to zero.
+    This option can be used to perform a type of optimal matching}
   \item{tolerance}{ This is a scalar which is used to determine
     numerical tolerances.  This option is used by numerical routines
     such as those used to determine if a matrix is singular.}
-  \item{distance.tolerance}{This is a scalar which is used to determine if distances
-    between two observations are different from zero.  Values less than
-    \code{distance.tolerance} are deemed to be equal to zero.  This
-    option can be used to perform a type of optimal matching}
   \item{restrict}{A matrix which restricts the possible matches.  This
     matrix has one row for each restriction and three
     columns.  The first two columns contain the two observation numbers
@@ -225,12 +225,12 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
 
 \value{
   \item{est }{The estimated average causal effect.}
-  \item{se }{The Abadie-Imbens standard error.  This standard error is
-    principled if \code{X} consists of either covariates or a known propensity score
-    because it takes into account the uncertainty of the matching
-    procedure.  If an estimated propensity score is used, the
-    uncertainty involved in its estimation is not accounted for although the
-    uncertainty of the matching procedure itself still is.}
+  \item{se }{The Abadie-Imbens standard error.  This standard error has
+    correct coverage if \code{X} consists of either covariates or a known
+    propensity score because it takes into account the uncertainty of the
+    matching procedure.  If an estimated propensity score is used, the
+    uncertainty involved in its estimation is not accounted for although
+    the uncertainty of the matching procedure itself still is.}
   \item{est.noadj }{The estimated average causal effect without any
     \code{BiasAdjust}.  If \code{BiasAdjust} is not requested, this is the
     same as \code{est}.}
@@ -272,9 +272,10 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     because of various options such as \code{caliper} and
     \code{exact}.  If no observations were dropped, this
     index will be \code{NULL}.}
-  \item{weights }{The weight for the matched dataset.  If all of the
-    observations had a weight of 1 on input, they will have a weight of
-    1 on output if each observation was only matched once.}
+  \item{weights}{The weights for each observation in the matched
+    dataset.  If all of the observations had a weight of 1 on input, they
+    will have a weight of 1 on output if each observation was only matched
+    once.}
   \item{orig.nobs }{The original number of observations in the dataset.}
   \item{orig.wnobs }{The original number of weighted observations in the
     dataset.}
@@ -360,13 +361,12 @@ Tr  <- lalonde$treat
 rr  <- Match(Y=Y, Tr=Tr, X=X, M=1);
 summary(rr)
 
-#
-# Let's check for balance
-# 'nboots' and 'nmc' are set to small values in the interest of speed.
+# Let's check the covariate balance
+# 'nboots' is set to small values in the interest of speed.
 # Please increase to at least 500 each for publication quality p-values.  
 mb  <- MatchBalance(treat~age + I(age^2) + educ + I(educ^2) + black +
                     hisp + married + nodegr + re74  + I(re74^2) + re75 + I(re75^2) +
-                    u74 + u75, data=lalonde, match.out=rr, nboots=10, nmc=10)
+                    u74 + u75, data=lalonde, match.out=rr, nboots=10)
 }
 \keyword{nonparametric}
 
@@ -378,4 +378,4 @@ mb  <- MatchBalance(treat~age + I(age^2) + educ + I(educ^2) + black +
 %  LocalWords:  balanceMV balanceUV lalonde Dehejia psid Rajeev Sadek glm hisp
 %  LocalWords:  nodegr rr nboots nmc mb Neyman Tr CommonSupport Var var Matchby
 %  LocalWords:  est orig nobs Guido ealso qqstats educ nonparametric rep es ks
-%  LocalWords:  inliers
+%  LocalWords:  inliers Mahalanobis
