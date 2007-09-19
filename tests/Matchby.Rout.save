@@ -21,7 +21,7 @@ Loading required package: rgenoud
 ##  See http://sekhon.berkeley.edu/rgenoud for additional documentation.
 Loading required package: MASS
 ## 
-##  Matching (Version 4.5-2, Build Date: 2007/08/22)
+##  Matching (Version 4.5-3, Build Date: 2007/09/19)
 ##  See http://sekhon.berkeley.edu/matching for additional documentation.
 ##  Please cite software as:
 ##   Jasjeet S. Sekhon. 2007. ``Multivariate and Propensity Score Matching
@@ -84,7 +84,7 @@ Number of obs dropped by 'exact' or 'caliper'  66
              [,1]
 [1,] 2.273737e-13
 > rr$se-rr2$se
-[1] 1.136868e-13
+[1] 0
 > rr$se.standard-rr2$se.standard
 [1] 0
 > 
