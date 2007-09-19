@@ -6,14 +6,28 @@ Matchby <- function(Y=NULL, Tr, X, by, estimand="ATT", M=1, ties=FALSE, replace=
                     print.level=1, version="Matchby", ...)
   {
 
-    X  <- as.matrix(X)
-
     #index for raw obs
+    Tr <- as.real(Tr)    
     nobs  <- length(Tr)
     orig.treated.nobs  <- sum(Tr==1)
 
     if(is.null(Y))
-      Y <- rep(0, nobs)
+      {
+        Y <- rep(0, nobs)
+      } else {
+        Y  <- as.real(Y)
+        if (nobs != length(Y))
+          {
+            stop("length(Tr) != length(Y)")
+          }
+      }
+    
+    X  <- as.matrix(X)
+
+    if( nobs != nrow(X))
+      {
+        stop("length(Tr) != nrow(X)")
+      }        
 
     index.nobs <- 1:nobs
     t.index.nobs <- split(index.nobs, by, drop=TRUE)

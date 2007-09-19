@@ -184,9 +184,21 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                      balance=TRUE, ...)
   {
 
-    Tr <- as.matrix(Tr)
+    Tr <- as.real(Tr)
     X  <- as.matrix(X)
     BalanceMatrix  <- as.matrix(BalanceMatrix)
+
+    if(length(Tr) != nrow(X))
+      {
+        stop("length(Tr) != nrow(X)")
+      }
+    if(!is.function(fit.func))
+      {
+        if(nrow(BalanceMatrix) != length(Tr))
+          {
+            stop("nrow(BalanceMatrix) != length(Tr)")
+          }
+      }
 
     if (is.null(weights))
       {
@@ -194,8 +206,12 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         weights.flag <- FALSE
       } else {
         weights.flag <- TRUE
+        weights <- as.real(weights)
+        if( length(Tr) != length(weights))
+          {
+            stop("length(Tr) != length(weights)")
+          }            
       }
-    weights <- as.matrix(weights)
 
     isna  <- sum(is.na(Tr)) + sum(is.na(X)) + sum(is.na(weights)) + sum(is.na(BalanceMatrix))
     if (isna!=0)
@@ -240,10 +256,10 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
           }
 
         indx3 <- indx1==0 & indx2==0
-        Tr <- as.matrix(Tr[indx3])
+        Tr <- as.real(Tr[indx3])
         X  <- as.matrix(X[indx3,])
         BalanceMatrix <- as.matrix(BalanceMatrix[indx3,])
-        weights <- as.matrix(weights[indx3])
+        weights <- as.real(weights[indx3])
       }#end of CommonSupport
     
     if (pop.size < 0 | pop.size!=round(pop.size) )
@@ -338,18 +354,6 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
       {
         warning("'ties' must be TRUE or FALSE.  Setting to TRUE")
         ties <- TRUE
-      }
-
-    if(length(Tr) != nrow(X))
-      {
-        stop("length(Tr) != nrow(X)")
-      }
-    if(!is.function(fit.func))
-      {
-        if(nrow(BalanceMatrix) != length(Tr))
-          {
-            stop("nrow(BalanceMatrix) != length(Tr)")
-          }
       }
 
     #print warning if pop.size, max.generations and wait.generations are all set to their original values

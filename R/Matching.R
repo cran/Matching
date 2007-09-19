@@ -24,20 +24,51 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
         version <- "fast"
       }
     
+    Y  <- as.real(Y)
+    Tr <- as.real(Tr)
+    X  <- as.matrix(X)
+    Z  <- as.matrix(Z)
+    V  <- as.matrix(V)
+
+    orig.nobs  <- length(Y)
+    nobs  <- orig.nobs
+    xvars <- ncol(X)    
+    orig.tr.nobs <- length(Tr)
+    if (orig.tr.nobs != orig.nobs)
+      {
+        stop("length(Y) != length(Tr)")
+      }
+    if( orig.tr.nobs != nrow(X))
+      {
+        stop("length(Tr) != nrow(X)")
+      }    
+    
+    if( orig.nobs != nrow(X))
+      {
+        stop("length(Y) != nrow(X)")
+      }
+    if( orig.nobs != nrow(V))
+      {
+        stop("length(Y) != nrow(V)")
+      }
+    if( orig.nobs != nrow(Z))
+      {
+        stop("length(Y) != nrow(Z)")
+      }
+
     if (is.null(weights))
       {
         weights <- rep(1,length(Y))
         weights.flag <- FALSE
       } else {
         weights.flag <- TRUE
+        weights <- as.real(weights)
+        if( orig.tr.nobs != length(weights))
+          {
+            stop("length(Tr) != length(weights)")
+          }        
       }
 
-    Y  <- as.matrix(Y)
-    Tr <- as.matrix(Tr)
-    X  <- as.matrix(X)
-    Z  <- as.matrix(Z)
-    V  <- as.matrix(V)
-    weights <- as.matrix(weights)
     BiasAdj  <- as.real(BiasAdjust)
     sample  <- as.real(sample)
 
@@ -87,17 +118,17 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
           }
 
         indx3 <- indx1==0 & indx2==0
-        Y  <- as.matrix(Y[indx3])
-        Tr <- as.matrix(Tr[indx3])
+        Y  <- as.real(Y[indx3])
+        Tr <- as.real(Tr[indx3])
         X  <- as.matrix(X[indx3,])
         Z  <- as.matrix(Z[indx3,])
         V  <- as.matrix(V[indx3,])
-        weights <- as.matrix(weights[indx3])
-      }#end of CommonSupport
+        weights <- as.real(weights[indx3])
 
-    orig.nobs  <- length(Y)
-    nobs  <- orig.nobs
-    xvars <- ncol(X)
+        #let's recalculate these for common support
+        orig.nobs  <- length(Y)
+        nobs  <- orig.nobs
+      }#end of CommonSupport
 
     #check additional inputs
     if (tolerance < 0)
@@ -200,29 +231,6 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
       warning("match.out object not of class 'Match'")
       return(invisible(NULL))
     }
-
-    orig.tr.nobs <- length(Tr)
-    if (orig.tr.nobs != orig.nobs)
-      {
-        stop("length(Y) != length(Tr)")
-      }
-    if( orig.tr.nobs != nrow(X))
-      {
-        stop("length(Tr) != nrow(X)")
-      }    
-    
-    if( orig.nobs != nrow(X))
-      {
-        stop("length(Y) != nrow(X)")
-      }
-    if( orig.nobs != nrow(V))
-      {
-        stop("length(Y) != nrow(V)")
-      }
-    if( orig.nobs != nrow(Z))
-      {
-        stop("length(Y) != nrow(Z)")
-      }
 
     ccc  <- tolerance
     cdd  <- distance.tolerance
