@@ -272,10 +272,10 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     because of various options such as \code{caliper} and
     \code{exact}.  If no observations were dropped, this
     index will be \code{NULL}.}
-  \item{weights}{The weights for each observation in the matched
-    dataset.  If all of the observations had a weight of 1 on input, they
-    will have a weight of 1 on output if each observation was only matched
-    once.}
+  \item{weights}{A vector of weights.  There is one weight for each
+    matched-pair in the matched dataset.  If all of the observations had a
+    weight of 1 on input, then each matched-pair will have a weight of 1
+    on output if there are no ties.}
   \item{orig.nobs }{The original number of observations in the dataset.}
   \item{orig.wnobs }{The original number of weighted observations in the
     dataset.}

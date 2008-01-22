@@ -1,5 +1,6 @@
 \name{summary.Matchby}
 \alias{summary.Matchby}
+\alias{print.summary.Matchby}
 \title{Summarizing output from Matchby}
 \description{
   \code{\link{summary}} method for class \code{\link{Matchby}}

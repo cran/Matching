@@ -114,13 +114,16 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1, weights=NULL,
     \code{qqmax.max}:  calculate the maximum standardized difference in the eQQ
     plot for each variable.  Minimize the maximum of these differences across
     variables.  Lexical optimization is conducted.\cr
-    The user may provide their own \code{fit.func}.  This function needs
-    to return a fit value that will be minimized.  The function should
-    expect two arguments.  The first being the \code{matches} object
+    Users may provide their own \code{fit.func}. The name of the user
+    provided function should not be backquoted or quoted.  This function needs
+    to return a fit value that will be minimized, by lexical
+    optimization if more than one fit value is returned.  The function
+    should expect two arguments.  The first being the \code{matches} object
     returned by \code{GenMatch}---see
     below.  And the second being a matrix which contains the variables to
     be balanced---i.e., the \code{BalanceMatrix} the user provided to
-    \code{GenMatch}.}
+    \code{GenMatch}. For an example see
+    \url{http://sekhon.berkeley.edu/matching/R/my_fitfunc.R}.}
   \item{MemoryMatrix}{
     This variable controls if \code{\link[rgenoud]{genoud}} sets up a memory matrix.  Such a
     matrix ensures that \code{\link[rgenoud]{genoud}} will request the fitness evaluation

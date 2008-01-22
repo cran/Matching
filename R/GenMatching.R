@@ -389,12 +389,12 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         lexical = 1
       } else if (fit.func=="qqmean.max" | fit.func=="qqmedian.max" | fit.func=="qqmax.max")   {
         lexical=ncol(BalanceMatrix)
-      } else  if (!fit.func=="pvals") {
-        lexical = 0
       } else if (fit.func!="qqmean.mean" & fit.func!="qqmean.max" &
                  fit.func!="qqmedian.median" & fit.func!="qqmedian.max"
                  & fit.func!="pvals") {
         stop("invalid 'fit.func' argument")
+      } else  if (!fit.func=="pvals") {
+        lexical = 0
       }
 
     if(replace==FALSE)
@@ -967,11 +967,12 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         GENclusterExport(cl, "genoudfunc")
       }
 
-    if (fit.func=="pvals") {
-      do.max=TRUE
-    } else {
-      do.max=FALSE
-    }
+    do.max <- FALSE    
+    if(!is.function(fit.func))
+      {
+        if (fit.func=="pvals") 
+          do.max <- TRUE
+      }
     
     rr <- genoud(genoudfunc, nvars=nvars, starting.values=starting.values,
                  pop.size=pop.size, max.generations=max.generations,

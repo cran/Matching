@@ -1,5 +1,5 @@
 
-R version 2.5.0 (2007-04-23)
+R version 2.6.1 (2007-11-26)
 Copyright (C) 2007 The R Foundation for Statistical Computing
 ISBN 3-900051-07-0
 
@@ -21,11 +21,11 @@ Type 'q()' to quit R.
 > 
 > library(Matching)
 Loading required package: rgenoud
-##  rgenoud (Version 5.1-14, Build Date: 2007-08-04)
+##  rgenoud (Version 5.4-7, Build Date: 2007-01-04)
 ##  See http://sekhon.berkeley.edu/rgenoud for additional documentation.
 Loading required package: MASS
 ## 
-##  Matching (Version 4.5-3, Build Date: 2007/09/19)
+##  Matching (Version 4.6-1, Build Date: 2008/01/22)
 ##  See http://sekhon.berkeley.edu/matching for additional documentation.
 ##  Please cite software as:
 ##   Jasjeet S. Sekhon. 2007. ``Multivariate and Propensity Score Matching
@@ -58,7 +58,6 @@ Original number of treated obs...............  185
 Matched number of observations...............  445 
 Matched number of observations  (unweighted).  5251 
 
-
 > 
 > res[1,]  <- cbind(1,rr$est,rr$se)
 > 
@@ -78,7 +77,6 @@ Original number of treated obs...............  185
 Matched number of observations...............  445 
 Matched number of observations  (unweighted).  733 
 
-
 > 
 > res  <- rbind(res,cbind(2,rr$est,rr$se))
 > 
@@ -96,7 +94,6 @@ Original number of treated obs...............  185
 Matched number of observations...............  445 
 Matched number of observations  (unweighted).  1670 
 
-
 > res  <- rbind(res,cbind(4,rr$est,rr$se))
 > 
 > rr  <- Match(Y=Y,Tr=T,X=X,Z=Z,V=V,estimand="ATT",M=1,BiasAdj=FALSE,Weight=1,Var.calc=0,
@@ -112,7 +109,6 @@ Original number of observations..............  445
 Original number of treated obs...............  185 
 Matched number of observations...............  185 
 Matched number of observations  (unweighted).  327 
-
 
 > res  <- rbind(res,cbind(5,rr$est,rr$se))
 > 
@@ -130,7 +126,6 @@ Original number of control obs...............  260
 Matched number of observations...............  260 
 Matched number of observations  (unweighted).  406 
 
-
 > res  <- rbind(res,cbind(6,rr$est,rr$se))
 > 
 > rr  <- Match(Y=Y,Tr=T,X=X,Z=Z,V=V,estimand="ATE",M=1,BiasAdj=FALSE,Weight=2,Var.calc=0,
@@ -147,7 +142,6 @@ Original number of treated obs...............  185
 Matched number of observations...............  445 
 Matched number of observations  (unweighted).  729 
 
-
 > res  <- rbind(res,cbind(7,rr$est,rr$se))
 > 
 > rr  <- Match(Y=Y,Tr=T,X=X,Z=Z,V=V,estimand="ATE",M=1,BiasAdj=FALSE,Weight=3,Var.calc=0,
@@ -163,7 +157,6 @@ Original number of observations..............  445
 Original number of treated obs...............  185 
 Matched number of observations...............  445 
 Matched number of observations  (unweighted).  733 
-
 
 > res  <- rbind(res,cbind(8,rr$est,rr$se))
 > 
@@ -182,7 +175,6 @@ Original number of treated obs...............  185
 Matched number of observations...............  445 
 Matched number of observations  (unweighted).  733 
 
-
 > res  <- rbind(res,cbind(9,rr$est,rr$se))
 > 
 > Z  <- cbind(lalonde$married, lalonde$age)
@@ -198,7 +190,6 @@ Original number of observations..............  445
 Original number of treated obs...............  185 
 Matched number of observations...............  445 
 Matched number of observations  (unweighted).  733 
-
 
 > res  <- rbind(res,cbind(10,rr$est,rr$se))
 > 
@@ -219,7 +210,6 @@ Matched number of observations  (unweighted).  378
 
 Number of obs dropped by 'exact' or 'caliper'  276 
 
-
 > res  <- rbind(res,cbind(11,rr$est,rr$se))
 > 
 > V  <- cbind(lalonde$married, lalonde$u74)
@@ -239,7 +229,6 @@ Matched number of observations  (unweighted).  378
 
 Number of obs dropped by 'exact' or 'caliper'  276 
 
-
 > res  <- rbind(res,cbind(12,rr$est,rr$se))
 > 
 > rr  <- Match(Y=Y,Tr=T,X=X,Z=Z,V=V,estimand="ATE",M=1,BiasAdj=FALSE,Weight=1,Var.calc=0,sample=FALSE);
@@ -255,7 +244,6 @@ Original number of treated obs...............  185
 Matched number of observations...............  445 
 Matched number of observations  (unweighted).  733 
 
-
 > res  <- rbind(res,cbind(13,rr$est,rr$se))
 > 
 > rr  <- Match(Y=Y,Tr=T,X=X,Z=Z,V=V,estimand="ATE",M=1,BiasAdj=FALSE,Weight=1,Var.calc=3,sample=TRUE);
@@ -270,7 +258,6 @@ Original number of observations..............  445
 Original number of treated obs...............  185 
 Matched number of observations...............  445 
 Matched number of observations  (unweighted).  733 
-
 
 > res  <- rbind(res,cbind(14,rr$est,rr$se))
 > 
@@ -289,7 +276,6 @@ Original number of treated obs (weighted)....  322.71
 Original number of treated obs...............  185 
 Matched number of observations...............  661.147 
 Matched number of observations  (unweighted).  1155 
-
 
 > res  <- rbind(res,cbind(15,rr$est,rr$se))
 > 
@@ -320,7 +306,6 @@ Matched number of observations  (unweighted).  130
 Number of obs dropped by 'exact' or 'caliper'  152 
 Weighted #obs dropped by 'exact' or 'caliper'  262.694 
 
-
 > res  <- rbind(res,cbind(75,rr$est,rr$se))
 > 
 > 
@@ -347,7 +332,6 @@ Matched number of observations  (unweighted).  305
 
 Number of obs dropped by 'exact' or 'caliper'  366 
 Weighted #obs dropped by 'exact' or 'caliper'  525.935 
-
 
 > res  <- rbind(res,cbind(76,rr$est,rr$se))
 > 

@@ -252,5 +252,14 @@ summary.Matchby  <- function(object, ..., digits=5)
           cat("Number of treated observations dropped....... ", object$ndrops, "\n")
           cat("\n")
         }
+
+    z <- list()
+    class(z) <- "summary.Matchby"
+    return(invisible(z))
   } #end of summary.Matchby
+
+print.summary.Matchby <- function(x, ...)
+  {
+    invisible(NULL)
+  }
 

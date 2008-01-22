@@ -1,5 +1,6 @@
 \name{summary.Match}
 \alias{summary.Match}
+\alias{print.summary.Match}
 \title{Summarizing output from Match}
 \description{
   \code{\link{summary}} method for class \code{\link{Match}}

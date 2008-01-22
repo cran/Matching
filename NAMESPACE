@@ -1,8 +1,12 @@
 import(MASS)
 useDynLib(Matching)
-export(balanceMV, balanceUV, ks.boot, Match, Matchby, MatchBalance, qqstats, summary.balanceMV, summary.ks.boot, summary.Match, GenMatch)
+export(balanceMV, balanceUV, ks.boot, Match, Matchby, MatchBalance, qqstats, summary.balanceMV, summary.ks.boot, summary.Match, GenMatch, print.summary.Match, print.summary.ks.boot, print.summary.Matchby)
 S3method(summary, balanceMV)
 S3method(summary, balanceUV)
 S3method(summary, ks.boot)
 S3method(summary, Match)
 S3method(summary, Matchby)
+
+S3method(print, summary.Match)
+S3method(print, summary.ks.boot)
+S3method(print, summary.Matchby)

@@ -1,5 +1,6 @@
 \name{summary.ks.boot}
 \alias{summary.ks.boot}
+\alias{print.summary.ks.boot}
 \title{Summarizing output from ks.boot}
 \description{
   \code{\link{summary}} method for class \code{\link{ks.boot}}
