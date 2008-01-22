@@ -1,5 +1,5 @@
 
-R version 2.5.0 (2007-04-23)
+R version 2.6.1 (2007-11-26)
 Copyright (C) 2007 The R Foundation for Statistical Computing
 ISBN 3-900051-07-0
 
@@ -24,11 +24,11 @@ Type 'q()' to quit R.
 > 
 > library(Matching)
 Loading required package: rgenoud
-##  rgenoud (Version 5.1-14, Build Date: 2007-08-04)
+##  rgenoud (Version 5.4-7, Build Date: 2007-01-04)
 ##  See http://sekhon.berkeley.edu/rgenoud for additional documentation.
 Loading required package: MASS
 ## 
-##  Matching (Version 4.5-3, Build Date: 2007/09/19)
+##  Matching (Version 4.6-1, Build Date: 2008/01/22)
 ##  See http://sekhon.berkeley.edu/matching for additional documentation.
 ##  Please cite software as:
 ##   Jasjeet S. Sekhon. 2007. ``Multivariate and Propensity Score Matching
@@ -76,7 +76,6 @@ Original number of observations..............  445
 Original number of treated obs...............  185 
 Matched number of observations...............  185 
 Matched number of observations  (unweighted).  346 
-
 
 > 
 > #

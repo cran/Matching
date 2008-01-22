@@ -643,18 +643,25 @@ summary.Match  <- function(object, ..., full=FALSE, digits=5)
         cat("Number of obs dropped by 'exact' or 'caliper' ", object$ndrops.matches, "\n")
         if (object$ndrops.matches!=round(object$ndrops))
           cat("Weighted #obs dropped by 'exact' or 'caliper' ", round(object$ndrops, 3),"\n")        
-        cat("\n\n")        
+        cat("\n")        
       }else if(!is.null(object$caliper))
       {
         cat("Caliper (SDs)........................................  ",object$caliper,"\n")            
         cat("Number of obs dropped by 'exact' or 'caliper' ", object$ndrops.matches, "\n")
         if (object$ndrops.matches!=round(object$ndrops))
           cat("Weighted #obs dropped by 'exact' or 'caliper' ", round(object$ndrops, 3),"\n")        
-        cat("\n\n")
-      } else {
         cat("\n")
       }
+    
+    z <- list()
+    class(z) <- "summary.Match"
+    return(invisible(z))
   } #end of summary.Match
+
+print.summary.Match <- function(x, ...)
+  {
+    invisible(NULL)
+  }
 
 
 Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.calc, weight,
@@ -1569,7 +1576,7 @@ summary.balanceUV  <- function(object, ..., digits=5)
         cat("KS Naive p-value......", format(object$ks$ks$p.value, digits=digits), "\n")                        
         cat("KS Statistic..........", format(object$ks$ks$statistic, digits=digits), "\n")
       }
-    cat("\n")        
+    cat("\n")
   } #end of summary.balanceUV
 
 
@@ -2678,8 +2685,8 @@ summary.balanceMV  <- function(object, ..., digits=5)
             format(Mt1.df,digits=digits),"\n")
       }
 
-    cat("\n\n")
-  }#end of summary.Match
+    cat("\n")
+  }#end of summary.balanceMV
 
 
 get.xdata <- function(formul, datafr) {
@@ -2777,8 +2784,17 @@ summary.ks.boot <- function(object, ..., digits=5)
     cat("Naive p-value:        ", format(object$ks$p.value, digits=digits), "\n")
     cat("Full Sample Statistic:", format(object$ks$statistic, digits=digits), "\n")
 #    cat("nboots completed      ", object$nboots, "\n")
-#   cat("\n")
+    cat("\n")
+
+    z <- list()
+    class(z) <- "summary.ks.boot"
+    return(invisible(z))
   } #end of summary.ks.boot
+
+print.summary.ks.boot <- function(x, ...)
+  {
+    invisible(NULL)
+  }
 
 
 RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.calc, weight,
