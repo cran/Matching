@@ -17,11 +17,26 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
                    version="standard")
   {
 
+    BiasAdj  <- as.real(BiasAdjust)
+    sample  <- as.real(sample)
+
+    if ( (BiasAdj != 0) & (BiasAdj != 1) )
+      {
+        warning("User set 'BiasAdjust' to a non-logical value.  Resetting to the default which is FALSE.")        
+        BiasAdj <- 0
+      }
+    
     #we don't need to use a Y
     if (is.null(Y))
       {
         Y = rep(0, length(Tr))
         version <- "fast"
+
+        if(BiasAdj)
+          {
+            warning("'BiasAdjust' set to FALSE because Y is NULL")
+            BiasAdj <- FALSE
+          }
       }
     
     Y  <- as.real(Y)
@@ -68,9 +83,6 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
             stop("length(Tr) != length(weights)")
           }        
       }
-
-    BiasAdj  <- as.real(BiasAdjust)
-    sample  <- as.real(sample)
 
     isna  <- sum(is.na(Y)) + sum(is.na(Tr)) + sum(is.na(X)) + sum(is.na(weights)) + sum(is.na(Z)) + sum(is.na(V))
     if (isna!=0)
@@ -150,11 +162,6 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
       {
         warning("User set 'Var.calc' to less than 0.  Resetting to the default which is 0.")
         Var.calc <- 0
-      }
-    if ( (BiasAdj != 0) & (BiasAdj != 1) )
-      {
-        warning("User set 'BiasAdjust' to a non-logical value.  Resetting to the default which is FALSE.")        
-        BiasAdj <- 0
       }
     if ( (sample != 0) & (sample != 1) )
       {
@@ -3464,7 +3471,7 @@ VarCalcMatchC <- function(N, xvars, Var.calc, cdd, caliperflag, ww, Tr, Xmod, Ca
   cat(paste("## \n##  Matching (Version ", version, ", Build Date: ", BuildDate, ")\n", sep = "")) 
   cat("##  See http://sekhon.berkeley.edu/matching for additional documentation.\n",
       "##  Please cite software as:\n",
-      "##   Jasjeet S. Sekhon. 2007. ``Multivariate and Propensity Score Matching\n",
+      "##   Jasjeet S. Sekhon. Forthcoming. ``Multivariate and Propensity Score Matching\n",
       "##   Software with Automated Balance Optimization: The Matching package for R.''\n",
       "##   Journal of Statistical Software. \n##\n",
       sep="")

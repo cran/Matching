@@ -1,6 +1,6 @@
 /* Edited by Jasjeet S. Sekhon <jasjeet_sekhon@berkeley.edu> */
 /* HTTP://sekhon.berkeley.edu                                */
-/* May 25, 2005                                              */
+/* June 26, 2008                                             */
 /* __NATE__ additions by Nate Begeman (Apple)                */
 
 
@@ -58,9 +58,11 @@
 #include <climits>
 #include <cmath>
 
-//explicit include needed for gcc4.3
+ //explicit include needed for gcc4.3 because of header cleanup
 #include <cstdlib>
-
+ //http://gcc.gnu.org/gcc-4.3/porting_to.html
+ //http://www.cyrius.com/journal/2007/05/10#gcc-4.3-include
+#include <cstring>
 
 // Avoid NameSpace Pollution
 namespace SCYTHE {
