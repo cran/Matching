@@ -35,27 +35,27 @@ ks.boot(Tr, Co, nboots=1000, alternative = c("two.sided", "less", "greater"), pr
   \url{http://sekhon.berkeley.edu/}.  
 }
 \references{
-  Sekhon, Jasjeet S. 2007.  ``Multivariate and Propensity Score
+  Sekhon, Jasjeet S. forthcoming.  ``Multivariate and Propensity Score
   Matching Software with Automated Balance Optimization.''
   \emph{Journal of Statistical Software}.
   \url{http://sekhon.berkeley.edu/papers/MatchingJSS.pdf}
 
-  Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias
-  Reduction in Matching Methods for Causal Inference.''  Working Paper.
-  \url{http://sekhon.berkeley.edu/papers/SekhonBalanceMetrics.pdf}
-  
   Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
   Estimating Causal Effects: A General Multivariate Matching Method for
   Achieving Balance in Observational Studies.''  Working Paper.
   \url{http://sekhon.berkeley.edu/papers/GenMatch.pdf}
 
+  Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias
+  Reduction in Matching Methods for Causal Inference.''  Working Paper.
+  \url{http://sekhon.berkeley.edu/papers/SekhonBalanceMetrics.pdf}
+  
   Abadie, Alberto.  2002.  ``Bootstrap Tests for Distributional Treatment
   Effects in Instrumental Variable Models.'' \emph{Journal of the
   American Statistical Association}, 97:457 (March) 284-292.
   }
   \seealso{ Also see \code{\link{summary.ks.boot}},
     \code{\link{qqstats}}, \code{\link{balanceUV}}, \code{\link{Match}},
-    \code{\link{GenMatch}}, \code{\link{MatchBalance}}, \code{\link{balanceMV}},
+    \code{\link{GenMatch}}, \code{\link{MatchBalance}}, 
     \code{\link{GerberGreenImai}}, \code{\link{lalonde}} }
 \examples{
 #
@@ -97,5 +97,5 @@ summary(ks)
 \keyword{htest}
 
 %  LocalWords:  Kolmogorov nboots ksboot pvalue UC url Abadie emph seealso psid
-%  LocalWords:  balanceUV GenMatch MatchBalance balanceMV GerberGreenImai Wahba
+%  LocalWords:  balanceUV GenMatch MatchBalance GerberGreenImai Wahba
 %  LocalWords:  lalonde Dehejia Rajeev Sadek glm hisp nodegr estimand rr htest

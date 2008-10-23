@@ -43,11 +43,11 @@
 } 
   \seealso{ Also see \code{\link{Match}}, \code{\link{GenMatch}},
   \code{\link{MatchBalance}},
-    \code{\link{balanceMV}}, \code{\link{balanceUV}},
-    \code{\link{ks.boot}}, \code{\link{GerberGreenImai}} }
+   \code{\link{balanceUV}},
+   \code{\link{ks.boot}}, \code{\link{GerberGreenImai}} }
 \keyword{datasets}
 
 %  LocalWords:  lalonde docType Dataset Dehejia Wahba hisp nodegr dataset url
 %  LocalWords:  DehejiaWahba AbadieImbens Abadie Imbens Rajeev Sadek emph
-%  LocalWords:  seealso GenMatch MatchBalance balanceMV balanceUV datasets
+%  LocalWords:  seealso GenMatch MatchBalance balanceUV datasets
 %  LocalWords:  GerberGreenImai

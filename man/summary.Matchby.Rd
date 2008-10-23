@@ -20,11 +20,11 @@
   \url{http://sekhon.berkeley.edu/}.  
 }
 \seealso{ Also see \code{\link{Matchby}},  \code{\link{Match}}, \code{\link{GenMatch}},
-  \code{\link{MatchBalance}}, \code{\link{balanceMV}},
+  \code{\link{MatchBalance}}, 
   \code{\link{balanceUV}}, \code{\link{qqstats}}, \code{\link{ks.boot}},
   \code{\link{GerberGreenImai}}, \code{\link{lalonde}}
 }
 \keyword{htest}
 
-%  LocalWords:  UC url seealso GenMatch MatchBalance balanceMV balanceUV htest
+%  LocalWords:  UC url seealso GenMatch MatchBalance balanceUV htest
 %  LocalWords:  GerberGreenImai lalonde Matchby qqstats

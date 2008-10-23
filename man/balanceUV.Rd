@@ -79,10 +79,15 @@ balanceUV(Tr, Co, weights = rep(1, length(Co)), exact = FALSE, ks=FALSE,
   \url{http://sekhon.berkeley.edu/}.  
 }
 \references{
-  Sekhon, Jasjeet S. 2007.  ``Multivariate and Propensity Score
+  Sekhon, Jasjeet S. forthcoming.  ``Multivariate and Propensity Score
   Matching Software with Automated Balance Optimization.''
   \emph{Journal of Statistical Software}.
   \url{http://sekhon.berkeley.edu/papers/MatchingJSS.pdf}
+
+  Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
+  Estimating Causal Effects: A General Multivariate Matching Method for
+  Achieving Balance in Observational Studies.''  Working Paper.
+  \url{http://sekhon.berkeley.edu/papers/GenMatch.pdf}
   
   Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias
   Reduction in Matching Methods for Causal Inference.''  Working Paper.
@@ -98,7 +103,7 @@ balanceUV(Tr, Co, weights = rep(1, length(Co)), exact = FALSE, ks=FALSE,
   \seealso{ Also see \code{\link{summary.balanceUV}}, \code{\link{qqstats}}
     \code{\link{ks.boot}}, \code{\link{Match}}, \code{\link{GenMatch}},
     \code{\link{MatchBalance}},
-    \code{\link{balanceMV}}, \code{\link{GerberGreenImai}}, \code{\link{lalonde}} }
+    \code{\link{GerberGreenImai}}, \code{\link{lalonde}} }
 \examples{
 data(lalonde)
 attach(lalonde)
@@ -110,5 +115,5 @@ summary(foo)
 \keyword{univar}
 
 %  LocalWords:  balanceUV Univariate MatchBalance nboots Wilcoxon wilcox sdiff
-%  LocalWords:  Kolmogorov tt UC url emph seealso GenMatch balanceMV lalonde
+%  LocalWords:  Kolmogorov tt UC url emph seealso GenMatch lalonde
 %  LocalWords:  GerberGreenImai univar qqstats

@@ -363,15 +363,11 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1, weights=NULL,
   
   }
 \references{
-  Sekhon, Jasjeet S. 2007.  ``Multivariate and Propensity Score
+  Sekhon, Jasjeet S. forthcoming.  ``Multivariate and Propensity Score
   Matching Software with Automated Balance Optimization.''
   \emph{Journal of Statistical Software}.
   \url{http://sekhon.berkeley.edu/papers/MatchingJSS.pdf}
   
-  Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias
-  Reduction in Matching Methods for Causal Inference.''  Working Paper.
-  \url{http://sekhon.berkeley.edu/papers/SekhonBalanceMetrics.pdf}
-
   Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
   Estimating Causal Effects: A General Multivariate Matching Method for
   Achieving Balance in Observational Studies.''  Working Paper.
@@ -381,6 +377,10 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1, weights=NULL,
   Optimization Using Derivatives: Theory and Application to Nonlinear
   Models.'' \emph{Political Analysis}, 7: 187-210.
   \url{http://sekhon.berkeley.edu/genoud/genoud.pdf} 
+
+  Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias
+  Reduction in Matching Methods for Causal Inference.''  Working Paper.
+  \url{http://sekhon.berkeley.edu/papers/SekhonBalanceMetrics.pdf}
 }
 \author{
   Jasjeet S. Sekhon, UC Berkeley, \email{sekhon@berkeley.edu},
@@ -388,7 +388,7 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1, weights=NULL,
 }
 \seealso{ Also see \code{\link{Match}}, \code{\link{summary.Match}},
   \code{\link{MatchBalance}}, \code{\link[rgenoud]{genoud}},
-  \code{\link{balanceMV}}, \code{\link{balanceUV}}, \code{\link{qqstats}},
+  \code{\link{balanceUV}}, \code{\link{qqstats}},
   \code{\link{ks.boot}}, \code{\link{GerberGreenImai}}, \code{\link{lalonde}}
 } 
 \examples{
@@ -428,7 +428,7 @@ summary(mout)
 #                        
 mb <- MatchBalance(treat~age +educ+black+ hisp+ married+ nodegr+ u74+ u75+
                    re75+ re74+ I(re74*re75),
-                   match.out=mout, nboots=500, ks=TRUE, mv=FALSE)
+                   match.out=mout, nboots=500)
 
 # For more examples see: http://sekhon.berkeley.edu/matching/R.
 }
@@ -438,7 +438,7 @@ mb <- MatchBalance(treat~age +educ+black+ hisp+ married+ nodegr+ u74+ u75+
 %  LocalWords:  ncol MemoryMatrix nboots ATC rgenoud genoud emph cr ecaliper UC
 %  LocalWords:  eqn tempdir rbind makeCluster localhost musil deckard usernames
 %  LocalWords:  makeSOCKcluster PVM MPI url dataset seealso MatchBalance cbind
-%  LocalWords:  balanceMV balanceUV GerberGreenImai lalonde hisp nodegr genout
+%  LocalWords:  balanceUV GerberGreenImai lalonde hisp nodegr genout
 %  LocalWords:  BalanceMat mout mb mv pvals qqmean QQ qqmedian qqmax Smirnov Tr
 %  LocalWords:  func CommonSupport min Abadie Imbens boostrap ssh username educ
 %  LocalWords:  ealso qqstats nonparametric eQQ rep ks inliers es

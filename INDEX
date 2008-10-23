@@ -1,4 +1,3 @@
-balanceMV               Multivariate Tests for Balance
 balanceUV               Univariate Balance Tests
 GenMatch                Genetic Matching
 GerberGreenImai         Gerber and Green Dataset used by Imai
@@ -10,7 +9,6 @@ MatchBalance            Tests for Univariate and Multivariate Balance
 Matchby                 Grouped Multivariate and Propensity Score
                         Matching
 qqstats                 QQ Summary Statistics
-summary.balanceMV       Summarizing output from balanceMV
 summary.balanceUV       Summarizing output from balanceUV
 summary.ks.boot         Summarizing output from ks.boot
 summary.Match           Summarizing output from Match

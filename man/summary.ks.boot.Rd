@@ -21,11 +21,11 @@
 }
 \seealso{
   Also see \code{\link{ks.boot}}, \code{\link{balanceUV}}, \code{\link{qqstats}},
-  \code{\link{balanceMV}}, \code{\link{Match}}, \code{\link{GenMatch}},
+  \code{\link{Match}}, \code{\link{GenMatch}},
   \code{\link{MatchBalance}}, \code{\link{GerberGreenImai}},
   \code{\link{lalonde}}
 }
 \keyword{htest}
 
-%  LocalWords:  UC url seealso balanceUV balanceMV GenMatch MatchBalance htest
+%  LocalWords:  UC url seealso balanceUV GenMatch MatchBalance htest
 %  LocalWords:  GerberGreenImai lalonde

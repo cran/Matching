@@ -56,15 +56,22 @@
   Gerber, Alan S. and Donald P. Green. 2000. ``The Effects of
   Canvassing, Telephone Calls, and Direct Mail on Voter Turnout: A Field
   Experiment.'' \emph{American Political Science Review} 94: 653-663.
-  
+
+  Gerber, Alan S. and Donald P. Green. 2005. ``Correction to Gerber
+  and Green (2000), replication of disputed findings, and reply to
+  Imai (2005).''  \emph{American Political Science Review} 99:
+  301-313.
+
   Imai, Kosuke. 2005. ``Do Get-Out-The-Vote Calls Reduce Turnout?
   The Importance of Statistical Methods for Field Experiments.'' 
   \emph{American Political Science Review} 99: 283-300.
-  
+
+  Hansen, Ben B. Hansen and Jake Bowers. forthcoming. ``Attributing
+  Effects to a Cluster Randomized Get-Out-The-Vote Campaign.''
+  \emph{Journal of the American Statistical Association}.
 } 
 \seealso{ Also see \code{\link{Match}} and \code{\link{MatchBalance}},
-  \code{\link{GenMatch}}, \code{\link{balanceMV}},
-  \code{\link{balanceUV}}, \code{\link{ks.boot}}
+  \code{\link{GenMatch}}, \code{\link{balanceUV}}, \code{\link{ks.boot}}
   \code{\link{lalonde}}
 }
 \keyword{datasets}
@@ -72,5 +79,5 @@
 
 %  LocalWords:  GerberGreenImai docType Dataset dataset Imai's MAILGRP PHONEGRP
 %  LocalWords:  PERSNGRP MAJORPTY MAILCALL PHNSCRPT PHN PHNTRT phntrt emph
-%  LocalWords:  Kosuke seealso MatchBalance GenMatch balanceMV balanceUV
+%  LocalWords:  Kosuke seealso MatchBalance GenMatch balanceUV
 %  LocalWords:  lalonde datasets
