@@ -296,10 +296,15 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
     caliper or exact matching.}  
 }
 \references{
-  Sekhon, Jasjeet S. 2007.  ``Multivariate and Propensity Score
+  Sekhon, Jasjeet S. forthcoming.  ``Multivariate and Propensity Score
   Matching Software with Automated Balance Optimization.''
   \emph{Journal of Statistical Software}.
   \url{http://sekhon.berkeley.edu/papers/MatchingJSS.pdf}
+
+  Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
+  Estimating Causal Effects: A General Multivariate Matching Method for
+  Achieving Balance in Observational Studies.''  Working Paper.
+  \url{http://sekhon.berkeley.edu/papers/GenMatch.pdf}
 
   Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias
   Reduction in Matching Methods for Causal Inference.''  Working Paper.
@@ -309,11 +314,6 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
   ``Large Sample Properties of Matching Estimators for Average
   Treatment Effects.'' \emph{Econometrica} 74(1): 235-267.
   \url{http://ksghome.harvard.edu/~.aabadie.academic.ksg/sme.pdf} 
-
-  Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
-  Estimating Causal Effects: A General Multivariate Matching Method for
-  Achieving Balance in Observational Studies.''  Working Paper.
-  \url{http://sekhon.berkeley.edu/papers/GenMatch.pdf}
 
   Imbens, Guido. 2004. Matching Software for Matlab and
   Stata. \url{http://elsa.berkeley.edu/~imbens/estimators.shtml}
@@ -326,7 +326,7 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
   \code{\link{GenMatch}},
   \code{\link{MatchBalance}},
   \code{\link{Matchby}},  
-  \code{\link{balanceMV}}, \code{\link{balanceUV}},
+  \code{\link{balanceUV}},
   \code{\link{qqstats}}, \code{\link{ks.boot}},
   \code{\link{GerberGreenImai}}, \code{\link{lalonde}}
 } 
@@ -375,7 +375,7 @@ mb  <- MatchBalance(treat~age + I(age^2) + educ + I(educ^2) + black +
 %  LocalWords:  ATC ecaliper cr diag homoscedasticity rbind GerberGreenImai se
 %  LocalWords:  DehejiaWahba AbadieImbens noadj cond mdata datasets wnobs url
 %  LocalWords:  ndrops Abadie Imbens Econometrica Matlab Stata UC seealso Wahba
-%  LocalWords:  balanceMV balanceUV lalonde Dehejia psid Rajeev Sadek glm hisp
+%  LocalWords:  balanceUV lalonde Dehejia psid Rajeev Sadek glm hisp
 %  LocalWords:  nodegr rr nboots nmc mb Neyman Tr CommonSupport Var var Matchby
 %  LocalWords:  est orig nobs Guido ealso qqstats educ nonparametric rep es ks
 %  LocalWords:  inliers Mahalanobis

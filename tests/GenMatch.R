@@ -38,7 +38,7 @@ summary(mout)
 #                        
 mb <- MatchBalance(treat~age +educ+black+ hisp+ married+ nodegr+ u74+ u75+
                    re75+ re74+ I(re74*re75),
-                   match.out=mout, nboots=500, ks=TRUE, mv=FALSE)
+                   match.out=mout, nboots=500)
 
 # For more examples see: http://sekhon.berkeley.edu/matching/R.
 

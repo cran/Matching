@@ -10,9 +10,8 @@
   was successful in achieving balance on the observed covariates.
 }
 \usage{
-MatchBalance(formul, data = NULL, match.out = NULL, ks = TRUE, mv = FALSE,
-             nboots=500, nmc=nboots,  maxit = 1000,
-             weights=NULL, digits=5, paired=TRUE, print.level=1, ...)
+MatchBalance(formul, data = NULL, match.out = NULL, ks = TRUE,
+             nboots=500, weights=NULL, digits=5, paired=TRUE, print.level=1)
 }
 \arguments{
   \item{formul}{
@@ -38,18 +37,6 @@ MatchBalance(formul, data = NULL, match.out = NULL, ks = TRUE, mv = FALSE,
     non-dichotomous variables.  The bootstrap KS test is consistent even
     for non-continuous variables.  See \code{\link{ks.boot}} for more
     details.}
-  \item{mv}{A logical flag for whether multivariate balance tests (the
-    Kolmogorov-Smirnov and Chi-Square tests) should be calculated.  If
-    this flag is \code{TRUE}, then the formula provided to
-    \code{MatchBalance} will be used to estimate a logistic regression.
-    And the multivariate tests will be conducted on the predicted
-    probabilities of treatment for both treated and control based on the
-    formula. The predicted probability densities for both treated and
-    control should be indistinguishable if balance has been
-    achieved. The model defined by this formula is estimated separately
-    for the matched and unmatched datasets. }
-  \item{maxit}{ The maximum number of iterations for the glm logistic
-    procedure. }
   \item{weights}{An optional vector of observation specific weights.}
   \item{nboots}{The number of bootstrap samples to be run.  If zero, no
     bootstraps are done.  Bootstrapping is highly recommended because
@@ -57,14 +44,6 @@ MatchBalance(formul, data = NULL, match.out = NULL, ks = TRUE, mv = FALSE,
     even when the distributions being compared are not continuous.  At
     least 500 \code{nboots} (preferably 1000) are recommended for
     publication quality p-values.}
-  \item{nmc}{This option is only used if the \code{mv} flag is
-    \code{TRUE}. The number of Monte Carlo simulations to be conducted
-    for each multivariate Kolmogorov-Smirnov test calculated.  Monte
-    Carlo simulations are highly recommended because the usual
-    Kolmogorov-Smirnov test is not consistent when the densities being
-    compared contain point masses.  At least 500 \code{nmc} (preferably
-    1000) are recommended for publication quality p-values. Also see the
-    \code{nboots} option.}
   \item{digits}{The number of significant digits that should be
     displayed.}
   \item{paired}{A flag for whether the paired \code{\link{t.test}} should be
@@ -75,7 +54,6 @@ MatchBalance(formul, data = NULL, match.out = NULL, ks = TRUE, mv = FALSE,
   \item{print.level}{The amount of printing to be done.  If zero, there is
     no printing.  If one, the results are summarized.  If
     two, details of the computations are printed.}
-  \item{...}{Further arguments passed to \code{\link{balanceMV}}.}  
 }
 \value{
   \item{BeforeMatching}{A list containing the before matching univariate
@@ -104,7 +82,6 @@ MatchBalance(formul, data = NULL, match.out = NULL, ks = TRUE, mv = FALSE,
     \code{AMsmallest.p.value} (a vector in case of ties).}
   \item{AMsmallestVarNumber}{The number of the variable with the
     \code{AMsmallest.p.value} (a vector in case of ties).}  
-  \item{mv}{A return object from a call to \code{\link{balanceMV}}}
 }
 \details{
   This function can be used to determine if there is balance in the pre-
@@ -140,20 +117,20 @@ MatchBalance(formul, data = NULL, match.out = NULL, ks = TRUE, mv = FALSE,
   one should check to make sure that missingness is balanced.
   }
   \references{
-  Sekhon, Jasjeet S. 2007.  ``Multivariate and Propensity Score
+  Sekhon, Jasjeet S. forthcoming.  ``Multivariate and Propensity Score
   Matching Software with Automated Balance Optimization.''
   \emph{Journal of Statistical Software}.
   \url{http://sekhon.berkeley.edu/papers/MatchingJSS.pdf}
 
-  Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias
-  Reduction in Matching Methods for Causal Inference.''  Working Paper.
-  \url{http://sekhon.berkeley.edu/papers/SekhonBalanceMetrics.pdf}
-    
   Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
   Estimating Causal Effects: A General Multivariate Matching Method for
   Achieving Balance in Observational Studies.''  Working Paper.
   \url{http://sekhon.berkeley.edu/papers/GenMatch.pdf}
 
+  Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias
+  Reduction in Matching Methods for Causal Inference.''  Working Paper.
+  \url{http://sekhon.berkeley.edu/papers/SekhonBalanceMetrics.pdf}
+    
   Abadie, Alberto.  2002.  ``Bootstrap Tests for Distributional Treatment
   Effects in Instrumental Variable Models.'' \emph{Journal of the
   American Statistical Association}, 97:457 (March) 284-292.  
@@ -176,7 +153,7 @@ MatchBalance(formul, data = NULL, match.out = NULL, ks = TRUE, mv = FALSE,
   \url{http://sekhon.berkeley.edu/}.  
 }
 \seealso{
-  Also see \code{\link{Match}}, \code{\link{GenMatch}}, \code{\link{balanceMV}},
+  Also see \code{\link{Match}}, \code{\link{GenMatch}}, 
   \code{\link{balanceUV}}, \code{\link{qqstats}}, \code{\link{ks.boot}}, 
   \code{\link{GerberGreenImai}}, \code{\link{lalonde}}
 }
@@ -223,8 +200,8 @@ mb  <- MatchBalance(treat~age + I(age^2) + educ + I(educ^2) + black +
 \keyword{nonparametric}
 \keyword{htest}
 
-%  LocalWords:  MatchBalance formul mv nboots nmc maxit nrow regressors glm uv
-%  LocalWords:  datasets Kolmogorov balanceMV balanceUV logit url Abadie emph
+%  LocalWords:  MatchBalance formul nboots nrow regressors glm uv
+%  LocalWords:  datasets Kolmogorov balanceUV logit url Abadie emph
 %  LocalWords:  Edgeworth Verlag Conover Shao Dongsheng UC seealso GenMatch rr
 %  LocalWords:  GerberGreenImai lalonde Dehejia Wahba psid Rajeev Sadek hisp mb
 %  LocalWords:  nodegr estimand htest QQ eQQ cr Monte Carlo Smirnov ks rep Chi

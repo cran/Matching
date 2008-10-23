@@ -19,7 +19,7 @@
   \url{http://sekhon.berkeley.edu/}.  
 }
 \seealso{
-  Also see \code{\link{balanceUV}}, \code{\link{balanceMV}},
+  Also see \code{\link{balanceUV}}, 
   \code{\link{Match}}, \code{\link{GenMatch}},
   \code{\link{MatchBalance}}, \code{\link{qqstats}}, \code{\link{ks.boot}},
   \code{\link{GerberGreenImai}},
@@ -27,5 +27,5 @@
 }
 \keyword{htest}
 
-%  LocalWords:  balanceUV UC url seealso balanceMV GenMatch MatchBalance htest
+%  LocalWords:  balanceUV UC url seealso GenMatch MatchBalance htest
 %  LocalWords:  GerberGreenImai lalonde

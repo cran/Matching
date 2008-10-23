@@ -7,7 +7,7 @@
 # using the approach of Abadie and Imbens is implemented.  In the
 # future, quantile treatment effects will be implemented along with
 # the ability to use robust estimation when estimating the propensity
-# score. MatchBalance(), balanceMV() and balanceUV() test for balance.
+# score. MatchBalance(), and balanceUV() test for balance.
 
 Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
                    BiasAdjust=FALSE,exact=NULL,caliper=NULL, replace=TRUE, ties=TRUE,
@@ -2022,10 +2022,9 @@ Mt.test.unpaired  <- function(Tr, Co,
     return(z)
   } #end of Mt.test.unpaired
 
-MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE, 
-                         nboots=500, nmc=nboots, 
-                         maxit=1000, weights=NULL,
-                         digits=5, paired=TRUE, print.level=1, ...)
+MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, 
+                         nboots=500, weights=NULL,
+                         digits=5, paired=TRUE, print.level=1)
   {
     if(!is.list(match.out) & !is.null(match.out)) {
       warning("'Match' object contains no valid matches")
@@ -2057,9 +2056,6 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
 
     if(!is.numeric(weights))
       stop("'weights' must be a numeric vector")
-
-    if (mv)
-      orig.weights <- weights
 
     if( sum(is.na(xdata))!=0 | sum(is.na(Tr))!=0)
       {
@@ -2096,9 +2092,6 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
     if(nboots < 10 & nboots > 0)
       nboots <- 10
     
-    if(nmc < 10 & nmc > 0)
-      nmc <- 10    
-
     if (ks)
       {
         ks.bm <- KSbootBalanceSummary(index.treated=(Tr==0),
@@ -2288,31 +2281,6 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
           } #end of !is.null(match.out)
       }#end of print.level & (nvars > 1)
   
-    if (mv)  {
-      if(print.level > 0)
-        {
-          cat("...estimating Kolmogorov-Smirnov tests...\n")
-          if (nboots > 0)
-            cat("  ",nboots,"bootstraps are being run (see the 'nboots' option) \n")
-          if (nmc > 0)
-            cat("  ",nmc,"Monte Carlos are being run for the KS test in each bootstrap (see the 'nmc' option)\n")
-          if ( (nboots < 500) | (nmc < 500) )
-            {
-              cat("\n  ","For publication quality p-values it is recommended that 'nboots' and 'nmc'\n")
-              cat("  ","be set equal to at least 500 (preferably 1000).\n")              
-            }
-          cat("\n")
-        }
-
-      ml  <- balanceMV(formul=formul, data=data, match.out=match.out,
-                       maxit=maxit, weights=orig.weights, nboots=nboots, nmc=nmc,
-                       print.level=print.level, ...)
-      if(print.level > 0)
-        summary.balanceMV(ml, digits=digits)
-    }  else  {
-      ml  <- NULL
-    }
-
     return(invisible(list(BeforeMatching=BeforeMatchingBalance,
                           AfterMatching=AfterMatchingBalance,
                           BMsmallest.p.value=BMsmallest.p.value,
@@ -2320,380 +2288,8 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE, mv=FALSE,
                           BMsmallestVarNumber=BMsmallest.number,
                           AMsmallest.p.value=AMsmallest.p.value,
                           AMsmallestVarName=AMsmallest.name,
-                          AMsmallestVarNumber=AMsmallest.number,                          
-                          mv=ml)))
+                          AMsmallestVarNumber=AMsmallest.number)))
   } #end of MatchBalance
-
-
-balanceMV  <- function(formul, data=NULL, match.out=NULL, maxit=1000, weights=rep(1,nrow(data)),
-                       nboots=100, nmc=nboots, print.level=0, ...)
-  {
-
-    tol <- sqrt(.Machine$double.eps)
-    
-    if(!is.list(match.out) & (!is.null(match.out))) {
-      warning("'Match' object contains no valid matches")
-      match.out  <- NULL
-    }
-
-    if ( (class(match.out) != "Match") & (class(match.out) != "Matchby") & (!is.null(match.out)) ) {
-      warning("Object not of class 'Match'")
-      match.out  <- NULL
-    }
-
-    if (is.null(data))
-      {
-        data  <- as.data.frame(model.frame(formul))
-        xdata <- get.xdata(formul,datafr=environment(formul))
-        Tr    <- get.ydata(formul,datafr=environment(formul))
-      } else {
-        data  <- as.data.frame(data)
-        xdata <- get.xdata(formul, data)
-        Tr <- get.ydata(formul, data)
-      }
-
-    if (sum(is.na(data)!=0))
-      stop("MatchBalance: NAs found in data input")
-
-    if (sum(Tr !=1 & Tr !=0) > 0) {
-      stop("Treatment indicator must be a logical variable---i.e., TRUE (1) or FALSE (0)")
-    }    
-
-    if (nboots!=0 & nboots < 10)
-      {
-        nboots <- 10
-        warning("at least 10 nboots must be run")
-      }
-
-    if ( (nmc!=0 & nmc < 10) | (nboots > 0 & nmc < 10) )
-      {
-        nmc <- 10
-        warning("at least 10 Monte Carlo runs are required")
-      }
-
-    MC <- FALSE
-    if (nmc > 0)
-      MC <- TRUE
-    
-    if (!is.null(data$weight37172))
-      stop("balanceMV(): data$weight37172 cannot exist")
-
-    data$weight37172  <- weights
-
-    ddata  <- list()
-    ddata$Tr <- Tr
-    ddata$nboots <- nboots
-    ddata$weights.unmatched <- data$weight37172        
-
-    #FULL SAMPLE RUN
-    t1  <- glm(formul, family=binomial(link="logit"), weights=data$weight37172,
-               control=glm.control(maxit=maxit, ...), data=data)
-
-    t1$df <- t1$df.null-t1$df.residual
-    t1$stat <-  (t1$null.deviance-t1$deviance)
-    t1$p.value  <- 1-pchisq((t1$null.deviance-t1$deviance),t1$df)
-
-    t1$treated.fitted  <- t1$fitted.values[Tr==1]
-    t1$control.fitted  <- t1$fitted.values[Tr==0]
-
-    bm.ks  <- Mks.test(t1$treated.fitted, t1$control.fitted, MC=MC)
-
-    #Monte Carlo Estimates for the full sample before matching ks.test
-    Ys <- t1$fitted
-    obs <- nrow(data)
-    cutp <- length(t1$treated.fitted)
-    sim.ks.bm.pval <- NULL
-    bbcount <- 0
-    if (nmc > 0)
-      {
-        for (bb in 1:nmc)
-          {
-            sindx  <- sample(1:obs, obs, replace=TRUE)
-            
-            
-            X1tmp  <- Ys[sindx[1:cutp]]
-            X2tmp  <- Ys[sindx[(cutp+1):obs]]
-            
-            s.ks   <- Mks.test(X1tmp, X2tmp, exact=FALSE, MC=MC)$statistic
-            
-            if (s.ks >= (bm.ks$statistic - tol) )
-              bbcount  <- bbcount + 1
-            
-          }
-        sim.ks.bm.pval  <- bbcount/nmc
-      }
-
-    #BOOTSTRAP SAMPLE RUN
-    if (nboots > 0)
-      {
-        bcount <- 0
-        if (print.level > 1)
-          cat("unmatched bootstraps:\n")
-
-        na.indx   <- is.na(t1$coeff)
-        use.coeff <- t1$coeff[!na.indx]
-        Xs        <- xdata[,!na.indx]            
-        sigma     <- summary(t1)$cov.scaled
-        
-        parms.s <- MASS::mvrnorm(nboots, mu=use.coeff, Sigma=sigma)
-          
-        for (s in 1:nboots)
-          {
-            if (print.level > 1)
-              cat("s: ",s,"\n")
-
-            mu <- Xs %*% as.matrix(parms.s[s,])
-            Ys <- exp(mu)/(1 + exp(mu))
-
-            bbcount <- 0
-            for (bb in 1:nmc)
-              {
-                sindx  <- sample(1:obs, obs, replace=TRUE)
-
-                X1tmp  <- Ys[sindx[1:cutp]]
-                X2tmp  <- Ys[sindx[(cutp+1):obs]]
-
-                s.ks   <- Mks.test(X1tmp, X2tmp, exact=FALSE, MC=MC)
-
-                if (s.ks$statistic >= (bm.ks$statistic - tol) )
-                  bbcount  <- bbcount + 1                
-              } #end of nmc
-            bb.pval1  <- bbcount/nmc
-
-            if (bb.pval1 >= sim.ks.bm.pval )
-              {
-                bcount  <- bcount+1
-              }
-
-            if ((bb.pval1==sim.ks.bm.pval) & (sim.ks.bm.pval==0))
-              {
-                bcount  <- bcount-1
-              }
-            
-          }#end of s loop
-        p.bm.boot <- bcount/nboots        
-      } else {
-        p.bm.boot <- NULL
-      } #end of if nboots
-
-
-    if(!is.null(match.out))
-      {
-        Mdata  <- rbind(as.data.frame(data[match.out$index.treated,]), data[match.out$index.control,])
-        Mdata$weight37172  <- c(match.out$weights*weights[match.out$index.treated], 
-                                match.out$weights*weights[match.out$index.control])
-	MTr <- c(rep(1,length(match.out$index.treated)), rep(0,length(match.out$index.control)))
-
-        xdata <- as.data.frame(get.xdata(formul, Mdata))
-        xdata <- as.matrix(xdata)
-        Xs    <- xdata
-        if (sum(xdata[,1]==rep(1,nrow(xdata)))==nrow(xdata))
-          {
-            xdata <- xdata[,2:ncol(xdata)]
-
-            Mt1  <- glm(MTr~xdata, family=quasibinomial(link="logit"), 
-                        control=glm.control(maxit=maxit, ...),
-                        weights=Mdata$weight37172)
-          } else {
-            Mt1  <- glm(MTr~xdata-1, family=quasibinomial(link="logit"), weights=Mdata$weight37172,
-                        control=glm.control(maxit=maxit, ...))                        
-          }
-
-        Mdata0  <- list()
-        Mdata0$y  <- MTr
-        Mdata0$weight37172  <- Mdata$weight37172
-        
-        Mt0  <- glm(y~1, family=quasibinomial(link="logit"), weights=Mdata0$weight37172,
-                    control=glm.control(maxit=maxit, ...), data=Mdata0)
-        
-        rd0<-residuals(Mt0) # deviance residuals
-        rd1<-residuals(Mt1) # deviance residuals
-        Mt1$df <- Mt1$df.null-Mt1$df.residual
-        #the square root of the weights is already included in the residuals
-        wdeviance1  <- sum( rd1^2 *sqrt(Mdata$weight37172) )
-        wdeviance0  <- sum( rd0^2 *sqrt(Mdata$weight37172) )
-        rr  <- (rd1^2)*sqrt(Mdata$weight37172)    
-        Mt1$dispersion <- sum( rr )/( sum(Mdata$weight37172) - Mt1$df)
-        Mt1$stat  <- (wdeviance0-wdeviance1)/Mt1$dispersion
-        Mt1$p.value  <- 1-pchisq(Mt1$stat,Mt1$df)
-
-        Mt1$treated.fitted  <- Mt1$fitted.values[MTr==1]
-        Mt1$control.fitted  <- Mt1$fitted.values[MTr==0]
-        
-        am.ks  <- Mks.test(Mt1$treated.fitted, Mt1$control.fitted, MC=MC)
-
-	ddata$Tr.matched <- MTr        
-	ddata$weights.matched <- Mdata$weight37172
-	ddata$weights <- match.out$weights
-        ddata$index.treated.indata  <- match.out$index.treated
-        ddata$index.control.indata  <- match.out$index.control
-
-        #Monte Carlo Estimates for the full sample before matching ks.test
-        Ys <- Mt1$fitted
-        obs <- nrow(Mdata)
-        cutp <- length(Mt1$treated.fitted)
-        sim.ks.am.pval <- NULL
-        bbcount <- 0
-        if (nmc > 0)
-          {
-            for (bb in 1:nmc)
-              {
-                sindx  <- sample(1:obs, obs, replace=TRUE)
-                
-                X1tmp  <- Ys[sindx[1:cutp]]
-                X2tmp  <- Ys[sindx[(cutp+1):obs]]
-                
-                s.ks   <- Mks.test(X1tmp, X2tmp, exact=FALSE, MC=MC)$statistic
-                
-                if (s.ks >= (am.ks$statistic - tol) )
-                  bbcount  <- bbcount + 1
-                
-              }
-            sim.ks.am.pval  <- bbcount/nmc
-          }
-
-        #BOOTSTRAP SAMPLE RUN
-        if (nboots > 0)
-          {
-            bcount <- 0
-            
-            if (print.level > 1)
-              cat("matched bootstraps:\n")
-
-            na.indx   <- is.na(Mt1$coeff)
-            use.coeff <- Mt1$coeff[!na.indx]
-            Xs        <- Xs[,!na.indx]            
-            sigma     <- summary(Mt1, dispersion=Mt1$dispersion)$cov.scaled
-            
-            parms.s <- MASS::mvrnorm(nboots, mu=use.coeff, Sigma=sigma)
-          
-            for (s in 1:nboots)
-              {
-                if (print.level > 1)
-                  cat("s: ",s,"\n")
-                
-                mu <- Xs %*% as.matrix(parms.s[s,])
-                Ys <- exp(mu)/(1 + exp(mu))
-
-                bbcount <- 0
-                for (bb in 1:nmc)
-                  {
-                    sindx  <- sample(1:obs, obs, replace=TRUE)
-                    
-                    X1tmp  <- Ys[sindx[1:cutp]]
-                    X2tmp  <- Ys[sindx[(cutp+1):obs]]
-
-                    s.ks   <- Mks.test(X1tmp, X2tmp, exact=FALSE, MC=MC)
-
-                    if (s.ks$statistic >= (am.ks$statistic - tol) )
-                      bbcount  <- bbcount + 1                
-                  } #end of nmc
-                bb.pval1  <- bbcount/nmc
-
-                if (bb.pval1 >= sim.ks.am.pval)
-                  {
-                    bcount  <- bcount+1
-                  }
-
-                if ((bb.pval1==sim.ks.am.pval) & (sim.ks.am.pval==0))
-                  {
-                    bcount  <- bcount-1
-                  }                
-              }#end of s loop
-            p.am.boot <- bcount/nboots        
-          } else {
-            p.am.boot <- NULL
-          } #end of if nboots
-        
-      } else {
-        am.ks  <- NULL
-        Mt1  <- NULL
-        p.am.boot <- NULL
-
-      }
-
-    z  <- list(pval.kboot.unmatched=p.bm.boot, pval.kboot.matched=p.am.boot,
-               logit.unmatched=t1, logit.matched=Mt1,               
-               ks.unmatched=bm.ks, ks.matched=am.ks,
-               data=ddata)
-    class(z)  <- "balanceMV"
-
-    return(z)
-  } #end of balanceMV
-
-summary.balanceMV  <- function(object, ..., digits=5)
-  {
-    if (class(object) != "balanceMV") {
-      warning("Object not of class 'balanceMV'")
-      return(NULL)
-    }
-
-    t1.df <- object$logit.unmatched$df.null-object$logit.unmatched$df.residual
-    t1.stat <-  object$logit.unmatched$null.deviance-object$logit.unmatched$deviance
-
-    if(!is.null(object$ks.matched))
-      {    
-        Mt1.df  <- object$logit.matched$df.null-object$logit.matched$df.residual
-        Mt1.stat  <- object$logit.matched$null.deviance-object$logit.matched$deviance
-      }
-
-    cat("\nBefore Matching:\n")
-    w <- object$data$weights.unmatched[object$data$Tr==1]
-    mean.tr.unmatched <- sum(object$logit.unmatched$fitted[object$data$Tr==1]*w)/sum(w)
-
-    cat("Mean Probability of Treatment for Treated Observations:",
-        format(mean.tr.unmatched,digits=digits),"\n")
-    
-    w <- object$data$weights.unmatched[object$data$Tr==0]
-    mean.co.unmatched <- sum(object$logit.unmatched$fitted[object$data$Tr==0]*w)/sum(w)
-    
-    cat("Mean Probability of Treatment for Control Observations:",
-        format(mean.co.unmatched,digits=digits),"\n")
-    
-    if(!is.null(object$ks.matched))
-      {
-        mean.tr.matched <- 
-          sum(object$logit.matched$fitted[object$data$Tr.matched==1]*object$data$weights)/sum(object$data$weights)
-
-        mean.co.matched <- 
-          sum(object$logit.matched$fitted[object$data$Tr.matched==0]*object$data$weights)/sum(object$data$weights)
-
-        cat("\nAfter Matching:\n")    
-        cat("Mean Probability of Treatment for Treated Observations:", format(mean.tr.matched, digits=digits),"\n")
-        cat("Mean Probability of Treatment for Control Observations:", format(mean.co.matched, digits=digits),"\n")
-      }
-
-    cat("\nKolmogorov-Smirnov Test for Balance Before Matching:\n")
-    cat("statistic:",format(object$ks.unmatched$statistic,digits=digits), " p-val: ",
-        format.pval(object$ks.unmatched$p.value,digits=digits),"\n")
-    if( object$data$nboots > 0)
-      cat("bootstrap p-value:",format.pval(object$pval.kboot.unmatched,digits=digits),"\n")      
-      
-
-    if(!is.null(object$ks.matched))
-      {    
-        cat("\nKolmogorov-Smirnov Test for Balance After Matching:\n")
-        cat("statistic:",format(object$ks.matched$statistic,digits=digits), " p-val: ",
-            format.pval(object$ks.matched$p.value,digits=digits),"\n")
-        if( object$data$nboots > 0)
-          cat("bootstrap p-value:",format.pval(object$pval.kboot.matched,digits=digits),"\n")      
-      }
-
-    cat("\nChi-Square Deviance Test for Balance Before Matching:\n")
-    cat("statistic:",format(t1.stat,digits=digits),
-        " p-val:",format.pval(object$logit.unmatched$p.value,digits=digits),
-        "df:",format(t1.df,digits=digits),"\n")
-
-    if(!is.null(object$ks.matched))
-      {
-        cat("\nChi-Square Deviance Test for Balance After Matching:\n")
-        cat("statistic:",format(Mt1.stat,digits=digits),
-            " p-val:",format.pval(object$logit.matched$p.value,digits=digits),"df:",
-            format(Mt1.df,digits=digits),"\n")
-      }
-
-    cat("\n")
-  }#end of summary.balanceMV
 
 
 get.xdata <- function(formul, datafr) {
