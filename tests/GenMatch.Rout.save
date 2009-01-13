@@ -21,7 +21,7 @@ Loading required package: rgenoud
 ##  See http://sekhon.berkeley.edu/rgenoud for additional documentation.
 Loading required package: MASS
 ## 
-##  Matching (Version 4.7-2, Build Date: 2008/10/23)
+##  Matching (Version 4.7-5, Build Date: 2009/01/13)
 ##  See http://sekhon.berkeley.edu/matching for additional documentation.
 ##  Please cite software as:
 ##   Jasjeet S. Sekhon. Forthcoming. ``Multivariate and Propensity Score Matching
@@ -53,7 +53,7 @@ Loading required package: MASS
 +                    unif.seed=3392, int.seed=8282)
 
 
-Wed Oct 22 23:19:10 2008
+Tue Jan 13 01:38:51 2009
 Domains:
  0.000000e+00   <=  X1   <=    1.000000e+03 
  0.000000e+00   <=  X2   <=    1.000000e+03 
@@ -418,8 +418,8 @@ Parameters at the Solution:
 Solution Found Generation 4
 Number of Generations Run 6
 
-Wed Oct 22 23:19:12 2008
-Total run time : 0 hours 0 minutes and 2 seconds
+Tue Jan 13 01:38:54 2009
+Total run time : 0 hours 0 minutes and 3 seconds
 > 
 > #The outcome variable
 > Y=re78/1000
