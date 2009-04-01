@@ -21,11 +21,11 @@ Type 'q()' to quit R.
 > 
 > library(Matching)
 Loading required package: rgenoud
-##  rgenoud (Version 5.4-7, Build Date: 2007-01-04)
+##  rgenoud (Version 5.5-1, Build Date: 2009-03-13)
 ##  See http://sekhon.berkeley.edu/rgenoud for additional documentation.
 Loading required package: MASS
 ## 
-##  Matching (Version 4.7-5, Build Date: 2009/01/13)
+##  Matching (Version 4.7-6, Build Date: 2009/03/31)
 ##  See http://sekhon.berkeley.edu/matching for additional documentation.
 ##  Please cite software as:
 ##   Jasjeet S. Sekhon. Forthcoming. ``Multivariate and Propensity Score Matching

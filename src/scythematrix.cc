@@ -2005,6 +2005,7 @@ Matrix sumc (const Matrix & A)
  * \param A a constant reference to a Matrix \a A.
  * \return a Symmetric Matrix.
  */
+/* 
     Matrix xpnd(const Matrix& A){
 	double newrowsize_d = -.5 + .5*::sqrt(1+8*A.size);
 	if (fmod(newrowsize_d,1.0) != 0.0){
@@ -2024,6 +2025,7 @@ Matrix sumc (const Matrix & A)
 	}
 	return newdata;
     }
+*/
     
     
 //! Get the diagonal of a Matrix

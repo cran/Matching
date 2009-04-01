@@ -1,5 +1,8 @@
 /* Edited by Jasjeet S. Sekhon <jasjeet_sekhon@berkeley.edu> */
 /* HTTP://sekhon.berkeley.edu                                */
+
+/* remove xpnd to work on solaris march 31, 2009             */
+
 /* June 26, 2008                                             */
 /* __NATE__ additions by Nate Begeman (Apple)                */
 
@@ -949,7 +952,7 @@ public:
 //  Errors:  0049
 //  Dependencies: fmod()
 
-   friend Matrix xpnd(const Matrix& A);
+//   friend Matrix xpnd(const Matrix& A);
 
 /**********************************************************************/
 //  FUNCTION: Diag - get the diagonal of a Matrix

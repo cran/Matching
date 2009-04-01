@@ -17,11 +17,11 @@ Type 'q()' to quit R.
 
 > library(Matching)
 Loading required package: rgenoud
-##  rgenoud (Version 5.4-7, Build Date: 2007-01-04)
+##  rgenoud (Version 5.5-1, Build Date: 2009-03-13)
 ##  See http://sekhon.berkeley.edu/rgenoud for additional documentation.
 Loading required package: MASS
 ## 
-##  Matching (Version 4.7-5, Build Date: 2009/01/13)
+##  Matching (Version 4.7-6, Build Date: 2009/03/31)
 ##  See http://sekhon.berkeley.edu/matching for additional documentation.
 ##  Please cite software as:
 ##   Jasjeet S. Sekhon. Forthcoming. ``Multivariate and Propensity Score Matching
@@ -53,7 +53,7 @@ Loading required package: MASS
 +                    unif.seed=3392, int.seed=8282)
 
 
-Tue Jan 13 01:38:51 2009
+Tue Mar 31 19:37:26 2009
 Domains:
  0.000000e+00   <=  X1   <=    1.000000e+03 
  0.000000e+00   <=  X2   <=    1.000000e+03 
@@ -418,7 +418,7 @@ Parameters at the Solution:
 Solution Found Generation 4
 Number of Generations Run 6
 
-Tue Jan 13 01:38:54 2009
+Tue Mar 31 19:37:29 2009
 Total run time : 0 hours 0 minutes and 3 seconds
 > 
 > #The outcome variable
