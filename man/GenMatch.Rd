@@ -359,9 +359,6 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1, weights=NULL,
     \code{X} variables.  This object has the same length as the number of
     covariates in \code{X}.}
 }
-\details{
-  
-  }
 \references{
   Sekhon, Jasjeet S. forthcoming.  ``Multivariate and Propensity Score
   Matching Software with Automated Balance Optimization.''
