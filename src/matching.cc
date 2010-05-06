@@ -3,7 +3,7 @@
     HTTP://sekhon.berkeley.edu/
     UC Berkeley
     
-    2007/08/04
+    2010/05/05
     Under the GNU Public License Version 3
 
     A *lot* of work and trail-and-error has gone into these functions
@@ -2880,7 +2880,7 @@ void display(Matrix A)
   /* Loop through the data and display the same in matrix format */
   for( i = 0; i < r; i++ ){
     for( j = 0; j < c; j++){
-      printf("%4.2lf\t",A[count]);
+      printf("%e\t",A[count]);
       count++;
     }
     printf("\n");
