@@ -1,7 +1,8 @@
 /* Edited by Jasjeet S. Sekhon <jasjeet_sekhon@berkeley.edu> */
 /* HTTP://sekhon.berkeley.edu                                */
 
-/* remove xpnd to work on solaris march 31, 2009             */
+/* May 8, 2010, updated header files for Solaris             */
+/* remove xpnd to work on Solaris march 31, 2009             */
 
 /* June 26, 2008                                             */
 /* __NATE__ additions by Nate Begeman (Apple)                */
@@ -63,6 +64,9 @@
 
  //explicit include needed for gcc4.3 because of header cleanup
 #include <cstdlib>
+ //needed for Solaris instead of simply #include <cstdlib>
+#include <stdlib.h>
+
  //http://gcc.gnu.org/gcc-4.3/porting_to.html
  //http://www.cyrius.com/journal/2007/05/10#gcc-4.3-include
 #include <cstring>
