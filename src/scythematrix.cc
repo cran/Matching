@@ -1,5 +1,7 @@
 /* Edited by Jasjeet S. Sekhon <jasjeet_sekhon@berkeley.edu> */
 /* HTTP://sekhon.berkeley.edu                                */
+/*                                                           */
+/* May 9, 2010: Solaris compatibility issues                 */
 /* October 24, 2006                                          */
 /* May 25, 2006                                              */
 /* __NATE__ additions by Nate Begeman (Apple)                */
@@ -1280,7 +1282,7 @@ Matrix zeros (const int& rows, const int& cols)
 		int pivot = k;
 		// find pivot
 		for (int i=k; i<A.rowsize; ++i){
-		    if ( ::fabs(A(pivot,k)) < ::fabs(A(i,k)) ) pivot = i;  
+		    if ( std::fabs(A(pivot,k)) < std::fabs(A(i,k)) ) pivot = i;  
 		}
 		
 		if(A(pivot,k) == 0.0){
@@ -1380,7 +1382,7 @@ Matrix zeros (const int& rows, const int& cols)
 	    int pivot = k;
 	    // find pivot
 	    for (int i=k; i<A.rowsize; ++i){
-		if ( A(pivot,k) < ::fabs(A(i,k)) ) pivot = i;  
+		if ( A(pivot,k) < std::fabs(A(i,k)) ) pivot = i;  
 	    }
 	    
 	    if(A(pivot,k) == 0.0){
@@ -1565,7 +1567,7 @@ Matrix sumc (const Matrix & A)
 	
 	for (int i = 0; i < A.rowsize; ++i) {
 	    for (int j = 0; j < A.colsize; ++j) {
-		newdata.data[j] += ::pow (mu.data[j] - A.data[A.colsize * i + j], 2) *
+		newdata.data[j] += std::pow (mu.data[j] - A.data[A.colsize * i + j], 2) *
 		    (1.0 / (A.rowsize-1));
 	    }
 	}
@@ -1589,13 +1591,13 @@ Matrix sumc (const Matrix & A)
 	
 	for (int i = 0; i < A.rowsize; ++i) {
 	    for (int j = 0; j < A.colsize; ++j) {
-		newdata.data[j] += ::pow (mu.data[j] - A.data[A.colsize * i + j], 2) *
+		newdata.data[j] += std::pow (mu.data[j] - A.data[A.colsize * i + j], 2) *
 		    (1.0 / (A.rowsize-1));
 	    }
 	}
 	
 	for (int i = 0; i < A.colsize; ++i)
-	    newdata.data[i] = ::sqrt (newdata[i]);
+	    newdata.data[i] = std::sqrt (newdata[i]);
 	
 	return newdata;
     }
@@ -1611,7 +1613,7 @@ Matrix sumc (const Matrix & A)
       Matrix newdata(A.rowsize, A.colsize);
 	
 	for (int i = 0; i < A.size; ++i)
-	    newdata.data[i] = ::sqrt (A.data[i]);
+	    newdata.data[i] = std::sqrt (A.data[i]);
 	
 	return newdata;
     }
@@ -1627,7 +1629,7 @@ Matrix sumc (const Matrix & A)
       Matrix newdata(A.rowsize, A.colsize);
 	
 	for (int i = 0; i < A.size; ++i)
-	    newdata.data[i] = ::fabs (A.data[i]);
+	    newdata.data[i] = std::fabs (A.data[i]);
 	
 	return newdata;
     }
@@ -1643,7 +1645,7 @@ Matrix sumc (const Matrix & A)
       Matrix newdata(A.rowsize, A.colsize);
 	
 	for (int i = 0; i < A.size; ++i)
-	    newdata.data[i] = ::exp (A.data[i]);
+	    newdata.data[i] = std::exp (A.data[i]);
 	
 	return newdata;
     }
@@ -1658,7 +1660,7 @@ Matrix sumc (const Matrix & A)
       Matrix newdata(A.rowsize, A.colsize);
 	
 	for (int i = 0; i < A.size; ++i)
-	    newdata.data[i] = ::log (A.data[i]);
+	    newdata.data[i] = std::log (A.data[i]);
 	
 	return newdata;
     }
@@ -1673,7 +1675,7 @@ Matrix sumc (const Matrix & A)
       Matrix newdata(A.rowsize, A.colsize);
 
 	for (int i = 0; i < A.size; ++i)
-	    newdata.data[i] = ::log10(A.data[i]);
+	    newdata.data[i] = std::log10(A.data[i]);
 	
 	return newdata;
     }
@@ -1688,7 +1690,7 @@ Matrix sumc (const Matrix & A)
       Matrix newdata(A.rowsize, A.colsize);
 	
 	for (int i = 0; i < A.size; ++i)
-	    newdata.data[i] = ::pow(A.data[i], e);
+	    newdata.data[i] = std::pow(A.data[i], e);
 	
 	return newdata;
     }
@@ -2007,7 +2009,7 @@ Matrix sumc (const Matrix & A)
  */
 /* 
     Matrix xpnd(const Matrix& A){
-	double newrowsize_d = -.5 + .5*::sqrt(1+8*A.size);
+	double newrowsize_d = -.5 + .5*std::sqrt(1+8*A.size);
 	if (fmod(newrowsize_d,1.0) != 0.0){
 	    cerr << "ERROR 0049: Not possible to make square Matrix out of "
 		 << "input Matrix to SCYTHE::xpnd()" 
