@@ -224,6 +224,9 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
     if (sum(Tr !=1 & Tr !=0) > 0) {
       stop("Treatment indicator must be a logical variable---i.e., TRUE (1) or FALSE (0)")
     }
+    if (var(Tr)==0) {
+      stop("Treatment indicator ('Tr') must contain both treatment and control observations")
+    }    
     if (distance.tolerance < 0)
       {
         warning("User set 'distance.tolerance' to less than 0.  Resetting to the default which is 0.00001.")
