@@ -1,6 +1,6 @@
 
-R version 2.11.1 (2010-05-31)
-Copyright (C) 2010 The R Foundation for Statistical Computing
+R version 2.10.1 (2009-12-14)
+Copyright (C) 2009 The R Foundation for Statistical Computing
 ISBN 3-900051-07-0
 
 R is free software and comes with ABSOLUTELY NO WARRANTY.
@@ -17,11 +17,11 @@ Type 'q()' to quit R.
 
 > library(Matching)
 Loading required package: rgenoud
-##  rgenoud (Version 5.6-7, Build Date: 2010-06-01)
+##  rgenoud (Version 5.7-1, Build Date: 2010-08-26)
 ##  See http://sekhon.berkeley.edu/rgenoud for additional documentation.
 Loading required package: MASS
 ## 
-##  Matching (Version 4.7-10, Build Date: 2010/08/13)
+##  Matching (Version 4.7-11, Build Date: 2010/09/21)
 ##  See http://sekhon.berkeley.edu/matching for additional documentation.
 ##  Please cite software as:
 ##   Jasjeet S. Sekhon. Forthcoming. ``Multivariate and Propensity Score Matching
@@ -53,7 +53,7 @@ Loading required package: MASS
 +                    unif.seed=3392, int.seed=8282)
 
 
-Fri Aug 13 00:38:07 2010
+Thu Oct 21 00:03:03 2010
 Domains:
  0.000000e+00   <=  X1   <=    1.000000e+03 
  0.000000e+00   <=  X2   <=    1.000000e+03 
@@ -418,7 +418,7 @@ Parameters at the Solution:
 Solution Found Generation 4
 Number of Generations Run 6
 
-Fri Aug 13 00:38:09 2010
+Thu Oct 21 00:03:05 2010
 Total run time : 0 hours 0 minutes and 2 seconds
 > 
 > #The outcome variable
