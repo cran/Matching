@@ -2346,27 +2346,49 @@ ks.boot  <- function(Tr, Co, nboots=1000, alternative = c("two.sided", "less", "
     
     fs.ks  <- Mks.test(Tr, Co, MC=TRUE, alternative=alternative)    
 
-    for (bb in 1:nboots)
+    if (alternative=="two.sided")
       {
-        if (print.level > 1)
-          cat("s:", bb, "\n")
-        
-        sindx  <- sample(1:obs, obs, replace=TRUE)
-        
-        X1tmp <- w[sindx[1:cutp]]
-        X2tmp <- w[sindx[(cutp+1):obs]]
-        
-        s.ks <- ks.fast(X1tmp, X2tmp, n.x=n.x, n.y=n.y, n=obs)
-        
-        if (s.ks >= (fs.ks$statistic - tol) )
-          bbcount  <- bbcount + 1
-        
+        if (print.level > 0)
+          cat("ks.boot: two.sided test\n")
+        for (bb in 1:nboots)
+          {
+            if (print.level > 1)
+              cat("s:", bb, "\n")
+            
+            sindx  <- sample(1:obs, obs, replace=TRUE)
+            
+            X1tmp <- w[sindx[1:cutp]]
+            X2tmp <- w[sindx[(cutp+1):obs]]
+            
+            s.ks <- ks.fast(X1tmp, X2tmp, n.x=n.x, n.y=n.y, n=obs)
+            
+            if (s.ks >= (fs.ks$statistic - tol) )
+              bbcount  <- bbcount + 1
+          }
+      } else {
+        if (print.level > 0)
+          cat("ks.boot:",alternative,"test\n")            
+        for (bb in 1:nboots)
+          {
+            if (print.level > 1)
+              cat("s:", bb, "\n")
+            
+            sindx  <- sample(1:obs, obs, replace=TRUE)
+            
+            X1tmp <- w[sindx[1:cutp]]
+            X2tmp <- w[sindx[(cutp+1):obs]]
+            
+            s.ks <- Mks.test(X1tmp, X2tmp, MC=TRUE, alternative=alternative)$statistic
+            
+            if (s.ks >= (fs.ks$statistic - tol) )
+              bbcount  <- bbcount + 1                                
+          }        
       }
     ks.boot.pval  <- bbcount/nboots
-
+    
     ret  <- list(ks.boot.pvalue=ks.boot.pval, ks=fs.ks, nboots=nboots)
     class(ret)  <- "ks.boot"
-
+    
     return(ret)
   } #end of ks.boot
 
