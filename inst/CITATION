@@ -1,0 +1,17 @@
+citHeader("To cite Matching in publications use:")
+
+citEntry(entry = "Article",
+  title        = "Multivariate and Propensity Score Matching Software with Automated Balance Optimization: The {Matching} Package for {R}",
+  author       = personList(as.person("Jasjeet S. Sekhon")),
+  journal      = "Journal of Statistical Software",
+  year         = "2011",
+  note         = "Forthcoming",
+  url          = "http://www.jstatsoft.org/",
+
+  textVersion  =
+  paste("Jasjeet S. Sekhon (2011).",
+        "Multivariate and Propensity Score Matching Software with Automated Balance Optimization: The Matching Package for R.",
+        "Journal of Statistical Software, Forthcoming.",
+        "URL http://www.jstatsoft.org/.")
+)
+
