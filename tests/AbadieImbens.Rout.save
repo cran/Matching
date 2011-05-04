@@ -1,6 +1,6 @@
 
-R version 2.12.0 (2010-10-15)
-Copyright (C) 2010 The R Foundation for Statistical Computing
+R version 2.13.0 (2011-04-13)
+Copyright (C) 2011 The R Foundation for Statistical Computing
 ISBN 3-900051-07-0
 Platform: x86_64-apple-darwin9.8.0/x86_64 (64-bit)
 
@@ -22,11 +22,11 @@ Type 'q()' to quit R.
 > 
 > library(Matching)
 Loading required package: rgenoud
-##  rgenoud (Version 5.7-1, Build Date: 2010-08-26)
+##  rgenoud (Version 5.7-3, Build Date: 2011-05-04)
 ##  See http://sekhon.berkeley.edu/rgenoud for additional documentation.
 Loading required package: MASS
 ## 
-##  Matching (Version 4.7-12, Build Date: 2011/04/13)
+##  Matching (Version 4.7-13, Build Date: 2011/05/04)
 ##  See http://sekhon.berkeley.edu/matching for additional documentation.
 ##  Please cite software as:
 ##   Jasjeet S. Sekhon. Forthcoming. ``Multivariate and Propensity Score Matching
@@ -266,7 +266,7 @@ Matched number of observations  (unweighted).  733
 +              weights=w.educ,sample=TRUE);
 > summary(rr)
 
-Estimate...  3.1470 
+Estimate...  3.147 
 AI SE......  1.0709 
 T-stat.....  2.9386 
 p.val......  0.0032973 
