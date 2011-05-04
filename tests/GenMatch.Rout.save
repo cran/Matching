@@ -1,6 +1,6 @@
 
-R version 2.12.0 (2010-10-15)
-Copyright (C) 2010 The R Foundation for Statistical Computing
+R version 2.13.0 (2011-04-13)
+Copyright (C) 2011 The R Foundation for Statistical Computing
 ISBN 3-900051-07-0
 Platform: x86_64-apple-darwin9.8.0/x86_64 (64-bit)
 
@@ -18,11 +18,11 @@ Type 'q()' to quit R.
 
 > library(Matching)
 Loading required package: rgenoud
-##  rgenoud (Version 5.7-1, Build Date: 2010-08-26)
+##  rgenoud (Version 5.7-3, Build Date: 2011-05-04)
 ##  See http://sekhon.berkeley.edu/rgenoud for additional documentation.
 Loading required package: MASS
 ## 
-##  Matching (Version 4.7-12, Build Date: 2011/04/13)
+##  Matching (Version 4.7-13, Build Date: 2011/05/04)
 ##  See http://sekhon.berkeley.edu/matching for additional documentation.
 ##  Please cite software as:
 ##   Jasjeet S. Sekhon. Forthcoming. ``Multivariate and Propensity Score Matching
@@ -54,7 +54,7 @@ Loading required package: MASS
 +                    unif.seed=3392, int.seed=8282)
 
 
-Wed Apr 13 17:00:45 2011
+Wed May  4 02:12:55 2011
 Domains:
  0.000000e+00   <=  X1   <=    1.000000e+03 
  0.000000e+00   <=  X2   <=    1.000000e+03 
@@ -419,7 +419,7 @@ Parameters at the Solution:
 Solution Found Generation 4
 Number of Generations Run 6
 
-Wed Apr 13 17:00:46 2011
+Wed May  4 02:12:56 2011
 Total run time : 0 hours 0 minutes and 1 seconds
 > 
 > #The outcome variable
@@ -454,7 +454,7 @@ Matched number of observations  (unweighted).  605
                        Before Matching 	 	 After Matching
 mean treatment........     25.816 	 	     25.152 
 mean control..........     25.054 	 	     25.141 
-std mean diff.........     10.655 	 	    0.16650 
+std mean diff.........     10.655 	 	     0.1665 
 
 mean raw eQQ diff.....    0.94054 	 	    0.34545 
 med  raw eQQ diff.....          1 	 	          0 
@@ -496,7 +496,7 @@ KS Statistic..........    0.12651 	 	   0.033058
                        Before Matching 	 	 After Matching
 mean treatment........    0.84324 	 	     0.8382 
 mean control..........    0.82692 	 	     0.8427 
-std mean diff.........     4.4767 	 	    -1.2190 
+std mean diff.........     4.4767 	 	     -1.219 
 
 mean raw eQQ diff.....   0.016216 	 	  0.0033058 
 med  raw eQQ diff.....          0 	 	          0 
@@ -504,7 +504,7 @@ max  raw eQQ diff.....          1 	 	          1
 
 mean eCDF diff........  0.0081601 	 	  0.0016529 
 med  eCDF diff........  0.0081601 	 	  0.0016529 
-max  eCDF diff........   0.016320 	 	  0.0033058 
+max  eCDF diff........    0.01632 	 	  0.0033058 
 
 var ratio (Tr/Co).....    0.92503 	 	     1.0231 
 T-test p-value........    0.64736 	 	    0.47962 
@@ -512,7 +512,7 @@ T-test p-value........    0.64736 	 	    0.47962
 
 ***** (V4) hisp *****
                        Before Matching 	 	 After Matching
-mean treatment........    0.05946 	 	    0.08764 
+mean treatment........   0.059459 	 	    0.08764 
 mean control..........    0.10769 	 	    0.08764 
 std mean diff.........    -20.341 	 	          0 
 
@@ -568,7 +568,7 @@ T-test p-value........  0.0020368 	 	          1
                        Before Matching 	 	 After Matching
 mean treatment........    0.70811 	 	    0.73483 
 mean control..........       0.75 	 	    0.73933 
-std mean diff.........    -9.1895 	 	    -1.0170 
+std mean diff.........    -9.1895 	 	     -1.017 
 
 mean raw eQQ diff.....   0.037838 	 	  0.0066116 
 med  raw eQQ diff.....          0 	 	          0 
@@ -597,7 +597,7 @@ med  eCDF diff........   0.042308 	 	  0.0024793
 max  eCDF diff........   0.084615 	 	  0.0049587 
 
 var ratio (Tr/Co).....     1.1133 	 	     1.0117 
-T-test p-value........    0.06803 	 	    0.46533 
+T-test p-value........   0.068031 	 	    0.46533 
 
 
 ***** (V9) re75 *****
@@ -614,7 +614,7 @@ mean eCDF diff........   0.050834 	 	   0.010175
 med  eCDF diff........   0.061954 	 	  0.0082645 
 max  eCDF diff........    0.10748 	 	   0.029752 
 
-var ratio (Tr/Co).....     1.0763 	 	     1.0480 
+var ratio (Tr/Co).....     1.0763 	 	      1.048 
 T-test p-value........    0.38527 	 	    0.76788 
 KS Bootstrap p-value..       0.05 	 	      0.518 
 KS Naive p-value......    0.16449 	 	    0.95166 
@@ -624,7 +624,7 @@ KS Statistic..........    0.10748 	 	   0.029752
 ***** (V10) re74 *****
                        Before Matching 	 	 After Matching
 mean treatment........     2095.6 	 	     1954.4 
-mean control..........     2107.0 	 	     1995.3 
+mean control..........       2107 	 	     1995.3 
 std mean diff.........   -0.23437 	 	   -0.84484 
 
 mean raw eQQ diff.....     487.98 	 	     191.98 
@@ -632,7 +632,7 @@ med  raw eQQ diff.....          0 	 	          0
 max  raw eQQ diff.....       8413 	 	     7870.3 
 
 mean eCDF diff........   0.019223 	 	  0.0061874 
-med  eCDF diff........   0.015800 	 	  0.0049587 
+med  eCDF diff........     0.0158 	 	  0.0049587 
 max  eCDF diff........   0.047089 	 	   0.021488 
 
 var ratio (Tr/Co).....     0.7381 	 	    0.88048 

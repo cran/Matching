@@ -360,24 +360,24 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1, weights=NULL,
     covariates in \code{X}.}
 }
 \references{
-  Sekhon, Jasjeet S. forthcoming.  ``Multivariate and Propensity Score
+  Sekhon, Jasjeet S. 2011.  "Multivariate and Propensity Score
   Matching Software with Automated Balance Optimization.''
-  \emph{Journal of Statistical Software}.
-  \url{http://sekhon.berkeley.edu/papers/MatchingJSS.pdf}
+  \emph{Journal of Statistical Software} 42(7): 1-52.
+  \url{http://www.jstatsoft.org/v42/i07/}
   
-  Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
+  Diamond, Alexis and Jasjeet S. Sekhon. 2005. "Genetic Matching for
   Estimating Causal Effects: A General Multivariate Matching Method for
   Achieving Balance in Observational Studies.''  Working Paper.
   \url{http://sekhon.berkeley.edu/papers/GenMatch.pdf}
 
-  Sekhon, Jasjeet Singh and Walter R. Mebane, Jr. 1998.  ``Genetic
+  Sekhon, Jasjeet Singh and Walter R. Mebane, Jr. 1998.  "Genetic
   Optimization Using Derivatives: Theory and Application to Nonlinear
   Models.'' \emph{Political Analysis}, 7: 187-210.
   \url{http://sekhon.berkeley.edu/genoud/genoud.pdf} 
 
-  Sekhon, Jasjeet S. 2006.  ``Alternative Balance Metrics for Bias
-  Reduction in Matching Methods for Causal Inference.''  Working Paper.
-  \url{http://sekhon.berkeley.edu/papers/SekhonBalanceMetrics.pdf}
+  Sekhon, Jasjeet Singh and Richard D. Grieve. 2011. "A Matching Method
+  For Improving Covariate Balance in Cost-Effectiveness Analyses."
+  \emph{Health Economics}. forthcoming.
 }
 \author{
   Jasjeet S. Sekhon, UC Berkeley, \email{sekhon@berkeley.edu},

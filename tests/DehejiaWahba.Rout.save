@@ -1,6 +1,6 @@
 
-R version 2.12.0 (2010-10-15)
-Copyright (C) 2010 The R Foundation for Statistical Computing
+R version 2.13.0 (2011-04-13)
+Copyright (C) 2011 The R Foundation for Statistical Computing
 ISBN 3-900051-07-0
 Platform: x86_64-apple-darwin9.8.0/x86_64 (64-bit)
 
@@ -25,11 +25,11 @@ Type 'q()' to quit R.
 > 
 > library(Matching)
 Loading required package: rgenoud
-##  rgenoud (Version 5.7-1, Build Date: 2010-08-26)
+##  rgenoud (Version 5.7-3, Build Date: 2011-05-04)
 ##  See http://sekhon.berkeley.edu/rgenoud for additional documentation.
 Loading required package: MASS
 ## 
-##  Matching (Version 4.7-12, Build Date: 2011/04/13)
+##  Matching (Version 4.7-13, Build Date: 2011/05/04)
 ##  See http://sekhon.berkeley.edu/matching for additional documentation.
 ##  Please cite software as:
 ##   Jasjeet S. Sekhon. Forthcoming. ``Multivariate and Propensity Score Matching
@@ -102,13 +102,13 @@ max  eCDF diff........   0.065177 	 	   0.049133
 
 var ratio (Tr/Co).....     1.0278 	 	     1.0662 
 T-test p-value........    0.26594 	 	    0.23472 
-KS Naive p-value......     0.7481 	 	     0.7978 
+KS Naive p-value......     0.7481 	 	    0.79781 
 KS Statistic..........   0.065177 	 	   0.049133 
 
 
 ***** (V2) I(age^2) *****
                        Before Matching 	 	 After Matching
-mean treatment........      717.4 	 	      717.4 
+mean treatment........     717.39 	 	     717.39 
 mean control..........     677.32 	 	     673.08 
 std mean diff.........     9.2937 	 	     10.275 
 
@@ -122,14 +122,14 @@ max  eCDF diff........   0.065177 	 	   0.049133
 
 var ratio (Tr/Co).....     1.0115 	 	    0.91516 
 T-test p-value........    0.33337 	 	    0.31819 
-KS Naive p-value......     0.7481 	 	     0.7978 
+KS Naive p-value......     0.7481 	 	    0.79781 
 KS Statistic..........   0.065177 	 	   0.049133 
 
 
 ***** (V3) educ *****
                        Before Matching 	 	 After Matching
 mean treatment........     10.346 	 	     10.346 
-mean control..........     10.088 	 	     10.480 
+mean control..........     10.088 	 	      10.48 
 std mean diff.........     12.806 	 	    -6.6749 
 
 mean raw eQQ diff.....    0.40541 	 	    0.16185 
@@ -152,7 +152,7 @@ mean treatment........     111.06 	 	     111.06
 mean control..........     104.37 	 	     113.21 
 std mean diff.........     17.012 	 	     -5.466 
 
-mean raw eQQ diff.....      8.719 	 	     3.1098 
+mean raw eQQ diff.....     8.7189 	 	     3.1098 
 med  raw eQQ diff.....          0 	 	          0 
 max  raw eQQ diff.....         60 	 	         60 
 
@@ -178,7 +178,7 @@ max  raw eQQ diff.....          1 	 	          1
 
 mean eCDF diff........  0.0081601 	 	  0.0043353 
 med  eCDF diff........  0.0081601 	 	  0.0043353 
-max  eCDF diff........   0.016320 	 	  0.0086705 
+max  eCDF diff........    0.01632 	 	  0.0086705 
 
 var ratio (Tr/Co).....    0.92503 	 	     1.0943 
 T-test p-value........    0.64736 	 	    0.57783 
@@ -186,7 +186,7 @@ T-test p-value........    0.64736 	 	    0.57783
 
 ***** (V6) hisp *****
                        Before Matching 	 	 After Matching
-mean treatment........    0.05946 	 	    0.05946 
+mean treatment........   0.059459 	 	   0.059459 
 mean control..........    0.10769 	 	   0.048649 
 std mean diff.........    -20.341 	 	     4.5591 
 
@@ -241,15 +241,15 @@ T-test p-value........  0.0020368 	 	    0.49161
 ***** (V9) re74 *****
                        Before Matching 	 	 After Matching
 mean treatment........     2095.6 	 	     2095.6 
-mean control..........     2107.0 	 	     1624.3 
-std mean diff.........   -0.23437 	 	      9.644 
+mean control..........       2107 	 	     1624.3 
+std mean diff.........   -0.23437 	 	     9.6439 
 
 mean raw eQQ diff.....     487.98 	 	     467.33 
 med  raw eQQ diff.....          0 	 	          0 
 max  raw eQQ diff.....       8413 	 	      12410 
 
 mean eCDF diff........   0.019223 	 	   0.019782 
-med  eCDF diff........   0.015800 	 	   0.018786 
+med  eCDF diff........     0.0158 	 	   0.018786 
 max  eCDF diff........   0.047089 	 	   0.046243 
 
 var ratio (Tr/Co).....     0.7381 	 	     2.2663 
@@ -269,7 +269,7 @@ med  raw eQQ diff.....          0 	 	          0
 max  raw eQQ diff.....  365146387 	 	  616156569 
 
 mean eCDF diff........   0.019223 	 	   0.019782 
-med  eCDF diff........   0.015800 	 	   0.018786 
+med  eCDF diff........     0.0158 	 	   0.018786 
 max  eCDF diff........   0.047089 	 	   0.046243 
 
 var ratio (Tr/Co).....    0.50382 	 	     7.9006 
@@ -351,7 +351,7 @@ med  eCDF diff........   0.042308 	 	   0.015896
 max  eCDF diff........   0.084615 	 	   0.031792 
 
 var ratio (Tr/Co).....     1.1133 	 	     1.0194 
-T-test p-value........    0.06803 	 	    0.46507 
+T-test p-value........   0.068031 	 	    0.46507 
 
 
 Before Matching Minimum p.value: 0.0020368 
