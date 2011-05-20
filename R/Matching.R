@@ -3089,9 +3089,9 @@ VarCalcMatchC <- function(N, xvars, Var.calc, cdd, caliperflag, ww, Tr, Xmod, Ca
   cat(paste("## \n##  Matching (Version ", version, ", Build Date: ", BuildDate, ")\n", sep = "")) 
   cat("##  See http://sekhon.berkeley.edu/matching for additional documentation.\n",
       "##  Please cite software as:\n",
-      "##   Jasjeet S. Sekhon. Forthcoming. ``Multivariate and Propensity Score Matching\n",
+      "##   Jasjeet S. Sekhon. 2011. ``Multivariate and Propensity Score Matching\n",
       "##   Software with Automated Balance Optimization: The Matching package for R.''\n",
-      "##   Journal of Statistical Software. \n##\n",
+      "##   Journal of Statistical Software, 42(7): 1-52. \n##\n",
       sep="")
 }
 
