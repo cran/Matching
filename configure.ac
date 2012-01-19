@@ -1,6 +1,5 @@
-
 dnl Jasjeet S. Sekhon <sekhon@berkeley.edu> http://sekhon.berkeley.edu
-dnl Current version: 2007-08-04
+dnl Current version: 2009-01-09
 dnl First version: 2006-09-17
 dnl Process this file with autoconf to produce a configure script.
 
@@ -9,6 +8,12 @@ dnl MAKEFLAGS="CC=icc" R CMD SHLIB *.c* amongst other ways.  This
 dnl script handles gcc well.  For the Intel compilers see makefile.icc
 dnl in the "extras" directory, and for Sun Studio 12 see makefile.sun.
 dnl Modify these makefiles for your environment.
+
+dnl Matching Version 4.8-0+ we now check out flags along with
+dnl RC(XX)FLAGS. Ripley noted an issue with -ffast-math and Fedora 16:
+dnl -ffast-math and -pedantic (which is an option that R adds) are
+dnl incompatible in that OS. Update this script to also check use with RCXXFLAGS
+dnl and test script updated with #include <cmath>.
 
 dnl Matching Version 3.6-0+ we switched to configure.ac instead of the
 dnl configure hack.
@@ -19,7 +24,7 @@ dnl friend declarations is no longer the default.  We check for the
 dnl flag directly instead of relying on gcc --version information because of 
 dnl backporting issues---e.g., Gentoo.
 
-dnl We also setup optimization flags.  This VASTLY improves performance.
+dnl We also setup optimization flags.  This significantly improves performance.
 
 dnl We use makevars on all platforms instead of
 dnl the makefile because of build issues on OS X.  This requires moving
@@ -35,6 +40,7 @@ dnl Already included in the Linux gcc -O2 option, but does no harm on Linux
 
 AC_INIT(Matching, 4.0.8+, sekhon@berkeley.edu)
 
+
 dnl MYCFLAGS0 should work on most compilers and MYCFLAGS1 should work on most GNU C compilers.  
 dnl MYCFLAGS2 may not (generally needs gcc 4.0+).   The last three options in MYCFLAGS2 are the OS X 
 dnl addons referenced above.
@@ -42,7 +48,7 @@ dnl addons referenced above.
 
 
 MYCFLAGS0="-O3"
-MYCFLAGS1="-finline-functions -ffast-math -funroll-loops -fexpensive-optimizations"
+MYCFLAGS1="-finline-functions -funroll-loops -fexpensive-optimizations"
 MYCFLAGS2="-funswitch-loops -fgcse-after-reload -fstrict-aliasing -freorder-blocks -fsched-interblock"
 
 dnl -funsafe-loop-optimizations for gcc 4.2+; the following doesn't work any better in any case
@@ -51,7 +57,7 @@ dnl MYCFLAGS2="-funswitch-loops -fgcse-after-reload -fstrict-aliasing -freorder-
 
 
 MYCXXFLAGS0="-O3"
-MYCXXFLAGS1="-finline-functions -ffast-math -funroll-loops -fexpensive-optimizations"
+MYCXXFLAGS1="-finline-functions -funroll-loops -fexpensive-optimizations"
 MYCXXFLAGS2="-funswitch-loops -fgcse-after-reload -fstrict-aliasing -freorder-blocks -fsched-interblock"
 
 dnl -funsafe-loop-optimizations for gcc 4.2+; the following doesn't work any better in any case
@@ -68,10 +74,12 @@ if test -z "${R_HOME}"; then
 fi
 CC=`"${R_HOME}/bin/R" CMD config CC`
 CXX=`"${R_HOME}/bin/R" CMD config CXX`
+RCFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
+RCXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
 
 AC_MSG_CHECKING([whether $CC accepts $MYCFLAGS0])
 AC_LANG([C])
-CFLAGS=$MYCFLAGS0
+CFLAGS="$MYCFLAGS0 $RCFLAGS"
 AC_COMPILE_IFELSE([[char b[10];]], [mycflags0_set=yes], [mycflags0_set=no])    
 AC_MSG_RESULT($mycflags0_set)    
 
@@ -83,7 +91,7 @@ fi
 
 AC_MSG_CHECKING([whether $CC accepts $MYCFLAGS1])
 AC_LANG([C])
-CFLAGS=$MYCFLAGS1
+CFLAGS="$MYCFLAGS1 $RCFLAGS -pedantic"
 AC_COMPILE_IFELSE([[char b[10];]], [mycflags1_set=yes], [mycflags1_set=no])    
 AC_MSG_RESULT($mycflags1_set)    
 
@@ -93,7 +101,7 @@ fi
 
 AC_MSG_CHECKING([whether $CC accepts $MYCFLAGS2])
 AC_LANG([C])
-CFLAGS=$MYCFLAGS2
+CFLAGS="$MYCFLAGS2 $RCFLAGS"
 AC_COMPILE_IFELSE([[char b[10];]], [mycflags2_set=yes], [mycflags2_set=no])    
 AC_MSG_RESULT($mycflags2_set)    
 
@@ -109,8 +117,12 @@ fi
 
 AC_MSG_CHECKING([whether $CXX accepts $MYCXXFLAGS0])
 AC_LANG([C++])
-CXXFLAGS=$MYCXXFLAGS0
-AC_COMPILE_IFELSE([[char b[10];]], [mycxxflags0_set=yes], [mycxxflags0_set=no])    
+CXXFLAGS="$MYCXXFLAGS0 $RCXXFLAGS"
+AC_COMPILE_IFELSE([[#include <cmath>
+                    int main() {
+                      std::sqrt(5.1);
+                      return 0;
+                    }]], [mycxxflags0_set=yes], [mycxxflags0_set=no])    
 AC_MSG_RESULT($mycxxflags0_set)    
 
 if test $mycxxflags0_set = no; then    
@@ -121,14 +133,22 @@ fi
 
 AC_MSG_CHECKING([whether $CXX accepts $MYCXXFLAGS1])
 AC_LANG([C++])
-CXXFLAGS=$MYCXXFLAGS1
-AC_COMPILE_IFELSE([[char b[10];]], [mycxxflags1_set=yes], [mycxxflags1_set=no])    
+CXXFLAGS="$MYCXXFLAGS1 $RCXXFLAGS -pedantic"
+AC_COMPILE_IFELSE([[#include <cmath>
+                    int main() {
+                      std::sqrt(5.1);
+                      return 0;
+                    }]], [mycxxflags1_set=yes], [mycxxflags1_set=no])    
 AC_MSG_RESULT($mycxxflags1_set)    
 
 AC_MSG_CHECKING([whether $CXX accepts $MYCXXFLAGS2])
 AC_LANG([C++])
-CXXFLAGS=$MYCXXFLAGS2
-AC_COMPILE_IFELSE([[char b[10];]], [mycxxflags2_set=yes], [mycxxflags2_set=no])    
+CXXFLAGS="$MYCXXFLAGS2 $RCXXFLAGS"
+AC_COMPILE_IFELSE([[#include <cmath>
+                    int main() {
+                      std::sqrt(5.1);
+                      return 0;
+                    }]], [mycxxflags2_set=yes], [mycxxflags2_set=no])    
 AC_MSG_RESULT($mycxxflags2_set)    
 
 if test $mycxxflags1_set = yes; then    
@@ -141,7 +161,7 @@ fi
 
 AC_MSG_CHECKING([whether $CXX accepts -ffriend-injection])
 AC_LANG([C++])
-CXXFLAGS="-ffriend-injection"
+CXXFLAGS="-ffriend-injection $RCXXFLAGS"
 AC_COMPILE_IFELSE([[char b[10];]], [ffriend_set=yes], [ffriend_set=no])
 AC_MSG_RESULT($ffriend_set)
 

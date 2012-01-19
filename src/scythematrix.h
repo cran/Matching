@@ -1,6 +1,8 @@
 /* Edited by Jasjeet S. Sekhon <jasjeet_sekhon@berkeley.edu> */
 /* HTTP://sekhon.berkeley.edu                                */
 
+/* January 9, 2012                                           */
+
 /* May 8, 2010, updated header files for Solaris             */
 /* remove xpnd to work on Solaris march 31, 2009             */
 
@@ -52,6 +54,7 @@
 #ifndef SCYTHE_DOUBLE_MATRIX_H
 #define SCYTHE_DOUBLE_MATRIX_H
 
+#include <R.h> /* needed for the error() function */
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -159,8 +162,7 @@ public:
 
   inline double &operator[] (const int& i) {
 		if (i >= size || i < 0) {
-		  ::std::cerr << "ERROR 0003: Index out of range in [] operator" << ::std::endl;
-		  exit (0003);
+		  error("Index out of range in [] operator");
 		}
 		return (data[i]);
   }
@@ -178,8 +180,7 @@ public:
 
   inline double &operator () (const int& i, const int& j) {
 		if (rowsize < i || colsize < j || i < 0 || j < 0) {
-		  ::std::cerr << "ERROR 0004: Index out of range in () operator" << ::std::endl;
-			exit (0004);
+		  error("Index out of range in () operator");
 		}
 		return data[i * colsize + j];
 	}
