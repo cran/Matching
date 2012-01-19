@@ -3,7 +3,7 @@
     HTTP://sekhon.berkeley.edu/
     UC Berkeley
     
-    2010/05/05
+    2012/01/02
     Under the GNU Public License Version 3
 
     A *lot* of work and trail-and-error has gone into these functions
@@ -83,11 +83,13 @@
 using namespace SCYTHE;
 using namespace std;
 
-#include <stdio.h>
+/* #include <stdio.h> */
 #include <stdlib.h>
 #include <cmath>
 #include <vector>
+/* Now included from  "scythematrix.h"
 #include <R.h>
+*/
 #include <Rdefines.h>
 
 #include "matching.h"
@@ -549,8 +551,8 @@ extern "C"
 	    
 	    if(overFirstNM > 0)
 	      {
-		printf("Increasing memory because of ties: allocating a matrix of size 3 times %d doubles.\n", NM);
-		printf("I would be faster with the ties=FALSE option.\n");
+		Rprintf("Increasing memory because of ties: allocating a matrix of size 3 times %d doubles.\n", NM);
+		Rprintf("I would be faster with the ties=FALSE option.\n");
 		warning("Increasing memory because of ties.  I would be faster with the ties=FALSE option.");
 	      }
 	    
@@ -2080,13 +2082,13 @@ extern "C"
 
 		if(overFirstNM > 0)
 		  {
-		    printf("Increasing memory because of ties: allocating a matrix of size 3 times %d doubles.\n", NM);
-		    printf("I would be faster with the ties=FALSE option.\n");
+		    Rprintf("Increasing memory because of ties: allocating a matrix of size 3 times %d doubles.\n", NM);
+		    Rprintf("I would be faster with the ties=FALSE option.\n");
 		    warning("Increasing memory because of ties.  I would be faster with the ties=FALSE option.");
 		  }
 		else 
 		  {
-		    printf("Increasing memory because of ties: allocating a matrix of size 3 times %d doubles.", NM);
+		    Rprintf("Increasing memory because of ties: allocating a matrix of size 3 times %d doubles.", NM);
 		  }
 		
 		int OldMatchCount = MatchCount - (int) Mi;
@@ -2825,7 +2827,7 @@ Matrix EqualityTestMatrix(Matrix a, Matrix s)
     }
   else 
     {
-      printf("ASSERTION in EqualityTestMatrix\n");
+      Rprintf("ASSERTION in EqualityTestMatrix\n");
     }
 
   return(ret);
@@ -2880,12 +2882,12 @@ void display(Matrix A)
   /* Loop through the data and display the same in matrix format */
   for( i = 0; i < r; i++ ){
     for( j = 0; j < c; j++){
-      printf("%e\t",A[count]);
+      Rprintf("%e\t",A[count]);
       count++;
     }
-    printf("\n");
+    Rprintf("\n");
   }
-  printf("\n");
+  Rprintf("\n");
 }
 
 //previously in a __NBLAS__ wrapper, but it should always be used
