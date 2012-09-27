@@ -189,8 +189,7 @@ GenBalance <-
             {
                                         #storage.k[i] <- ks.test(X[,i][index.treated], X[,i][index.control])$p.value
               
-              storage.k[i] <- Mks.test(X[,i][index.treated], X[,i][index.control],
-                                       MC=TRUE)$p.value
+              storage.k[i] <- Mks.test(X[,i][index.treated], X[,i][index.control])$p.value
 
             }
       }#end of i loop
@@ -292,7 +291,7 @@ KSbootBalanceSummary <- function(index.treated, index.control, X,
 
       if (!dummy.indx[i])
         {
-          foo <- Mks.test(X[,i][index.treated], X[,i][index.control], MC=TRUE)
+          foo <- Mks.test(X[,i][index.treated], X[,i][index.control])
           fs.ks[i] <- foo$statistic
           storage.k.naive[i] <- foo$p.value
         } 

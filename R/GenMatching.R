@@ -541,7 +541,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
     genoudfunc  <- function(x)
       {
         wmatrix <- diag(x, nrow=nvars)
-        if ( min(eigen(wmatrix, symmetric=TRUE, only.values=TRUE, EISPACK = TRUE)$values) < tolerance )
+        if ( min(eigen(wmatrix, symmetric=TRUE, only.values=TRUE)$values) < tolerance )
             wmatrix <- wmatrix + diag(nvars)*tolerance
         
         ww <- chol(wmatrix)
@@ -767,8 +767,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                   } else if(!dummy.indx[i] & ks)
                     {
                       
-                      storage.k[i] <- Mks.test(X[,i][index.treated], X[,i][index.control],
-                                               MC=TRUE)$p.value
+                      storage.k[i] <- Mks.test(X[,i][index.treated], X[,i][index.control])$p.value
 
                     }
               }#end of i loop
@@ -930,7 +929,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         GENclusterExport <- function (cl, list) 
           {
             gets <- function(n, v) {
-              assign(n, v, env = .GlobalEnv)
+              assign(n, v, envir = .GlobalEnv)
               NULL
             }
             for (name in list) {
@@ -992,7 +991,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
 
     wmatrix <- diag(rr$par, nrow=nvars)
     
-    if ( min(eigen(wmatrix, symmetric=TRUE, only.values=TRUE, EISPACK = TRUE)$values) < tolerance )
+    if ( min(eigen(wmatrix, symmetric=TRUE, only.values=TRUE)$values) < tolerance )
       wmatrix <- wmatrix + diag(nvars)*tolerance
         
     ww <- chol(wmatrix)

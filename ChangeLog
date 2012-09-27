@@ -1,5 +1,17 @@
 Change Log for public releases:
 
+2012-09-27 Version: 4.8-1
+	Minor update to resolve issues with API changes in R-devel
+
+	* Matching.R: EISPACK = TRUE now depracated for eigen(). See we
+	only look at the values anyways, we now revert to the R default,
+	which is EISPACK=FALSE.
+	Changed Mks.test() to handle warnings for ties in
+	the ks.test. Removes call to .C in the base 'stat' package.
+	* GenMatching.R: EISPACK = FALSE now for eigen().  Internal
+	function Mks.test no longer takes the MC argument
+	* GenBalance.R: Internal function Mks.test no longer takes the MC argument
+
 2012-01-19 Version: 4.8-0
 
 	* Makevars.win.gcc4: no more --ffast-math because it conflicts with -pedantic on some platforms

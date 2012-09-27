@@ -780,7 +780,7 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
       {
         Weight.matrix=diag(Kx)
       } else if (Weight==2) {
-        if (min (eigen( t(X)%*%X/N, only.values=TRUE, EISPACK = TRUE)$values) > ccc)
+        if (min (eigen( t(X)%*%X/N, only.values=TRUE)$values) > ccc)
           {
             Weight.matrix= solve(t(X)%*%X/N) 
           } else {
@@ -807,7 +807,7 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
     Nx <- nrow(X)
     Kx <- ncol(X)
 
-    if ( min(eigen(Weight.matrix, only.values=TRUE, EISPACK = TRUE)$values) < ccc )
+    if ( min(eigen(Weight.matrix, only.values=TRUE)$values) < ccc )
       Weight.matrix <- Weight.matrix + diag(Kx)*ccc
 
     # I.fg. initialize matrices before looping through sample
@@ -1134,7 +1134,7 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
             Kx <- ncol(ZZt)
             xw <- ZZt*(sqrt(Tr*Kcount) %*% t(as.matrix(rep(1,Kx))))
             
-            foo <- min(eigen(t(xw)%*%xw, only.values=TRUE, EISPACK = TRUE)$values)
+            foo <- min(eigen(t(xw)%*%xw, only.values=TRUE)$values)
             foo <- as.real(foo<=ccc)
             foo2 <- apply(xw, 2, sd)
 
@@ -1178,7 +1178,7 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
         
         xw <- ZZc*(sqrt((1-Tr)*Kcount) %*% matrix(1, nrow=1, ncol=Kx))
         
-        foo <- min(eigen(t(xw)%*%xw, only.values=TRUE, EISPACK = TRUE)$values)
+        foo <- min(eigen(t(xw)%*%xw, only.values=TRUE)$values)
         foo <- as.real(foo<=ccc)
         foo2 <- apply(xw, 2, sd)
 
@@ -1706,7 +1706,7 @@ McNemar2 <- function (Tr, Co, correct = TRUE, weights=rep(1,length(Tr)))
   } else y <- x - t(x)
   x <- x + t(x)
   STATISTIC <- sum(y[upper.tri(x)]^2/x[upper.tri(x)])
-  PVAL <- pchisq(STATISTIC, PARAMETER, lower = FALSE)
+  PVAL <- pchisq(STATISTIC, PARAMETER, lower.tail = FALSE)
   names(STATISTIC) <- "McNemar's chi-squared"
   names(PARAMETER) <- "df"
 
@@ -1870,97 +1870,39 @@ kswsig<-function(m,n,val){
 #    n=sample size of second group
 #    val=observed value of test statistic
 #
-mpn<-m+n
-cmat<-matrix(0,m+1,n+1)
-umat<-matrix(0,m+1,n+1)
-for (i in 1:m-1){
-for (j in 1:n-1)cmat[i+1,j+1]<-abs(i/m-j/n)*sqrt(m*n/((i+j)*(1-(i+j)/mpn)))
-}
-cmat<-ifelse(cmat<=val,1,0)
-for (i in 0:m){
-for (j in 0:n)if(i*j==0)umat[i+1,j+1]<-cmat[i+1,j+1]
-else umat[i+1,j+1]<-cmat[i+1,j+1]*(umat[i+1,j]+umat[i,j+1])
-}
-term<-lgamma(m+n+1)-lgamma(m+1)-lgamma(n+1)
-kswsig<-1.-umat[m+1,n+1]/exp(term)
-kswsig
+  mpn<-m+n
+  cmat<-matrix(0,m+1,n+1)
+  umat<-matrix(0,m+1,n+1)
+  for (i in 1:m-1){
+    for (j in 1:n-1)cmat[i+1,j+1]<-abs(i/m-j/n)*sqrt(m*n/((i+j)*(1-(i+j)/mpn)))
+  }
+  cmat<-ifelse(cmat<=val,1,0)
+  for (i in 0:m){
+    for (j in 0:n)if(i*j==0)umat[i+1,j+1]<-cmat[i+1,j+1]
+    else umat[i+1,j+1]<-cmat[i+1,j+1]*(umat[i+1,j]+umat[i,j+1])
+  }
+  term<-lgamma(m+n+1)-lgamma(m+1)-lgamma(n+1)
+  kswsig<-1.-umat[m+1,n+1]/exp(term)
+  kswsig
 }
 
-Mks.test <- function (x, y, ..., alternative = c("two.sided", "less", "greater"), 
-                      exact = NULL, MC=FALSE) 
-{
-  alternative <- match.arg(alternative)
-  DNAME <- deparse(substitute(x))
-  x <- x[!is.na(x)]
-  n <- length(x)
-  if (n < 1) 
-    stop("Not enough x data")
-  PVAL <- NULL
-  if (is.numeric(y)) {
-    DNAME <- paste(DNAME, "and", deparse(substitute(y)))
-    y <- y[!is.na(y)]
-    n.x <- as.double(n)
-    n.y <- length(y)
-    if (n.y < 1) 
-      stop("Not enough y data")
-    if (is.null(exact)) 
-      exact <- (n.x * n.y < 10000)
-    METHOD <- "Two-sample Kolmogorov-Smirnov test"
-    TIES <- FALSE
-    n <- n.x * n.y/(n.x + n.y)
-    w <- c(x, y)
-    z <- cumsum(ifelse(order(w) <= n.x, 1/n.x, -1/n.y))
-    if (length(unique(w)) < (n.x + n.y)) {
-      if (!MC)
-        warning("Use the Monte Carlo KS test because the regular test cannot compute correct p-values with ties")
-      z <- z[c(which(diff(sort(w)) != 0), n.x + n.y)]
-      TIES <- TRUE
-    }
-    STATISTIC <- switch(alternative, two.sided = max(abs(z)), 
-                        greater = max(z), less = -min(z))
-    if (exact && alternative == "two.sided" && !TIES) 
-      PVAL <- 1 - .C("psmirnov2x", p = as.double(STATISTIC), 
-                     as.integer(n.x), as.integer(n.y), PACKAGE = "stats")$p
+Mks.test.handler <- function(w)
+  {
+    #suppress the following warning:
+    #In ks.test() :
+    # p-values will be approximate in the presence of ties
+    if( any( grepl( "p-values will be approximate in the presence of ties", w) ) )
+      invokeRestart( "muffleWarning" )
+
+    #invoke as:
+    #withCallingHandlers( ks.test(round(x1), round(x2)), warning = Mks.test.handler )
   }
-  else {
-    if (is.character(y)) 
-      y <- get(y, mode = "function")
-    if (mode(y) != "function") 
-      stop("y must be numeric or a string naming a valid function")
-    METHOD <- "One-sample Kolmogorov-Smirnov test"
-    if (length(unique(x)) < n)
-      {
-        if (!MC)
-          warning("Use the Monte Carlo KS test because the regular test cannot compute correct p-values with ties")
-      }
-    x <- y(sort(x), ...) - (0:(n - 1))/n
-    STATISTIC <- switch(alternative, two.sided = max(c(x, 
-                                       1/n - x)), greater = max(1/n - x), less = max(x))
+
+Mks.test <- function(...)
+  {
+    RVAL <- withCallingHandlers( ks.test(...), warning = Mks.test.handler )
+    return(RVAL)
   }
-  names(STATISTIC) <- switch(alternative, two.sided = "D", 
-                             greater = "D^+", less = "D^-")
-  pkstwo <- function(x, tol = 1e-06) {
-    if (is.numeric(x)) 
-      x <- as.vector(x)
-    else stop("Argument x must be numeric")
-    p <- rep(0, length(x))
-    p[is.na(x)] <- NA
-    IND <- which(!is.na(x) & (x > 0))
-    if (length(IND) > 0) {
-      p[IND] <- .C("pkstwo", as.integer(length(x)), p = as.double(x[IND]), 
-                   as.double(tol), PACKAGE = "stats")$p
-    }
-    return(p)
-  }
-  if (is.null(PVAL)) {
-    PVAL <- ifelse(alternative == "two.sided", 1 - pkstwo(sqrt(n) * 
-                     STATISTIC), exp(-2 * n * STATISTIC^2))
-  }
-  RVAL <- list(statistic = STATISTIC, p.value = PVAL, alternative = alternative, 
-               method = METHOD, data.name = DNAME)
-  class(RVAL) <- "htest"
-  return(RVAL)
-} #end of Mks.test
 
 Mt.test  <- function(Tr, Co, weights)
   {
@@ -2344,7 +2286,7 @@ ks.boot  <- function(Tr, Co, nboots=1000, alternative = c("two.sided", "less", "
     if (nboots < 500)
       warning("For publication quality p-values it is recommended that 'nboots'\n be set equal to at least 500 (preferably 1000)") 
     
-    fs.ks  <- Mks.test(Tr, Co, MC=TRUE, alternative=alternative)    
+    fs.ks  <- Mks.test(Tr, Co, alternative=alternative)    
 
     if (alternative=="two.sided")
       {
@@ -2378,7 +2320,7 @@ ks.boot  <- function(Tr, Co, nboots=1000, alternative = c("two.sided", "less", "
             X1tmp <- w[sindx[1:cutp]]
             X2tmp <- w[sindx[(cutp+1):obs]]
             
-            s.ks <- Mks.test(X1tmp, X2tmp, MC=TRUE, alternative=alternative)$statistic
+            s.ks <- Mks.test(X1tmp, X2tmp, alternative=alternative)$statistic
             
             if (s.ks >= (fs.ks$statistic - tol) )
               bbcount  <- bbcount + 1                                
@@ -2535,7 +2477,7 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
       {
         Weight.matrix=diag(Kx)
       } else if (Weight==2) {
-        if (min (eigen( t(X)%*%X/N, only.values=TRUE, EISPACK = TRUE)$values) > 0.0000001)
+        if (min (eigen( t(X)%*%X/N, only.values=TRUE)$values) > 0.0000001)
           {
             Weight.matrix= solve(t(X)%*%X/N)
           } else {
@@ -2559,7 +2501,7 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
 #        Sig.X <- rbind(Sig.X, matrix(1, nrow(Sig.V), 1))
 #      } #end of exact
 
-    if ( min(eigen(Weight.matrix, only.values=TRUE, EISPACK = TRUE)$values) < ccc )
+    if ( min(eigen(Weight.matrix, only.values=TRUE)$values) < ccc )
       Weight.matrix <- Weight.matrix + diag(Kx)*ccc
 
     ww <- chol(Weight.matrix) # so that ww*ww=w.m
@@ -2821,7 +2763,7 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
             Kx <- ncol(ZZt)
             xw <- ZZt*(sqrt(Tr*Kcount) %*% t(as.matrix(rep(1,Kx))))
             
-            foo <- min(eigen(t(xw)%*%xw, only.values=TRUE, EISPACK = TRUE)$values)
+            foo <- min(eigen(t(xw)%*%xw, only.values=TRUE)$values)
             foo <- as.real(foo<=ccc)
             foo2 <- apply(xw, 2, sd)
 
@@ -2864,7 +2806,7 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
         
         xw <- ZZc*(sqrt((1-Tr)*Kcount) %*% matrix(1, nrow=1, ncol=Kx))
         
-        foo <- min(eigen(t(xw)%*%xw, only.values=TRUE, EISPACK = TRUE)$values)
+        foo <- min(eigen(t(xw)%*%xw, only.values=TRUE)$values)
         foo <- as.real(foo<=ccc)
         foo2 <- apply(xw, 2, sd)
 
@@ -3084,8 +3026,8 @@ VarCalcMatchC <- function(N, xvars, Var.calc, cdd, caliperflag, ww, Tr, Xmod, Ca
 .onAttach <- function( ... )
 {
   MatchLib <- dirname(system.file(package = "Matching"))
-  version <- packageDescription("Matching", lib = MatchLib)$Version
-  BuildDate <- packageDescription("Matching", lib = MatchLib)$Date
+  version <- packageDescription("Matching", lib.loc = MatchLib)$Version
+  BuildDate <- packageDescription("Matching", lib.loc = MatchLib)$Date
 
   foo <- paste("## \n##  Matching (Version ", version, ", Build Date: ", BuildDate, ")\n", 
                "##  See http://sekhon.berkeley.edu/matching for additional documentation.\n",

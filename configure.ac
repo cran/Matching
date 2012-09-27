@@ -170,13 +170,13 @@ if test $ffriend_set = yes; then
 fi
 
 dnl Are we on OSX?
-dnl If so, use dmalloc and don't compile our own cblas headers.
+dnl If so: use dmalloc (NO LONGER DONE) and don't compile our own cblas headers (still done).
 AC_MSG_CHECKING([whether we are on Darwin])
 UNAME=`uname -a`
 echo $UNAME | grep -i Darwin > /dev/null 2>&1
 if test "$?" = 0 ; then
  AC_MSG_RESULT(yes)
- cp inst/extras/malloc.c src/malloc.c
+dnl cp inst/extras/malloc.c src/malloc.c
  mv src/cblas_dgemm.c inst/extras
  mv src/cblas.h inst/extras
  mv src/cblas_dasum.c inst/extras

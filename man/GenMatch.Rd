@@ -365,19 +365,15 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1, weights=NULL,
   \emph{Journal of Statistical Software} 42(7): 1-52.
   \url{http://www.jstatsoft.org/v42/i07/}
   
-  Diamond, Alexis and Jasjeet S. Sekhon. 2005. "Genetic Matching for
+  Diamond, Alexis and Jasjeet S. Sekhon. Forthcoming. "Genetic Matching for
   Estimating Causal Effects: A General Multivariate Matching Method for
-  Achieving Balance in Observational Studies.''  Working Paper.
+  Achieving Balance in Observational Studies.'' \emph{Review of Economics and Statistics}.
   \url{http://sekhon.berkeley.edu/papers/GenMatch.pdf}
 
   Sekhon, Jasjeet Singh and Walter R. Mebane, Jr. 1998.  "Genetic
   Optimization Using Derivatives: Theory and Application to Nonlinear
   Models.'' \emph{Political Analysis}, 7: 187-210.
   \url{http://sekhon.berkeley.edu/genoud/genoud.pdf} 
-
-  Sekhon, Jasjeet Singh and Richard D. Grieve. 2011. "A Matching Method
-  For Improving Covariate Balance in Cost-Effectiveness Analyses."
-  \emph{Health Economics}. forthcoming.
 }
 \author{
   Jasjeet S. Sekhon, UC Berkeley, \email{sekhon@berkeley.edu},
