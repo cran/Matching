@@ -84,14 +84,10 @@ balanceUV(Tr, Co, weights = rep(1, length(Co)), exact = FALSE, ks=FALSE,
   \emph{Journal of Statistical Software} 42(7): 1-52.
   \url{http://www.jstatsoft.org/v42/i07/}
 
-  Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
+  Diamond, Alexis and Jasjeet S. Sekhon. Forthcoming. "Genetic Matching for
   Estimating Causal Effects: A General Multivariate Matching Method for
-  Achieving Balance in Observational Studies.''  Working Paper.
+  Achieving Balance in Observational Studies.'' \emph{Review of Economics and Statistics}.
   \url{http://sekhon.berkeley.edu/papers/GenMatch.pdf}
-
-  Sekhon, Jasjeet Singh and Richard D. Grieve. 2011. "A Matching Method
-  For Improving Covariate Balance in Cost-Effectiveness Analyses."
-  \emph{Health Economics}. forthcoming.
 
   Rosenbaum, Paul R. and Donald B. Rubin. 1985. ``Constructing a Control
   Group Using Multivariate Matched Sampling Methods That Incorporate the

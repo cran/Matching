@@ -1,6 +1,6 @@
 
-R version 2.13.0 (2011-04-13)
-Copyright (C) 2011 The R Foundation for Statistical Computing
+R Under development (unstable) (2012-09-26 r60825) -- "Unsuffered Consequences"
+Copyright (C) 2012 The R Foundation for Statistical Computing
 ISBN 3-900051-07-0
 Platform: x86_64-apple-darwin9.8.0/x86_64 (64-bit)
 
@@ -18,17 +18,24 @@ Type 'q()' to quit R.
 
 > library(Matching)
 Loading required package: rgenoud
-##  rgenoud (Version 5.7-3, Build Date: 2011-05-04)
+##  rgenoud (Version 5.7-8, Build Date: 2012-06-03)
 ##  See http://sekhon.berkeley.edu/rgenoud for additional documentation.
+##  Please cite software as:
+##   Walter Mebane, Jr. and Jasjeet S. Sekhon. 2011.
+##   ``Genetic Optimization Using Derivatives: The rgenoud package for R.''
+##   Journal of Statistical Software, 42(11): 1-26. 
+##
+
 Loading required package: MASS
 ## 
-##  Matching (Version 4.8-0, Build Date: 2012/01/19)
+##  Matching (Version 4.8-1, Build Date: 2012/09/27)
 ##  See http://sekhon.berkeley.edu/matching for additional documentation.
 ##  Please cite software as:
 ##   Jasjeet S. Sekhon. 2011. ``Multivariate and Propensity Score Matching
 ##   Software with Automated Balance Optimization: The Matching package for R.''
 ##   Journal of Statistical Software, 42(7): 1-52. 
 ##
+
 > 
 > set.seed(3101)
 > data(lalonde)
@@ -54,7 +61,7 @@ Loading required package: MASS
 +                    unif.seed=3392, int.seed=8282)
 
 
-Thu Jan 19 02:33:39 2012
+Thu Sep 27 17:32:15 2012
 Domains:
  0.000000e+00   <=  X1   <=    1.000000e+03 
  0.000000e+00   <=  X2   <=    1.000000e+03 
@@ -419,7 +426,7 @@ Parameters at the Solution:
 Solution Found Generation 4
 Number of Generations Run 6
 
-Thu Jan 19 02:33:40 2012
+Thu Sep 27 17:32:16 2012
 Total run time : 0 hours 0 minutes and 1 seconds
 > 
 > #The outcome variable
@@ -673,3 +680,6 @@ Variable Name(s): I(re74 * re75)  Number(s): 11
 > # For more examples see: http://sekhon.berkeley.edu/matching/R.
 > 
 > 
+> proc.time()
+   user  system elapsed 
+  4.636   0.066   4.851 

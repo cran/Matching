@@ -122,15 +122,11 @@ MatchBalance(formul, data = NULL, match.out = NULL, ks = TRUE,
   \emph{Journal of Statistical Software} 42(7): 1-52.
   \url{http://www.jstatsoft.org/v42/i07/}
 
-  Diamond, Alexis and Jasjeet S. Sekhon. 2005. ``Genetic Matching for
+  Diamond, Alexis and Jasjeet S. Sekhon. Forthcoming. "Genetic Matching for
   Estimating Causal Effects: A General Multivariate Matching Method for
-  Achieving Balance in Observational Studies.''  Working Paper.
+  Achieving Balance in Observational Studies.'' \emph{Review of Economics and Statistics}.
   \url{http://sekhon.berkeley.edu/papers/GenMatch.pdf}
 
-  Sekhon, Jasjeet Singh and Richard D. Grieve. 2011. "A Matching Method
-  For Improving Covariate Balance in Cost-Effectiveness Analyses."
-  \emph{Health Economics}. forthcoming.
-    
   Abadie, Alberto.  2002.  ``Bootstrap Tests for Distributional Treatment
   Effects in Instrumental Variable Models.'' \emph{Journal of the
   American Statistical Association}, 97:457 (March) 284-292.  
