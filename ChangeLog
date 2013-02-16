@@ -1,5 +1,12 @@
 Change Log for public releases:
 
+2013-02-16 Version: 4.8-1.2
+	* GenMatching.R: removes assignment to .GlobalEnv in GENclusterExport.
+
+2013-02-15 Version: 4.8-1.1
+	Only trivial internal code changes. Changed all as.real() to as.double(), as as.real() no longer work
+	in R-devel.
+
 2012-09-27 Version: 4.8-1
 	Minor update to resolve issues with API changes in R-devel
 

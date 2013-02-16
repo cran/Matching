@@ -7,7 +7,7 @@ Matchby <- function(Y=NULL, Tr, X, by, estimand="ATT", M=1, ties=FALSE, replace=
   {
 
     #index for raw obs
-    Tr <- as.real(Tr)    
+    Tr <- as.double(Tr)    
     nobs  <- length(Tr)
     orig.treated.nobs  <- sum(Tr==1)
 
@@ -15,7 +15,7 @@ Matchby <- function(Y=NULL, Tr, X, by, estimand="ATT", M=1, ties=FALSE, replace=
       {
         Y <- rep(0, nobs)
       } else {
-        Y  <- as.real(Y)
+        Y  <- as.double(Y)
         if (nobs != length(Y))
           {
             stop("length(Tr) != length(Y)")

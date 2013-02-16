@@ -12,7 +12,7 @@ AIse <- function(Y, Tr, index.treated, index.control, weights, est=NULL)
         est <- sum(Y[index.treated]*weights)/sum(weights)-
           sum(Y[index.control]*weights)/sum(weights)
       } else{
-        est <- as.real(est)
+        est <- as.double(est)
       }
 
 #    ret <- est.func(N=N, All=0, Tr=Tr,
@@ -21,8 +21,8 @@ AIse <- function(Y, Tr, index.treated, index.control, weights, est=NULL)
 #                    BiasAdj=FALSE, Kz=NULL)
 
     ret <- .Call("EstFuncC", as.integer(N), as.integer(0), as.integer(length(index.treated)),
-                 as.real(Y), as.real(Tr),
-                 as.real(rep(1,N)), as.real(cbind(index.treated,index.control,weights)),
+                 as.double(Y), as.double(Tr),
+                 as.double(rep(1,N)), as.double(cbind(index.treated,index.control,weights)),
                  PACKAGE="Matching")
 
 #    YCAUS <- ret$YCAUS

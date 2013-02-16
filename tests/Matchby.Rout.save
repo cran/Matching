@@ -1,6 +1,6 @@
 
-R Under development (unstable) (2012-09-26 r60825) -- "Unsuffered Consequences"
-Copyright (C) 2012 The R Foundation for Statistical Computing
+R Under development (unstable) (2013-02-14 r61949) -- "Unsuffered Consequences"
+Copyright (C) 2013 The R Foundation for Statistical Computing
 ISBN 3-900051-07-0
 Platform: x86_64-apple-darwin9.8.0/x86_64 (64-bit)
 
@@ -18,7 +18,7 @@ Type 'q()' to quit R.
 
 > library(Matching)
 Loading required package: rgenoud
-##  rgenoud (Version 5.7-8, Build Date: 2012-06-03)
+##  rgenoud (Version 5.7-8.1, Build Date: 2012-06-03)
 ##  See http://sekhon.berkeley.edu/rgenoud for additional documentation.
 ##  Please cite software as:
 ##   Walter Mebane, Jr. and Jasjeet S. Sekhon. 2011.
@@ -28,7 +28,7 @@ Loading required package: rgenoud
 
 Loading required package: MASS
 ## 
-##  Matching (Version 4.8-1, Build Date: 2012/09/27)
+##  Matching (Version 4.8-1.2, Build Date: 2013/02/16)
 ##  See http://sekhon.berkeley.edu/matching for additional documentation.
 ##  Please cite software as:
 ##   Jasjeet S. Sekhon. 2011. ``Multivariate and Propensity Score Matching
@@ -97,4 +97,4 @@ Number of obs dropped by 'exact' or 'caliper'  66
 > 
 > proc.time()
    user  system elapsed 
-  0.290   0.036   0.340 
+  0.282   0.035   1.082 
