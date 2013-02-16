@@ -1,8 +1,8 @@
 FastMatchC <- function(N, xvars, All, M, cdd, ww, Tr, Xmod, weights)
   {
     ret <- .Call("FastMatchC", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
-                 as.double(cdd), as.real(ww), as.real(Tr),
-                 as.real(Xmod), as.real(weights),
+                 as.double(cdd), as.double(ww), as.double(Tr),
+                 as.double(Xmod), as.double(weights),
                  PACKAGE="Matching")
     return(ret)
   }
@@ -184,7 +184,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                      balance=TRUE, ...)
   {
 
-    Tr <- as.real(Tr)
+    Tr <- as.double(Tr)
     X  <- as.matrix(X)
     BalanceMatrix  <- as.matrix(BalanceMatrix)
 
@@ -206,7 +206,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         weights.flag <- FALSE
       } else {
         weights.flag <- TRUE
-        weights <- as.real(weights)
+        weights <- as.double(weights)
         if( length(Tr) != length(weights))
           {
             stop("length(Tr) != length(weights)")
@@ -259,10 +259,10 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
           }
 
         indx3 <- indx1==0 & indx2==0
-        Tr <- as.real(Tr[indx3])
+        Tr <- as.double(Tr[indx3])
         X  <- as.matrix(X[indx3,])
         BalanceMatrix <- as.matrix(BalanceMatrix[indx3,])
-        weights <- as.real(weights[indx3])
+        weights <- as.double(weights[indx3])
       }#end of CommonSupport
     
     if (pop.size < 0 | pop.size!=round(pop.size) )
@@ -366,7 +366,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
       }
 
     #loss function
-    if (is.real(loss))
+    if (is.double(loss))
       {
         if (loss==1)  {
           loss.func=sort
@@ -554,8 +554,8 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                 FastMatchC.internal <- function(N, xvars, All, M, cdd, ww, Tr, Xmod, weights)
                   {
                     ret <- .Call("FastMatchC", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
-                                 as.double(cdd), as.real(ww), as.real(Tr),
-                                 as.real(Xmod), as.real(weights),
+                                 as.double(cdd), as.double(ww), as.double(Tr),
+                                 as.double(Xmod), as.double(weights),
                                  PACKAGE="Matching")
                     return(ret)
                   }
@@ -567,8 +567,8 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                 FasterMatchC.internal <- function(N, xvars, All, M, cdd, ww, Tr, Xmod, weights)
                   {
                     ret <- .Call("FasterMatchC", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
-                                 as.double(cdd), as.real(ww), as.real(Tr),
-                                 as.real(Xmod), 
+                                 as.double(cdd), as.double(ww), as.double(Tr),
+                                 as.double(Xmod), 
                                  PACKAGE="Matching")
                     return(ret)
                   }
@@ -591,11 +591,11 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                       }    
                     
                     ret <- .Call("MatchLoopC", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
-                                 as.double(cdd), as.integer(caliperflag), as.integer(replace), as.integer(ties), as.real(ww), as.real(Tr),
-                                 as.real(Xmod), as.real(weights), as.real(CaliperVec), as.real(Xorig),
-                                 as.integer(restrict.trigger), as.integer(restrict.nrow), as.real(restrict),
+                                 as.double(cdd), as.integer(caliperflag), as.integer(replace), as.integer(ties), as.double(ww), as.double(Tr),
+                                 as.double(Xmod), as.double(weights), as.double(CaliperVec), as.double(Xorig),
+                                 as.integer(restrict.trigger), as.integer(restrict.nrow), as.double(restrict),
                                  #next line is sets the DiagWeightMatrixFlag
-                                 as.real(1),                             
+                                 as.double(1),                             
                                  PACKAGE="Matching")
                     return(ret)
                   } #end of MatchLoopC.internal
@@ -620,11 +620,11 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                       }    
                     
                     ret <- .Call("MatchLoopCfast", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
-                                 as.double(cdd), as.integer(caliperflag), as.integer(replace), as.integer(ties), as.real(ww), as.real(Tr),
-                                 as.real(Xmod), as.real(CaliperVec), as.real(Xorig),
-                                 as.integer(restrict.trigger), as.integer(restrict.nrow), as.real(restrict),
+                                 as.double(cdd), as.integer(caliperflag), as.integer(replace), as.integer(ties), as.double(ww), as.double(Tr),
+                                 as.double(Xmod), as.double(CaliperVec), as.double(Xorig),
+                                 as.integer(restrict.trigger), as.integer(restrict.nrow), as.double(restrict),
                                  #next line is the DiagWeightMatrixFlag
-                                 as.real(1),                              
+                                 as.double(1),                              
                                  PACKAGE="Matching")
                     return(ret)
                   } #end of MatchLoopCfast.internal
@@ -926,10 +926,10 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
     if(clustertrigger)
       {
 
-        GENclusterExport <- function (cl, list) 
+        GENclusterExport <- function (cl, list, envir = .GlobalEnv) 
           {
             gets <- function(n, v) {
-              assign(n, v, envir = .GlobalEnv)
+              assign(n, v, envir = envir)
               NULL
             }
             for (name in list) {

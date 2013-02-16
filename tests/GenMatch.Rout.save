@@ -1,6 +1,6 @@
 
-R Under development (unstable) (2012-09-26 r60825) -- "Unsuffered Consequences"
-Copyright (C) 2012 The R Foundation for Statistical Computing
+R Under development (unstable) (2013-02-14 r61949) -- "Unsuffered Consequences"
+Copyright (C) 2013 The R Foundation for Statistical Computing
 ISBN 3-900051-07-0
 Platform: x86_64-apple-darwin9.8.0/x86_64 (64-bit)
 
@@ -18,7 +18,7 @@ Type 'q()' to quit R.
 
 > library(Matching)
 Loading required package: rgenoud
-##  rgenoud (Version 5.7-8, Build Date: 2012-06-03)
+##  rgenoud (Version 5.7-8.1, Build Date: 2012-06-03)
 ##  See http://sekhon.berkeley.edu/rgenoud for additional documentation.
 ##  Please cite software as:
 ##   Walter Mebane, Jr. and Jasjeet S. Sekhon. 2011.
@@ -28,7 +28,7 @@ Loading required package: rgenoud
 
 Loading required package: MASS
 ## 
-##  Matching (Version 4.8-1, Build Date: 2012/09/27)
+##  Matching (Version 4.8-1.2, Build Date: 2013/02/16)
 ##  See http://sekhon.berkeley.edu/matching for additional documentation.
 ##  Please cite software as:
 ##   Jasjeet S. Sekhon. 2011. ``Multivariate and Propensity Score Matching
@@ -61,7 +61,7 @@ Loading required package: MASS
 +                    unif.seed=3392, int.seed=8282)
 
 
-Thu Sep 27 17:32:15 2012
+Sat Feb 16 01:21:53 2013
 Domains:
  0.000000e+00   <=  X1   <=    1.000000e+03 
  0.000000e+00   <=  X2   <=    1.000000e+03 
@@ -426,7 +426,7 @@ Parameters at the Solution:
 Solution Found Generation 4
 Number of Generations Run 6
 
-Thu Sep 27 17:32:16 2012
+Sat Feb 16 01:21:54 2013
 Total run time : 0 hours 0 minutes and 1 seconds
 > 
 > #The outcome variable
@@ -682,4 +682,4 @@ Variable Name(s): I(re74 * re75)  Number(s): 11
 > 
 > proc.time()
    user  system elapsed 
-  4.636   0.066   4.851 
+  4.537   0.080   5.806 

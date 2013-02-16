@@ -17,8 +17,8 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
                    version="standard")
   {
 
-    BiasAdj  <- as.real(BiasAdjust)
-    sample  <- as.real(sample)
+    BiasAdj  <- as.double(BiasAdjust)
+    sample  <- as.double(sample)
 
     if ( (BiasAdj != 0) & (BiasAdj != 1) )
       {
@@ -39,8 +39,8 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
           }
       }
     
-    Y  <- as.real(Y)
-    Tr <- as.real(Tr)
+    Y  <- as.double(Y)
+    Tr <- as.double(Tr)
     X  <- as.matrix(X)
     Z  <- as.matrix(Z)
     V  <- as.matrix(V)
@@ -77,7 +77,7 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
         weights.flag <- FALSE
       } else {
         weights.flag <- TRUE
-        weights <- as.real(weights)
+        weights <- as.double(weights)
         if( orig.tr.nobs != length(weights))
           {
             stop("length(Tr) != length(weights)")
@@ -130,12 +130,12 @@ Match  <- function(Y=NULL,Tr,X,Z=X,V=rep(1,length(Y)), estimand="ATT", M=1,
           }
 
         indx3 <- indx1==0 & indx2==0
-        Y  <- as.real(Y[indx3])
-        Tr <- as.real(Tr[indx3])
+        Y  <- as.double(Y[indx3])
+        Tr <- as.double(Tr[indx3])
         X  <- as.matrix(X[indx3,])
         Z  <- as.matrix(Z[indx3,])
         V  <- as.matrix(V[indx3,])
-        weights <- as.real(weights[indx3])
+        weights <- as.double(weights[indx3])
 
         #let's recalculate these for common support
         orig.nobs  <- length(Y)
@@ -985,8 +985,8 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
                 xmat <- t(t(X[ACTMAT,]) %*% Wi/Mi)
                 zmat <- t(t(Z[ACTMAT,]) %*% Wi/Mi)
               } else {
-                xmat <- t(X[ACTMAT,]) * as.real(Wi)/Mi
-                zmat <- t(Z[ACTMAT,]) * as.real(Wi)/Mi
+                xmat <- t(X[ACTMAT,]) * as.double(Wi)/Mi
+                zmat <- t(Z[ACTMAT,]) * as.double(Wi)/Mi
               }
 
             # estimate causal effect on y for observation i
@@ -1135,7 +1135,7 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
             xw <- ZZt*(sqrt(Tr*Kcount) %*% t(as.matrix(rep(1,Kx))))
             
             foo <- min(eigen(t(xw)%*%xw, only.values=TRUE)$values)
-            foo <- as.real(foo<=ccc)
+            foo <- as.double(foo<=ccc)
             foo2 <- apply(xw, 2, sd)
 
             options(show.error.messages = FALSE)
@@ -1179,7 +1179,7 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
         xw <- ZZc*(sqrt((1-Tr)*Kcount) %*% matrix(1, nrow=1, ncol=Kx))
         
         foo <- min(eigen(t(xw)%*%xw, only.values=TRUE)$values)
-        foo <- as.real(foo<=ccc)
+        foo <- as.double(foo<=ccc)
         foo2 <- apply(xw, 2, sd)
 
         options(show.error.messages = FALSE)
@@ -1304,7 +1304,7 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
 
     if (Var.calc==0)
       {
-        eps <- Tau.i - as.real(est)
+        eps <- Tau.i - as.double(est)
         eps.sq <- eps*eps
         Sigs <- 0.5 * matrix(1, N, 1) %*% (t(eps.sq) %*% W)/sum(W)
 #        sss <- sqrt(Sigs[1,1])
@@ -1322,9 +1322,9 @@ Rmatch <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, Var.c
 
     if (BiasAdj==1)
       {
-        dvar.pop <- sum(iot.t*(SCAUS-as.real(est))*(SCAUS-as.real(est)))/(SN*SN)
+        dvar.pop <- sum(iot.t*(SCAUS-as.double(est))*(SCAUS-as.double(est)))/(SN*SN)
       } else {
-        dvar.pop <- sum(iot.t*(YCAUS-as.real(est))*(YCAUS-as.real(est)))/(SN*SN)
+        dvar.pop <- sum(iot.t*(YCAUS-as.double(est))*(YCAUS-as.double(est)))/(SN*SN)
       }
 
     var.pop <- var.pop + dvar.pop
@@ -1792,13 +1792,13 @@ ks<-function(x,y,w=F,sig=T){
       print("of the weighted Kolmogorov-Smirnov test statistic is not exact.")
     }}
                                         #round off siglevel in a nicer way
-  if(is.real(ks) & is.real(crit) & !is.na(ks) & !is.na(crit))
+  if(is.double(ks) & is.double(crit) & !is.na(ks) & !is.na(crit))
     {
       if (is.na(siglevel) & ks < crit)
         {
           siglevel  <- 0.99999837212332
         }
-      if (is.real(siglevel) & !is.na(siglevel))
+      if (is.double(siglevel) & !is.na(siglevel))
         {
           if (siglevel < 0)
             siglevel  <- 0
@@ -1891,7 +1891,7 @@ Mks.test.handler <- function(w)
     #suppress the following warning:
     #In ks.test() :
     # p-values will be approximate in the presence of ties
-    if( any( grepl( "p-values will be approximate in the presence of ties", w) ) )
+    if( any( grepl( "ties", w) ) )
       invokeRestart( "muffleWarning" )
 
     #invoke as:
@@ -1983,13 +1983,13 @@ MatchBalance <- function(formul, data=NULL, match.out=NULL, ks=TRUE,
     if (is.null(data))
       {
         xdata <- as.data.frame(get.xdata(formul,datafr=environment(formul)))
-        Tr <- as.real(get.ydata(formul,datafr=environment(formul)))
+        Tr <- as.double(get.ydata(formul,datafr=environment(formul)))
 
       } else {
         data  <- as.data.frame(data)
 
         xdata  <- as.data.frame(get.xdata(formul, data))
-        Tr  <- as.real(get.ydata(formul, data))
+        Tr  <- as.double(get.ydata(formul, data))
       }
     options("na.action"=orig.na.action)
 
@@ -2518,7 +2518,7 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
     #if we have a diagonal matrix we can void cblas_dgemm
     if (Kx > 1)
       {
-        DiagWeightMatrixFlag <- as.real(sum( (Weight.matrix!=diag(diag(Weight.matrix))) )==0)
+        DiagWeightMatrixFlag <- as.double(sum( (Weight.matrix!=diag(diag(Weight.matrix))) )==0)
       } else {
         DiagWeightMatrixFlag <- 1
       }
@@ -2702,8 +2702,8 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
     if(version=="standard" & BiasAdj==0)
       {
         ret <- .Call("EstFuncC", as.integer(N), as.integer(All), as.integer(nrow(indx)),
-                     as.real(Y), as.real(Tr),
-                     as.real(weight), as.real(indx),
+                     as.double(Y), as.double(Tr),
+                     as.double(weight), as.double(indx),
                      PACKAGE="Matching")
         YCAUS <- ret[,1];
         Kcount <- ret[,2];
@@ -2764,7 +2764,7 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
             xw <- ZZt*(sqrt(Tr*Kcount) %*% t(as.matrix(rep(1,Kx))))
             
             foo <- min(eigen(t(xw)%*%xw, only.values=TRUE)$values)
-            foo <- as.real(foo<=ccc)
+            foo <- as.double(foo<=ccc)
             foo2 <- apply(xw, 2, sd)
 
             options(show.error.messages = FALSE)
@@ -2807,7 +2807,7 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
         xw <- ZZc*(sqrt((1-Tr)*Kcount) %*% matrix(1, nrow=1, ncol=Kx))
         
         foo <- min(eigen(t(xw)%*%xw, only.values=TRUE)$values)
-        foo <- as.real(foo<=ccc)
+        foo <- as.double(foo<=ccc)
         foo2 <- apply(xw, 2, sd)
 
         options(show.error.messages = FALSE)
@@ -2880,7 +2880,7 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
       {
         if (Var.calc==0)
           {
-            eps <- Tau.i - as.real(est)
+            eps <- Tau.i - as.double(est)
             eps.sq <- eps*eps
             Sigs <- 0.5 * matrix(1, N, 1) %*% (t(eps.sq) %*% W)/sum(W) #sss <- sqrt(Sigs[1,1])
           } #end of Var.calc==0
@@ -2897,9 +2897,9 @@ RmatchLoop <- function(Y, Tr, X, Z, V, All, M, BiasAdj, Weight, Weight.matrix, V
         
         if (BiasAdj==1)
           {
-            dvar.pop <- sum(iot.t*(SCAUS-as.real(est))*(SCAUS-as.real(est)))/(SN*SN)
+            dvar.pop <- sum(iot.t*(SCAUS-as.double(est))*(SCAUS-as.double(est)))/(SN*SN)
           } else {
-            dvar.pop <- sum(iot.t*(YCAUS-as.real(est))*(YCAUS-as.real(est)))/(SN*SN)
+            dvar.pop <- sum(iot.t*(YCAUS-as.double(est))*(YCAUS-as.double(est)))/(SN*SN)
           }
         
         var.pop <- var.pop + dvar.pop
@@ -2968,10 +2968,10 @@ MatchLoopC <- function(N, xvars, All, M, cdd, caliperflag, replace, ties, ww, Tr
 
     ret <- .Call("MatchLoopC", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
                  as.double(cdd), as.integer(caliperflag), as.integer(replace), as.integer(ties),
-                 as.real(ww), as.real(Tr),
-                 as.real(Xmod), as.real(weights), as.real(CaliperVec), as.real(Xorig),
-                 as.integer(restrict.trigger), as.integer(restrict.nrow), as.real(restrict),
-                 as.real(DiagWeightMatrixFlag),
+                 as.double(ww), as.double(Tr),
+                 as.double(Xmod), as.double(weights), as.double(CaliperVec), as.double(Xorig),
+                 as.integer(restrict.trigger), as.integer(restrict.nrow), as.double(restrict),
+                 as.double(DiagWeightMatrixFlag),
                  PACKAGE="Matching")
     return(ret)
   } #end of MatchLoopC
@@ -2989,10 +2989,10 @@ MatchLoopCfast <- function(N, xvars, All, M, cdd, caliperflag, replace, ties, ww
     
     ret <- .Call("MatchLoopCfast", as.integer(N), as.integer(xvars), as.integer(All), as.integer(M),
                  as.double(cdd), as.integer(caliperflag), as.integer(replace), as.integer(ties),
-                 as.real(ww), as.real(Tr),
-                 as.real(Xmod), as.real(CaliperVec), as.real(Xorig),
-                 as.integer(restrict.trigger), as.integer(restrict.nrow), as.real(restrict),
-                 as.real(DiagWeightMatrixFlag),
+                 as.double(ww), as.double(Tr),
+                 as.double(Xmod), as.double(CaliperVec), as.double(Xorig),
+                 as.integer(restrict.trigger), as.integer(restrict.nrow), as.double(restrict),
+                 as.double(DiagWeightMatrixFlag),
                  PACKAGE="Matching")
     return(ret)
   } #end of MatchLoopCfast
@@ -3011,12 +3011,12 @@ VarCalcMatchC <- function(N, xvars, Var.calc, cdd, caliperflag, ww, Tr, Xmod, Ca
     
     ret <- .Call("VarCalcMatchC", as.integer(N), as.integer(xvars), as.integer(Var.calc),
                  as.double(cdd), as.integer(caliperflag), 
-                 as.real(ww), as.real(Tr),
-                 as.real(Xmod), as.real(CaliperVec), as.real(Xorig),
-                 as.integer(restrict.trigger), as.integer(restrict.nrow), as.real(restrict),
-                 as.real(DiagWeightMatrixFlag),
-                 as.real(Y),
-                 as.integer(weightFlag), as.real(weight),
+                 as.double(ww), as.double(Tr),
+                 as.double(Xmod), as.double(CaliperVec), as.double(Xorig),
+                 as.integer(restrict.trigger), as.integer(restrict.nrow), as.double(restrict),
+                 as.double(DiagWeightMatrixFlag),
+                 as.double(Y),
+                 as.integer(weightFlag), as.double(weight),
                  PACKAGE="Matching")
     return(ret)
   } #end of VarCalcMatchC
