@@ -1,6 +1,8 @@
 /* Edited by Jasjeet S. Sekhon <jasjeet_sekhon@berkeley.edu> */
 /* HTTP://sekhon.berkeley.edu                                */
 /*                                                           */
+/* April 26, 2013                                            */
+/* get rid of friend-injection for ones, zero, seqa          */
 /* January 9, 2012                                           */
 /* May 9, 2010: Solaris compatibility issues                 */
 /* October 24, 2006                                          */
@@ -1033,7 +1035,7 @@ Matrix t (const Matrix & old_matrix)
  * \param cols a constant int reflecting the number of columns in the Matrix.
  * \return a new Matrix filled with 1's.
  */
- Matrix ones (const int& rows, const int& cols)
+  Matrix Matrix::ones (const int& rows, const int& cols)
  {
    if (rows < 1 || cols < 1) {
      error("improper row or column dimension in ones()");
@@ -1045,6 +1047,7 @@ Matrix t (const Matrix & old_matrix)
       }
       return newdata;
  }
+
     
 /*!
  * \brief Creates a Matrix of Zeros
@@ -1055,7 +1058,7 @@ Matrix t (const Matrix & old_matrix)
  * \return a new Matrix filled with 1's.
  */
 // #ifdef __NATE__
-Matrix zeros (const int& rows, const int& cols)
+  Matrix Matrix::zeros (const int& rows, const int& cols)
 {
   if (rows < 1 || cols < 1) {
     error("Error 0018: improper row or column dimension in ones()");
@@ -1100,7 +1103,7 @@ Matrix zeros (const int& rows, const int& cols)
  * \param size a constant integer reflecting the size of the vector.
  * \return a new Matrix (vector).
  */
-    Matrix seqa (const double& start, const double& incr, const int& size)
+Matrix Matrix::seqa (const double& start, const double& incr, const int& size)
     {
       Matrix newdata(size, 1);
 	double val = start;
@@ -1237,9 +1240,9 @@ Matrix zeros (const int& rows, const int& cols)
 	Matrix L, U, perm_vec;
 	
 	if (A.rowsize == 1){
-	    L = ones(1,1);
-	    U = AA;
-	    perm_vec = Matrix(1,1);
+	  L = Matrix::ones(1,1);
+	  U = AA;
+	  perm_vec = Matrix(1,1);
 	} else {
 	    L = U = Matrix(A.rowsize, A.rowsize);
 	    perm_vec = Matrix(A.rowsize-1,1);
@@ -1448,7 +1451,7 @@ Matrix zeros (const int& rows, const int& cols)
 // #ifdef __NATE__
 Matrix sumc (const Matrix & A)
 {
-  Matrix temp = zeros(1, A.colsize);
+  Matrix temp = Matrix::zeros(1, A.colsize);
   
   for (int i = 0; i < A.rowsize; ++i) {
     double *rowptr = A.data + (A.colsize * i);

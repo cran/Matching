@@ -1,8 +1,9 @@
 /* Edited by Jasjeet S. Sekhon <jasjeet_sekhon@berkeley.edu> */
 /* HTTP://sekhon.berkeley.edu                                */
-
+/*                                                           */
+/* April 26, 2013                                            */
+/* get rid of friend-injection for ones, zero, seqa          */
 /* January 9, 2012                                           */
-
 /* May 8, 2010, updated header files for Solaris             */
 /* remove xpnd to work on Solaris march 31, 2009             */
 
@@ -452,7 +453,7 @@ public:
 //  Errors:  0018
 //  Dependencies:  none
 
-   friend Matrix ones (const int& rows, const int& cols);
+   static Matrix ones (const int& rows, const int& cols);
 
 /**********************************************************************/
 //  FUNCTION: Zeros - creates a Matrix of zeros
@@ -462,7 +463,7 @@ public:
 //  Errors:  0018
 //  Dependencies:  none
 
-   friend Matrix zeros (const int& rows, const int& cols);
+   static Matrix zeros (const int& rows, const int& cols);
 
 /**********************************************************************/
 //  FUNCTION: Eye - creates an Identity Matrix of size k x k
@@ -482,8 +483,8 @@ public:
 //  Errors:  
 //  Dependencies:  none
 
-   friend Matrix seqa (const double& start, const double& incr,
-    	const int& size);
+   static Matrix seqa (const double& start, const double& incr,
+		       const int& size);
 
 /**********************************************************************/
 //  FUNCTION: sort - sorts all elements of a Matrix using shellsort
