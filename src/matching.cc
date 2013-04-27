@@ -3,7 +3,7 @@
     HTTP://sekhon.berkeley.edu/
     UC Berkeley
     
-    2012/01/02
+    2013/04/26
     Under the GNU Public License Version 3
 
     A *lot* of work and trail-and-error has gone into these functions
@@ -264,7 +264,7 @@ extern "C"
     //Master Loop
     for (i=0; i<N; i++)
       {
-	if ( ((int) Tr[i]==1 & All!=1) | All==1)
+	if ( ((int) Tr[i]==1 & All!=1) | (All==1))
 	  {
 	    
 	    SumFooWeight = 0;
@@ -302,7 +302,7 @@ extern "C"
 		    
 		    KKcount[k] = KKcount[k] + weight[i]*WWFW[k];
 		    
-		    //if ( ((int) Tr[i]==1 & All!=1) | All==1)
+		    //if ( ((int) Tr[i]==1 & All!=1) | (All==1))
 		      YCAUS[i] = Y[k]*indx[M(l,2,ic)]/SumIndx3 + YCAUS[i];
 		  } // endof if
 	      } // l for loop
@@ -432,7 +432,7 @@ extern "C"
       }
     }
     
-    Matrix INN = seqa(1, 1, N);
+    Matrix INN = Matrix::seqa(1, 1, N);
     // TT is just equal to INN
 
     Matrix ZX(N, xvars), Dist(N, 1);
@@ -463,7 +463,7 @@ extern "C"
       
       // proceed with all observations if All==1
       // but only with treated observations if All=0        
-      if ( (TREATi==1 & All!=1) | All==1 )
+      if ( (TREATi==1 & All!=1) | (All==1) )
       {
 
 #ifdef __GenMatchBLAS__
@@ -596,7 +596,7 @@ extern "C"
 	      }
 	  }
 	MCindx = MCindx+k;
-      } // end of (TREATi==1 & All!=1) | All==1 )
+      } // end of (TREATi==1 & All!=1) | (All==1) )
     } //END OF i MASTER LOOP!
 
     // subset matrices to get back to the right dims
@@ -622,9 +622,9 @@ extern "C"
     if(All==1)
     {
       long tl  = MatchCount;
-      Matrix I2  = zeros(tl, 1);
-      Matrix IM2 = zeros(tl, 1);
-      Matrix trt = zeros(tl, 1);
+      Matrix I2  = Matrix::zeros(tl, 1);
+      Matrix IM2 = Matrix::zeros(tl, 1);
+      Matrix trt = Matrix::zeros(tl, 1);
       
       for(i=0; i<tl; i++)
       {
@@ -791,7 +791,7 @@ extern "C"
       weight[i] = REAL(I_weight)[i];
     }
     
-    Matrix INN = seqa(1, 1, N);
+    Matrix INN = Matrix::seqa(1, 1, N);
     // TT is just equal to INN
 
     Matrix ZX(N, xvars), Dist(N, 1);
@@ -818,7 +818,7 @@ extern "C"
       
       // proceed with all observations if All==1
       // but only with treated observations if All=0        
-      if ( (TREATi==1 & All!=1) | All==1 )
+      if ( (TREATi==1 & All!=1) | (All==1) )
       {
 #ifdef __GenMatchBLAS__
         // this loop is equivalent to the matrix X less the matrix A, which is
@@ -893,7 +893,7 @@ extern "C"
 	  }
         weightPot_sum = cumsum(weightPot_sort);
         
-        tt = seqa(1, 1, rows(weightPot_sum));
+        tt = Matrix::seqa(1, 1, rows(weightPot_sum));
         
         foo1 = GreaterEqualTestScalar(weightPot_sum, M);
         foo2 = selif(tt, foo1);
@@ -927,19 +927,19 @@ extern "C"
         // collect results
         if (first==1)
 	  {
-	    I = ones(ACTMATsum, 1)*(i+1);
+	    I = Matrix::ones(ACTMATsum, 1)*(i+1);
 	    IM = selif(INN, ACTMAT);
 	    W = Wi;
 	    first = 0;
 	  }// end of first==1 
         else 
 	  {
-	    I = rbind(I, ones(ACTMATsum, 1)*(i+1));
+	    I = rbind(I, Matrix::ones(ACTMATsum, 1)*(i+1));
 	    IM = rbind(IM, selif(INN, ACTMAT));
 	    W = rbind(W, Wi);
 	  } // end of i else
         
-      } // end of (TREATi==1 & All!=1) | All==1 )
+      } // end of (TREATi==1 & All!=1) | (All==1) )
     } //END OF i MASTER LOOP!
     
     /*ATT is okay already */
@@ -947,9 +947,9 @@ extern "C"
     if(All==1)
     {
       long tl  = rows(I);
-      Matrix I2  = zeros(tl, 1);
-      Matrix IM2 = zeros(tl, 1);
-      Matrix trt = zeros(tl, 1);
+      Matrix I2  = Matrix::zeros(tl, 1);
+      Matrix IM2 = Matrix::zeros(tl, 1);
+      Matrix trt = Matrix::zeros(tl, 1);
       
       for(i=0; i<tl; i++)
       {
@@ -1184,7 +1184,7 @@ extern "C"
     if (ties==0)
       GetRNGstate();
 
-    Matrix INN = seqa(1, 1, N);
+    Matrix INN = Matrix::seqa(1, 1, N);
     // TT is just equal to INN
 
 #ifdef __NBLAS__
@@ -1192,16 +1192,16 @@ extern "C"
     if (DiagWeightMatrixFlag!=1) {
       /* ctor zeros data so this does not add any computational time and maintains the dims outside 
 	 the scope of this if statement */
-      DX = zeros(N, xvars);
+      DX = Matrix::zeros(N, xvars);
     }
 #else
-    Matrix index_onesN = ones(N, 1);
+    Matrix index_onesN = Matrix::ones(N, 1);
     Matrix xx;
     Matrix DX;
 #endif
 
-    Matrix Kcount  = zeros(N,1);
-    Matrix KKcount = zeros(N,1);
+    Matrix Kcount  = Matrix::zeros(N,1);
+    Matrix KKcount = Matrix::zeros(N,1);
     Matrix foo1;
     Matrix foo2;
 
@@ -1224,7 +1224,7 @@ extern "C"
 	
 	// proceed with all observations if All==1
 	// but only with treated observations if All=0        
-	if ( (TREATi==1 & All!=1) | All==1 )
+	if ( (TREATi==1 & All!=1) | (All==1) )
 	  {
 #ifdef __NBLAS__
 	    if (DiagWeightMatrixFlag!=1)
@@ -1415,7 +1415,7 @@ extern "C"
 	      }
             weightPot_sum = cumsum(weightPot_sort);
 	    
-	    tt = seqa(1, 1, rows(weightPot_sum));
+	    tt = Matrix::seqa(1, 1, rows(weightPot_sum));
 	    
 	    foo1 = GreaterEqualTestScalar(weightPot_sum, M);
 	    foo2 = selif(tt, foo1);
@@ -1496,7 +1496,7 @@ extern "C"
 	    // collect results
 	    if (first==1)
 	      {
-		I = ones(ACTMATsum, 1)*(i+1);
+		I = Matrix::ones(ACTMATsum, 1)*(i+1);
 		if(replace==0)
 		  {
 		    IM = IMt;
@@ -1510,7 +1510,7 @@ extern "C"
 	      }// end of first==1 
 	    else 
 	      {
-		I = rbind(I, ones(ACTMATsum, 1)*(i+1));
+		I = rbind(I, Matrix::ones(ACTMATsum, 1)*(i+1));
 		if(replace==0)
 		  {
 		    IM = rbind(IM, IMt);
@@ -1522,7 +1522,7 @@ extern "C"
 		W = rbind(W, Wi);
 	      } // end of i else
 	    
-	  } // end of (TREATi==1 & All!=1) | All==1 )
+	  } // end of (TREATi==1 & All!=1) | (All==1) )
       } //END OF i MASTER LOOP!
 
     //Stop random number generator if we are breaking ties
@@ -1535,11 +1535,11 @@ extern "C"
     long tl  = rows(I);
     /*ATT is okay already */
     /* ATE*/
-    if(All==1 & I[0]!=0)
+    if((All==1) & (I[0]!=0))
       {
-	Matrix I2  = zeros(tl, 1);
-	Matrix IM2 = zeros(tl, 1);
-	Matrix trt = zeros(tl, 1);
+	Matrix I2  = Matrix::zeros(tl, 1);
+	Matrix IM2 = Matrix::zeros(tl, 1);
+	Matrix trt = Matrix::zeros(tl, 1);
 	
 	for(i=0; i<tl; i++)
 	  {
@@ -1578,7 +1578,7 @@ extern "C"
     
     if (caliper==1)
       {
-	Matrix scalar_returns = zeros(tl, 1);
+	Matrix scalar_returns = Matrix::zeros(tl, 1);
 	scalar_returns[0] = sum_caliper_drops;
 	rr = cbind(rr, scalar_returns);
       }
@@ -1786,7 +1786,7 @@ extern "C"
     if (ties==0)
       GetRNGstate();
 
-    Matrix INN = seqa(1, 1, N);
+    Matrix INN = Matrix::seqa(1, 1, N);
     // TT is just equal to INN
 
 #ifdef __NBLAS__
@@ -1794,10 +1794,10 @@ extern "C"
     if (DiagWeightMatrixFlag!=1) {
       /* ctor zeros data so this does not add any computational time and maintains the dims outside 
 	 the scope of this if statement */
-      DX = zeros(N, xvars);
+      DX = Matrix::zeros(N, xvars);
     }
 #else
-    Matrix index_onesN = ones(N, 1);
+    Matrix index_onesN = Matrix::ones(N, 1);
     Matrix xx;
     Matrix DX, Dist;
 
@@ -1835,7 +1835,7 @@ extern "C"
 	
 	// proceed with all observations if All==1
 	// but only with treated observations if All=0        
-	if ( (TREATi==1 & All!=1) | All==1 )
+	if ( (TREATi==1 & All!=1) | (All==1) )
 	  {
 #ifdef __NBLAS__
 	    if (DiagWeightMatrixFlag!=1)
@@ -2059,7 +2059,7 @@ extern "C"
 	    //ACTMATsum = (int) sumc(ACTMAT)[0];
 
 	    Wi_ratio = 1/Mi;
-	    //Wi = ones(ACTMATsum, 1)*1/Mi;
+	    //Wi = Matrix::ones(ACTMATsum, 1)*1/Mi;
 
 	    //if no replacement
 	    if(replace==0)
@@ -2130,7 +2130,7 @@ extern "C"
 		  }
 		MCindx = MCindx+k;
 	      }
-	  } // end of (TREATi==1 & All!=1) | All==1 )
+	  } // end of (TREATi==1 & All!=1) | (All==1) )
       } //END OF i MASTER LOOP!
 
     //Stop random number generator if we are breaking ties
@@ -2162,11 +2162,11 @@ extern "C"
 
     /*ATT is okay already */
     /* ATE*/
-    if(All==1 & I[0]!=0)
+    if((All==1) & (I[0]!=0))
       {
-	Matrix I2  = zeros(tl, 1);
-	Matrix IM2 = zeros(tl, 1);
-	Matrix trt = zeros(tl, 1);
+	Matrix I2  = Matrix::zeros(tl, 1);
+	Matrix IM2 = Matrix::zeros(tl, 1);
+	Matrix trt = Matrix::zeros(tl, 1);
 
 	for(i=0; i<tl; i++)
 	  {
@@ -2203,7 +2203,7 @@ extern "C"
 
     if (caliper==1)
       {
-	Matrix scalar_returns = zeros(tl, 1);
+	Matrix scalar_returns = Matrix::zeros(tl, 1);
 	scalar_returns[0] = sum_caliper_drops;
 	rr = cbind(rr, scalar_returns);
       }
@@ -2398,7 +2398,7 @@ extern "C"
     int weightFlag = asInteger(I_weightFlag);
     if(weightFlag==1)
       {
-	weight = zeros(N, 1);
+	weight = Matrix::zeros(N, 1);
 
 	for(i=0;i<N; i++)
 	  {
@@ -2406,7 +2406,7 @@ extern "C"
 	  }	
       }
 
-    Matrix INN = seqa(1, 1, N);
+    Matrix INN = Matrix::seqa(1, 1, N);
     // TT is just equal to INN
 
 #ifdef __NBLAS__
@@ -2414,10 +2414,10 @@ extern "C"
     if (DiagWeightMatrixFlag!=1) {
       /* ctor zeros data so this does not add any computational time and maintains the dims outside 
 	 the scope of this if statement */
-      DX = zeros(N, xvars);
+      DX = Matrix::zeros(N, xvars);
     }
 #else
-    Matrix index_onesN = ones(N, 1);
+    Matrix index_onesN = Matrix::ones(N, 1);
     Matrix xx;
     Matrix DX, Dist;
 #endif
@@ -2670,7 +2670,7 @@ extern "C"
 	    }
 	  weightPot_sum = cumsum(weightPot_sort);
 
-	  tt = seqa(1, 1, rows(weightPot_sum));
+	  tt = Matrix::seqa(1, 1, rows(weightPot_sum));
 	  
 	  foo1 = GreaterEqualTestScalar(weightPot_sum, M);
 	  foo2 = selif(tt, foo1);
@@ -2778,7 +2778,7 @@ Matrix LessEqualTestScalar(Matrix a, double s)
 Matrix VectorAnd(Matrix a, Matrix b)
 {
   long nrows = rows(a);
-  Matrix ret =  zeros(nrows, 1);
+  Matrix ret =  Matrix::zeros(nrows, 1);
 
   for (long i =0; i< nrows; i++)
     {
@@ -2794,7 +2794,7 @@ Matrix EqualityTestMatrix(Matrix a, Matrix s)
 {
   long nrows = rows(a);
   long ncols = cols(a);
-  Matrix ret =  zeros(nrows, ncols);
+  Matrix ret =  Matrix::zeros(nrows, ncols);
 
   long scols = cols(s);
 
@@ -2837,7 +2837,7 @@ Matrix EqualityTestMatrix(Matrix a, Matrix s)
 Matrix cumsum(Matrix a)
 {
   long nrows = rows(a);
-  Matrix ret = zeros(nrows, 1);
+  Matrix ret = Matrix::zeros(nrows, 1);
   
   ret[0] = a[0];
   for (long i = 1;  i < nrows; i++) 

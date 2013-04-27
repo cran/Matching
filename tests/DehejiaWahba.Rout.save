@@ -35,7 +35,7 @@ Loading required package: rgenoud
 
 Loading required package: MASS
 ## 
-##  Matching (Version 4.8-1.2, Build Date: 2013/02/16)
+##  Matching (Version 4.8-2, Build Date: 2013/04/26)
 ##  See http://sekhon.berkeley.edu/matching for additional documentation.
 ##  Please cite software as:
 ##   Jasjeet S. Sekhon. 2011. ``Multivariate and Propensity Score Matching
@@ -371,4 +371,4 @@ Variable Name(s): I(re74^2)  Number(s): 10
 > 
 > proc.time()
    user  system elapsed 
-  0.419   0.059   0.686 
+  0.431   0.053   0.609 

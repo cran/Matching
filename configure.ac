@@ -18,6 +18,7 @@ dnl and test script updated with #include <cmath>.
 dnl Matching Version 3.6-0+ we switched to configure.ac instead of the
 dnl configure hack.
 
+dnl Matching Version 4.8-2: -ffriend-injection is no longer supported in recent versions of gcc
 dnl Matching Version 3.4.4+: we need to add the -ffriend-injection
 dnl argument for g++ versions 4.1+ because ARM-style name-injection of
 dnl friend declarations is no longer the default.  We check for the
@@ -159,15 +160,16 @@ if test $mycxxflags2_set = yes; then
    PKG_CXXFLAGS="$PKG_CXXFLAGS $MYCXXFLAGS2"
 fi
 
-AC_MSG_CHECKING([whether $CXX accepts -ffriend-injection])
-AC_LANG([C++])
-CXXFLAGS="-ffriend-injection $RCXXFLAGS"
-AC_COMPILE_IFELSE([[char b[10];]], [ffriend_set=yes], [ffriend_set=no])
-AC_MSG_RESULT($ffriend_set)
+dnl -ffrend-injection is no longer supported
+dnl AC_MSG_CHECKING([whether $CXX accepts -ffriend-injection])
+dnl AC_LANG([C++])
+dnl CXXFLAGS="-ffriend-injection $RCXXFLAGS"
+dnl AC_COMPILE_IFELSE([[char b[10];]], [ffriend_set=yes], [ffriend_set=no])
+dnl AC_MSG_RESULT($ffriend_set)
 
-if test $ffriend_set = yes; then    
-   PKG_CXXFLAGS="$PKG_CXXFLAGS -ffriend-injection"
-fi
+dnl if test $ffriend_set = yes; then    
+dnl    PKG_CXXFLAGS="$PKG_CXXFLAGS -ffriend-injection"
+dnl fi
 
 dnl Are we on OSX?
 dnl If so: use dmalloc (NO LONGER DONE) and don't compile our own cblas headers (still done).

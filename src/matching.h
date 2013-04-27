@@ -25,6 +25,3 @@ Matrix VectorAnd(Matrix a, Matrix b);
 Matrix cumsum(Matrix a);
 void display(Matrix A);
 
-
-
-
