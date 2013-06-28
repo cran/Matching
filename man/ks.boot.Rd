@@ -9,7 +9,8 @@
   test.
 }
 \usage{
-ks.boot(Tr, Co, nboots=1000, alternative = c("two.sided", "less", "greater"), print.level=0)
+ks.boot(Tr, Co, nboots=1000, alternative = c("two.sided","less","greater"),
+        print.level=0)
 }
 \arguments{
   \item{Tr}{A vector containing the treatment observations.}
@@ -57,8 +58,10 @@ ks.boot(Tr, Co, nboots=1000, alternative = c("two.sided", "less", "greater"), pr
 #
 # Replication of Dehejia and Wahba psid3 model
 #
-# Dehejia, Rajeev and Sadek Wahba. 1999.``Causal Effects in Non-Experimental Studies: Re-Evaluating the
-# Evaluation of Training Programs.''Journal of the American Statistical Association 94 (448): 1053-1062.
+# Dehejia, Rajeev and Sadek Wahba. 1999.``Causal Effects in
+# Non-Experimental Studies: Re-Evaluating the Evaluation of Training
+# Programs.''Journal of the American Statistical Association 94 (448):
+# 1053-1062.
 #
 data(lalonde)
 

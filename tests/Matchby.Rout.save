@@ -1,8 +1,7 @@
 
-R Under development (unstable) (2013-02-14 r61949) -- "Unsuffered Consequences"
+R Under development (unstable) (2013-06-27 r63079) -- "Unsuffered Consequences"
 Copyright (C) 2013 The R Foundation for Statistical Computing
-ISBN 3-900051-07-0
-Platform: x86_64-apple-darwin9.8.0/x86_64 (64-bit)
+Platform: x86_64-apple-darwin10.8.0 (64-bit)
 
 R is free software and comes with ABSOLUTELY NO WARRANTY.
 You are welcome to redistribute it under certain conditions.
@@ -16,26 +15,7 @@ Type 'demo()' for some demos, 'help()' for on-line help, or
 'help.start()' for an HTML browser interface to help.
 Type 'q()' to quit R.
 
-> library(Matching)
-Loading required package: rgenoud
-##  rgenoud (Version 5.7-8.1, Build Date: 2012-06-03)
-##  See http://sekhon.berkeley.edu/rgenoud for additional documentation.
-##  Please cite software as:
-##   Walter Mebane, Jr. and Jasjeet S. Sekhon. 2011.
-##   ``Genetic Optimization Using Derivatives: The rgenoud package for R.''
-##   Journal of Statistical Software, 42(11): 1-26. 
-##
-
-Loading required package: MASS
-## 
-##  Matching (Version 4.8-2, Build Date: 2013/04/26)
-##  See http://sekhon.berkeley.edu/matching for additional documentation.
-##  Please cite software as:
-##   Jasjeet S. Sekhon. 2011. ``Multivariate and Propensity Score Matching
-##   Software with Automated Balance Optimization: The Matching package for R.''
-##   Journal of Statistical Software, 42(7): 1-52. 
-##
-
+> suppressMessages(library(Matching))
 > 
 > data(lalonde)
 > 
@@ -97,4 +77,4 @@ Number of obs dropped by 'exact' or 'caliper'  66
 > 
 > proc.time()
    user  system elapsed 
-  0.290   0.031   0.336 
+  0.306   0.032   0.330 

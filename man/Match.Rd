@@ -327,12 +327,14 @@ Match(Y=NULL, Tr, X, Z = X, V = rep(1, length(Y)), estimand = "ATT", M = 1,
   \code{\link{GerberGreenImai}}, \code{\link{lalonde}}
 } 
 \examples{
-#
+
 # Replication of Dehejia and Wahba psid3 model
 #
-# Dehejia, Rajeev and Sadek Wahba. 1999.``Causal Effects in Non-Experimental Studies: Re-Evaluating the
-# Evaluation of Training Programs.''Journal of the American Statistical Association 94 (448): 1053-1062.
-#
+# Dehejia, Rajeev and Sadek Wahba. 1999.``Causal Effects in
+# Non-Experimental Studies: Re-Evaluating the Evaluation of Training
+# Programs.''Journal of the American Statistical Association 94 (448):
+# 1053-1062.
+
 data(lalonde)
 
 #

@@ -912,14 +912,14 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         if (cluster==FALSE)  {
           clustertrigger=0
         } else {
-          stop("cluster option must be either FALSE, an object of the 'cluster' class (from the 'snow' package) or a list of machines so 'genoud' can create such an object")
+          stop("cluster option must be either FALSE, an object of the 'cluster' class (from the 'parallel' package) or a list of machines so 'genoud' can create such an object")
         }
       }
     
     if(clustertrigger) {
-      snow.exists = require("snow")
-      if (!snow.exists) {
-        stop("The 'cluster' feature cannot be used unless the package 'snow' can be loaded.")
+      parallel.exists = require("parallel")
+      if (!parallel.exists) {
+        stop("The 'cluster' feature cannot be used unless the package 'parallel' can be loaded.")
       }
     } 
 
@@ -933,7 +933,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
               NULL
             }
             for (name in list) {
-              snow::clusterCall(cl, gets, name, get(name))
+              parallel::clusterCall(cl, gets, name, get(name))
             }
           }        
 
@@ -944,8 +944,8 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         } else {
           clustertrigger=2
           cluster <- as.vector(cluster)
-          cat("You will now be prompted for passwords so your cluster can be setup.\n")
-          cl <- snow::makeSOCKcluster(cluster)
+          cat("Initializing Cluster\n")
+          cl <- parallel::makePSOCKcluster(cluster)
           cl.genoud <- cl
         }      
       } else {
@@ -956,7 +956,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
       {
         #create restrict.summary, because passing the entire restrict matrix is too much
         
-        snow::clusterEvalQ(cl, library("Matching"))
+        parallel::clusterEvalQ(cl, library("Matching"))
         GENclusterExport(cl, c("s1.N", "s1.All", "s1.M", "s1.Tr", "s1.X", "nvars",
                                "tolerance", "distance.tolerance", "weights",
                                "BalanceMatrix", "balancevars", "nboots", "ks", "verbose", "paired", "loss.func",
@@ -1021,7 +1021,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
       }
 
     if (clustertrigger==2)
-      snow::stopCluster(cl)    
+      parallel::stopCluster(cl)    
     
     class(rr2) <- "GenMatch"
     return(rr2)

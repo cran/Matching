@@ -302,8 +302,8 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1, weights=NULL,
     the pair 6 and 55 from being matched, the restrict matrix would be:
     \code{restrict=rbind(c(4,20,-1),c(6,55,-1))}}
   \item{cluster}{This can either be an object of the 'cluster' class
-    returned by one of the \code{\link[snow]{makeCluster}} commands in
-    the snow package or a vector of machine names so that \code{GenMatch} can
+    returned by one of the \code{\link[parallel]{makeCluster}} commands in
+    the \code{parallel} package or a vector of machine names so that \code{GenMatch} can
     setup the cluster automatically. If it is the latter, the vector should
     look like: \cr
     \code{c("localhost","musil","musil","deckard")}.\cr
@@ -311,15 +311,15 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1, weights=NULL,
     localhost another on "deckard" and two on the machine named
     "musil".  Two nodes on a given machine make sense if the machine has two or more
     chips/cores.  \code{GenMatch} will setup a SOCK cluster by a call to
-    \code{\link[snow]{makeSOCKcluster}}.  This will require the user
+    \code{\link[parallel]{makePSOCKcluster}}.  This will require the user
     to type in her password for each node as the cluster is by default
     created via \code{ssh}.  One can add on usernames to the machine
     name if it differs from the current shell: "username@musil".  Other
     cluster types, such as PVM and MPI,
     which do not require passwords, can be created by directly calling
-    \code{\link[snow]{makeCluster}}, and then passing the returned
+    \code{\link[parallel]{makeCluster}}, and then passing the returned
     cluster object to \code{GenMatch}. For an example of how to manually setup up
-    a cluster with a direct call to \code{\link[snow]{makeCluster}} see
+    a cluster with a direct call to \code{\link[parallel]{makeCluster}} see
     \url{http://sekhon.berkeley.edu/matching/R/cluster_manual.R}.
     For an example of how to get around a firewall by ssh tunneling see:
     \url{http://sekhon.berkeley.edu/matching/R/cluster_manual_tunnel.R}.}
@@ -430,7 +430,7 @@ mb <- MatchBalance(treat~age +educ+black+ hisp+ married+ nodegr+ u74+ u75+
 %  LocalWords:  GenMatch Kolmogorov multinomial CPUs BalanceMatrix estimand ATT
 %  LocalWords:  ncol MemoryMatrix nboots ATC rgenoud genoud emph cr ecaliper UC
 %  LocalWords:  eqn tempdir rbind makeCluster localhost musil deckard usernames
-%  LocalWords:  makeSOCKcluster PVM MPI url dataset seealso MatchBalance cbind
+%  LocalWords:  makePSOCKcluster PVM MPI url dataset seealso MatchBalance cbind
 %  LocalWords:  balanceUV GerberGreenImai lalonde hisp nodegr genout
 %  LocalWords:  BalanceMat mout mb mv pvals qqmean QQ qqmedian qqmax Smirnov Tr
 %  LocalWords:  func CommonSupport min Abadie Imbens boostrap ssh username educ

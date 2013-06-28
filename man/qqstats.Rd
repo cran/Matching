@@ -59,9 +59,12 @@ qqstats(x, y, standardize=TRUE, summary.func)
 #
 # Replication of Dehejia and Wahba psid3 model
 #
-# Dehejia, Rajeev and Sadek Wahba. 1999.``Causal Effects in Non-Experimental Studies: Re-Evaluating the
-# Evaluation of Training Programs.''Journal of the American Statistical Association 94 (448): 1053-1062.
+# Dehejia, Rajeev and Sadek Wahba. 1999.``Causal Effects in
+# Non-Experimental Studies: Re-Evaluating the Evaluation of Training
+# Programs.''Journal of the American Statistical Association 94 (448):
+# 1053-1062.
 #
+
 data(lalonde)
 
 #

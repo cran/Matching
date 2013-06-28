@@ -1,4 +1,4 @@
-library(Matching)
+suppressMessages(library(Matching))
 
 set.seed(3101)
 data(lalonde)
@@ -21,7 +21,8 @@ BalanceMat <- cbind(age, educ, black, hisp, married, nodegr, u74, u75, re75, re7
 #
 genout <- GenMatch(Tr=treat, X=X, BalanceMatrix=BalanceMat, estimand="ATE", M=1,
                    pop.size=16, max.generations=10, wait.generations=1,
-                   unif.seed=3392, int.seed=8282)
+                   unif.seed=3392, int.seed=8282, print.level=0)
+print(genout)
 
 #The outcome variable
 Y=re78/1000

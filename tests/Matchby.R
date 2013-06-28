@@ -1,4 +1,4 @@
-library(Matching)
+suppressMessages(library(Matching))
 
 data(lalonde)
 

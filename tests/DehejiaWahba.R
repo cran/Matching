@@ -5,7 +5,7 @@
 # Evaluation of Training Programs.''Journal of the American Statistical Association 94 (448): 1053-1062.
 #
 
-library(Matching)
+suppressMessages(library(Matching))
 
 # Replication of Dehejia and Wahba psid3 model.  
 
