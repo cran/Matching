@@ -2,7 +2,7 @@
 # See http://elsa.berkeley.edu/~imbens/estimators.shtml
 # with balance checks
 
-library(Matching)
+suppressMessages(library(Matching))
 
 data(lalonde)
 

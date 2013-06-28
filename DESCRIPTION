@@ -1,6 +1,6 @@
 Package: Matching
-Version: 4.8-2
-Date: 2013/04/26
+Version: 4.8-3.1
+Date: 2013/06/28
 Title: Multivariate and Propensity Score Matching with Balance
         Optimization
 Author: Jasjeet Singh Sekhon <sekhon@berkeley.edu>
@@ -11,11 +11,11 @@ Description: Provides functions for multivariate and propensity score
         metrics to determine if balance has been obtained are also
         provided.
 Depends: R (>= 2.6.0), rgenoud (>= 2.12), MASS (>= 7.2-1), graphics,
-        grDevices, stats
-Suggests: snow (>= 0.2-1), rbounds
+        grDevices, parallel, stats
+Suggests: rbounds
 License: GPL-3
 URL: http://sekhon.berkeley.edu/matching
-Packaged: 2013-04-27 00:41:25 UTC; sekhon
+Packaged: 2013-06-28 20:40:26 UTC; jas
 NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2013-04-27 08:18:33
+Date/Publication: 2013-06-28 23:39:22

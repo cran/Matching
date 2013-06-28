@@ -1,11 +1,19 @@
 Change Log for public releases:
 
+2013-06-28 Version: 4.8-3.1
+	* tests: suppress message on load in the test .R files
+
+2013-06-28 Version: 4.8-3
+	* GenMatching.R: now uses the 'parallel' package instead of the
+	deprecated package 'snow'
+
 2013-04-26 Version: 4.8-2
 	* Makevars.win: removes the -ffriend-injection option
 	* configure.ac: removes the -ffriend-injection option
 	* matching.cc: fully resolves calls to seqa, ones, zeros, and
 	* scythematrix.cc: fully resolves calls to seqa, ones, zeros
-	* scythematrix.h: makes seqa, ones, zeros static parentheses around evalution to move ambiguity
+	* scythematrix.h: makes seqa, ones, zeros static parentheses
+	around evalution to move ambiguity
 
 2013-02-16 Version: 4.8-1.2
 	* GenMatching.R: removes assignment to .GlobalEnv in GENclusterExport.
