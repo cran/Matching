@@ -1,5 +1,5 @@
 
-R Under development (unstable) (2013-06-27 r63079) -- "Unsuffered Consequences"
+R version 3.0.2 (2013-09-25) -- "Frisbee Sailing"
 Copyright (C) 2013 The R Foundation for Statistical Computing
 Platform: x86_64-apple-darwin10.8.0 (64-bit)
 
@@ -15,6 +15,7 @@ Type 'demo()' for some demos, 'help()' for on-line help, or
 'help.start()' for an HTML browser interface to help.
 Type 'q()' to quit R.
 
+> suppressMessages(library(rgenoud))
 > suppressMessages(library(Matching))
 > 
 > set.seed(3101)
@@ -941,4 +942,4 @@ Variable Name(s): I(re74 * re75)  Number(s): 11
 > 
 > proc.time()
    user  system elapsed 
-  4.675   0.051   4.732 
+  5.159   0.051   5.196 

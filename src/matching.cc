@@ -3,7 +3,7 @@
     HTTP://sekhon.berkeley.edu/
     UC Berkeley
     
-    2013/04/26
+    2013/10/28
     Under the GNU Public License Version 3
 
     A *lot* of work and trail-and-error has gone into these functions
@@ -95,12 +95,12 @@ using namespace std;
 #include "matching.h"
 
 #ifdef __NBLAS__
-#if defined(__darwin__) || defined(__APPLE__)
-#include <vecLib/cblas.h>
-#else
-#define INTERNAL_CBLAS
+/* #if defined(__darwin__) || defined(__APPLE__)
+#include <vecLib/cblas.h> 
+#else */
+#define INTERNAL_CBLAS 
 #include <R_ext/Applic.h>
-#endif
+/* #endif  */
 #endif
 
 /* 
