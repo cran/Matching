@@ -1,7 +1,10 @@
 dnl Jasjeet S. Sekhon <sekhon@berkeley.edu> http://sekhon.berkeley.edu
-dnl Current version: 2009-01-09
+dnl Current version: 2013-10-28
 dnl First version: 2006-09-17
 dnl Process this file with autoconf to produce a configure script.
+dnl autoconf configure.ac > configure
+
+dnl TODO: optimize options for clang, e.g, -O4
 
 dnl Note: to manually switch the compiler and link options one can use
 dnl MAKEFLAGS="CC=icc" R CMD SHLIB *.c* amongst other ways.  This 
@@ -27,11 +30,6 @@ dnl backporting issues---e.g., Gentoo.
 
 dnl We also setup optimization flags.  This significantly improves performance.
 
-dnl We use makevars on all platforms instead of
-dnl the makefile because of build issues on OS X.  This requires moving
-dnl files around because we do not want our cblas wrappers compiled on
-dnl OS X, but we need them for all other platforms.
-
 dnl On Windows configure does *not* need to be run.  On Windows,
 dnl Makevars.win should simply be used because we can assume that we are
 dnl using the mingw32 compiler
@@ -41,12 +39,20 @@ dnl Already included in the Linux gcc -O2 option, but does no harm on Linux
 
 AC_INIT(Matching, 4.0.8+, sekhon@berkeley.edu)
 
+dnl Find the compilers to use
+: ${R_HOME=`R RHOME`}
+if test -z "${R_HOME}"; then
+  echo "could not determine R_HOME"
+  exit 1
+fi
+CC=`"${R_HOME}/bin/R" CMD config CC`
+CXX=`"${R_HOME}/bin/R" CMD config CXX`
+RCFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
+RCXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
 
 dnl MYCFLAGS0 should work on most compilers and MYCFLAGS1 should work on most GNU C compilers.  
 dnl MYCFLAGS2 may not (generally needs gcc 4.0+).   The last three options in MYCFLAGS2 are the OS X 
 dnl addons referenced above.
-
-
 
 MYCFLAGS0="-O3"
 MYCFLAGS1="-finline-functions -funroll-loops -fexpensive-optimizations"
@@ -67,21 +73,14 @@ dnl MYCXXFLAGS2="-funswitch-loops -fgcse-after-reload -fstrict-aliasing -freorde
 
 AC_PROG_CC
 
-dnl Find the compilers to use
-: ${R_HOME=`R RHOME`}
-if test -z "${R_HOME}"; then
-  echo "could not determine R_HOME"
-  exit 1
-fi
-CC=`"${R_HOME}/bin/R" CMD config CC`
-CXX=`"${R_HOME}/bin/R" CMD config CXX`
-RCFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
-RCXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
-
 AC_MSG_CHECKING([whether $CC accepts $MYCFLAGS0])
 AC_LANG([C])
 CFLAGS="$MYCFLAGS0 $RCFLAGS"
-AC_COMPILE_IFELSE([[char b[10];]], [mycflags0_set=yes], [mycflags0_set=no])    
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[char b[10];]])], [mycflags0_set=yes], [mycflags0_set=no])    
+
+dnl AC_COMPILE_IFELSE([[char b[10];]], [], [AC_MSG_ERROR([you lose])])
+dnl AC_COMPILE_IFELSE([AC_LANG_SOURCE([[char b[10];]])], [], [AC_MSG_ERROR([you lose])])
+
 AC_MSG_RESULT($mycflags0_set)    
 
 if test $mycflags0_set = no; then    
@@ -93,7 +92,7 @@ fi
 AC_MSG_CHECKING([whether $CC accepts $MYCFLAGS1])
 AC_LANG([C])
 CFLAGS="$MYCFLAGS1 $RCFLAGS -pedantic"
-AC_COMPILE_IFELSE([[char b[10];]], [mycflags1_set=yes], [mycflags1_set=no])    
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[char b[10];]])], [mycflags1_set=yes], [mycflags1_set=no])    
 AC_MSG_RESULT($mycflags1_set)    
 
 if test $mycflags1_set = yes; then    
@@ -103,7 +102,7 @@ fi
 AC_MSG_CHECKING([whether $CC accepts $MYCFLAGS2])
 AC_LANG([C])
 CFLAGS="$MYCFLAGS2 $RCFLAGS"
-AC_COMPILE_IFELSE([[char b[10];]], [mycflags2_set=yes], [mycflags2_set=no])    
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[char b[10];]])], [mycflags2_set=yes], [mycflags2_set=no])    
 AC_MSG_RESULT($mycflags2_set)    
 
 if test $mycflags2_set = yes; then    
@@ -112,18 +111,18 @@ fi
 
 AC_PROG_CXX
 
-if test $GXX = no; then
-    AC_MSG_WARN([**** GNU g++ IS HIGHLY RECOMMENDED.  I will continue, but this may not work. ****])
-fi
+dnl if test $GXX = no; then
+dnl    AC_MSG_WARN([**** GNU g++ IS HIGHLY RECOMMENDED.  I will continue, but this may not work. ****])
+dnl fi
 
 AC_MSG_CHECKING([whether $CXX accepts $MYCXXFLAGS0])
 AC_LANG([C++])
 CXXFLAGS="$MYCXXFLAGS0 $RCXXFLAGS"
-AC_COMPILE_IFELSE([[#include <cmath>
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[#include <cmath>
                     int main() {
                       std::sqrt(5.1);
                       return 0;
-                    }]], [mycxxflags0_set=yes], [mycxxflags0_set=no])    
+                    }]])], [mycxxflags0_set=yes], [mycxxflags0_set=no])    
 AC_MSG_RESULT($mycxxflags0_set)    
 
 if test $mycxxflags0_set = no; then    
@@ -135,21 +134,21 @@ fi
 AC_MSG_CHECKING([whether $CXX accepts $MYCXXFLAGS1])
 AC_LANG([C++])
 CXXFLAGS="$MYCXXFLAGS1 $RCXXFLAGS -pedantic"
-AC_COMPILE_IFELSE([[#include <cmath>
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[#include <cmath>
                     int main() {
                       std::sqrt(5.1);
                       return 0;
-                    }]], [mycxxflags1_set=yes], [mycxxflags1_set=no])    
+                    }]])], [mycxxflags1_set=yes], [mycxxflags1_set=no])    
 AC_MSG_RESULT($mycxxflags1_set)    
 
 AC_MSG_CHECKING([whether $CXX accepts $MYCXXFLAGS2])
 AC_LANG([C++])
 CXXFLAGS="$MYCXXFLAGS2 $RCXXFLAGS"
-AC_COMPILE_IFELSE([[#include <cmath>
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[#include <cmath>
                     int main() {
                       std::sqrt(5.1);
                       return 0;
-                    }]], [mycxxflags2_set=yes], [mycxxflags2_set=no])    
+                    }]])], [mycxxflags2_set=yes], [mycxxflags2_set=no])    
 AC_MSG_RESULT($mycxxflags2_set)    
 
 if test $mycxxflags1_set = yes; then    
@@ -172,20 +171,21 @@ dnl    PKG_CXXFLAGS="$PKG_CXXFLAGS -ffriend-injection"
 dnl fi
 
 dnl Are we on OSX?
+dnl OS X specific modifications are no longer needed: Oct 28, 2013
 dnl If so: use dmalloc (NO LONGER DONE) and don't compile our own cblas headers (still done).
-AC_MSG_CHECKING([whether we are on Darwin])
-UNAME=`uname -a`
-echo $UNAME | grep -i Darwin > /dev/null 2>&1
-if test "$?" = 0 ; then
- AC_MSG_RESULT(yes)
+dnl AC_MSG_CHECKING([whether we are on Darwin])
+dnl UNAME=`uname -a`
+dnl echo $UNAME | grep -i Darwin > /dev/null 2>&1
+dnl if test "$?" = 0 ; then
+dnl  AC_MSG_RESULT(yes)
 dnl cp inst/extras/malloc.c src/malloc.c
- mv src/cblas_dgemm.c inst/extras
- mv src/cblas.h inst/extras
- mv src/cblas_dasum.c inst/extras
- mv src/cblas_dscal.c inst/extras
-else
- AC_MSG_RESULT(no)
-fi
+dnl  mv src/cblas_dgemm.c inst/extras
+dnl  mv src/cblas.h inst/extras
+dnl  mv src/cblas_dasum.c inst/extras
+dnl  mv src/cblas_dscal.c inst/extras
+dnl else
+dnl  AC_MSG_RESULT(no)
+dnl fi
 
 AC_SUBST(PKG_CFLAGS)
 AC_SUBST(PKG_CXXFLAGS)

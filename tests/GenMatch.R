@@ -1,3 +1,4 @@
+suppressMessages(library(rgenoud))
 suppressMessages(library(Matching))
 
 set.seed(3101)

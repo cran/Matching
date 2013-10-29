@@ -184,6 +184,8 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                      balance=TRUE, ...)
   {
 
+    require("rgenoud")
+
     Tr <- as.double(Tr)
     X  <- as.matrix(X)
     BalanceMatrix  <- as.matrix(BalanceMatrix)
@@ -975,7 +977,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
         if (fit.func=="pvals") 
           do.max <- TRUE
       }
-    
+
     rr <- genoud(genoudfunc, nvars=nvars, starting.values=starting.values,
                  pop.size=pop.size, max.generations=max.generations,
                  wait.generations=wait.generations, hard.generation.limit=hard.generation.limit,
@@ -988,7 +990,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                  cluster=cl.genoud,
                  balance=balance,
                  ...)
-
+    
     wmatrix <- diag(rr$par, nrow=nvars)
     
     if ( min(eigen(wmatrix, symmetric=TRUE, only.values=TRUE)$values) < tolerance )
