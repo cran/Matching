@@ -184,7 +184,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
                      balance=TRUE, ...)
   {
 
-    require("rgenoud")
+    requireNamespace("rgenoud")
 
     Tr <- as.double(Tr)
     X  <- as.matrix(X)
@@ -919,7 +919,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
       }
     
     if(clustertrigger) {
-      parallel.exists = require("parallel")
+      parallel.exists = requireNamespace("parallel")
       if (!parallel.exists) {
         stop("The 'cluster' feature cannot be used unless the package 'parallel' can be loaded.")
       }
@@ -978,7 +978,7 @@ GenMatch <- function(Tr, X, BalanceMatrix=X, estimand="ATT", M=1,
           do.max <- TRUE
       }
 
-    rr <- genoud(genoudfunc, nvars=nvars, starting.values=starting.values,
+    rr <- rgenoud::genoud(genoudfunc, nvars=nvars, starting.values=starting.values,
                  pop.size=pop.size, max.generations=max.generations,
                  wait.generations=wait.generations, hard.generation.limit=hard.generation.limit,
                  Domains=Domains,

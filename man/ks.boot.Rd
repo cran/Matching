@@ -41,9 +41,10 @@ ks.boot(Tr, Co, nboots=1000, alternative = c("two.sided","less","greater"),
   \emph{Journal of Statistical Software} 42(7): 1-52.
   \url{http://www.jstatsoft.org/v42/i07/}
 
-  Diamond, Alexis and Jasjeet S. Sekhon. Forthcoming. "Genetic Matching for
+  Diamond, Alexis and Jasjeet S. Sekhon. 2013. "Genetic Matching for
   Estimating Causal Effects: A General Multivariate Matching Method for
-  Achieving Balance in Observational Studies.'' \emph{Review of Economics and Statistics}.
+  Achieving Balance in Observational Studies.'' \emph{Review of
+  Economics and Statistics}.  95 (3): 932--945.
   \url{http://sekhon.berkeley.edu/papers/GenMatch.pdf}
   
   Abadie, Alberto.  2002.  ``Bootstrap Tests for Distributional Treatment

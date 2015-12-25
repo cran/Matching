@@ -27,8 +27,7 @@
   Two demos are provided which use this dataset.  The first,
   \code{DehejiaWahba}, replicates one of the models from Dehejia and
   Wahba (1999).  The second demo, \code{AbadieImbens}, replicates the
-  models produced by Abadie and Imbens
-  \url{http://elsa.berkeley.edu/~imbens/matlab/lalonde_exper_04feb2.m}.
+  models produced by Abadie and Imbens in their Matlab code. 
   Many of these models are found to produce good balance for the Lalonde
   data.
   }

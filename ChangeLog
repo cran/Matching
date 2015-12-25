@@ -1,5 +1,19 @@
 Change Log for public releases:
 
+2015-12-25 Version: 4.9-2
+	* Minor version number increased because of duplicate posting on
+	CRAN.
+
+2015-12-25 Version: 4.9-1
+	* NAMESPACES: Improve imports
+
+2015-07-18 Version: 4.9-0
+	* Matching.R: balance(): the standardized pooled difference now
+	uses the pooled variance as in Rosenbaum and Rubin (1985), instead
+	of the total variance. This is not printed by default by
+	MatchBalance(). One can obtain this statistic from directly
+	calling balanceUV().
+
 2013-06-28 Version: 4.8-3.4
 	* configure: Check for compilers before AC_PROG_CC
 	* configure.ac: Check for compilers before AC_PROG_CC

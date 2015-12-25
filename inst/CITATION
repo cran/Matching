@@ -23,14 +23,16 @@ citEntry(header="To refer to the theory on which this package is based:",
   title = "Genetic Matching for Estimating Causal Effects: A General Multivariate Matching Method for Achieving Balance in Observational Studies",
   author  = personList(as.person("Alexis Diamond"),as.person("Jasjeet S. Sekhon")),
   journal = "Review of Economics and Statistics",
-  year = "Forthcoming",
+  volume = "95",
+  number = "3",
+  pages = "932--945",
+  year = "2013",
   url  = "http://sekhon.berkeley.edu/papers/GenMatch.pdf", 
 
   textVersion  =
   paste("Alexis Diamond and Jasjeet S. Sekhon",
         "Genetic Matching for Estimating Causal Effects: A General Multivariate Matching Method for Achieving Balance in Observational Studies.",
-        "Review of Economics and Statistics.",
-	"Forthcoming.")
+        "Review of Economics and Statistics. 95 (3): 932--945. 2013.")
 )
 
 citEntry(header="Further developing the theory and practice:",

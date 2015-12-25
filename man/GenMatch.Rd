@@ -298,76 +298,77 @@ GenMatch(Tr, X, BalanceMatrix=X, estimand="ATT", M=1, weights=NULL,
     be matched.  \cr
 
     Exclusion restriction are even more common.  For example, if we want
-    to exclude the observation pair 4 and 20 and
-    the pair 6 and 55 from being matched, the restrict matrix would be:
-    \code{restrict=rbind(c(4,20,-1),c(6,55,-1))}}
-  \item{cluster}{This can either be an object of the 'cluster' class
-    returned by one of the \code{\link[parallel]{makeCluster}} commands in
-    the \code{parallel} package or a vector of machine names so that \code{GenMatch} can
-    setup the cluster automatically. If it is the latter, the vector should
-    look like: \cr
-    \code{c("localhost","musil","musil","deckard")}.\cr
-    This vector would create a cluster with four nodes: one on the
-    localhost another on "deckard" and two on the machine named
-    "musil".  Two nodes on a given machine make sense if the machine has two or more
-    chips/cores.  \code{GenMatch} will setup a SOCK cluster by a call to
-    \code{\link[parallel]{makePSOCKcluster}}.  This will require the user
-    to type in her password for each node as the cluster is by default
-    created via \code{ssh}.  One can add on usernames to the machine
-    name if it differs from the current shell: "username@musil".  Other
-    cluster types, such as PVM and MPI,
-    which do not require passwords, can be created by directly calling
+    to exclude the observation pair 4 and 20 and the pair 6 and 55 from
+    being matched, the restrict matrix would be:
+    \code{restrict=rbind(c(4,20,-1),c(6,55,-1))}} \item{cluster}{This
+    can either be an object of the 'cluster' class returned by one of
+    the \code{\link[parallel]{makeCluster}} commands in the
+    \code{parallel} package or a vector of machine names so that
+    \code{GenMatch} can setup the cluster automatically. If it is the
+    latter, the vector should look like: \cr
+    \code{c("localhost","musil","musil","deckard")}.\cr This vector
+    would create a cluster with four nodes: one on the localhost another
+    on "deckard" and two on the machine named "musil".  Two nodes on a
+    given machine make sense if the machine has two or more chips/cores.
+    \code{GenMatch} will setup a SOCK cluster by a call to
+    \code{\link[parallel]{makePSOCKcluster}}.  This will require the
+    user to type in her password for each node as the cluster is by
+    default created via \code{ssh}.  One can add on usernames to the
+    machine name if it differs from the current shell: "username@musil".
+    Other cluster types, such as PVM and MPI, which do not require
+    passwords, can be created by directly calling
     \code{\link[parallel]{makeCluster}}, and then passing the returned
-    cluster object to \code{GenMatch}. For an example of how to manually setup up
-    a cluster with a direct call to \code{\link[parallel]{makeCluster}} see
-    \url{http://sekhon.berkeley.edu/matching/R/cluster_manual.R}.
-    For an example of how to get around a firewall by ssh tunneling see:
+    cluster object to \code{GenMatch}. For an example of how to manually
+    setup up a cluster with a direct call to
+    \code{\link[parallel]{makeCluster}} see
+    \url{http://sekhon.berkeley.edu/matching/R/cluster_manual.R}.  For
+    an example of how to get around a firewall by ssh tunneling see:
     \url{http://sekhon.berkeley.edu/matching/R/cluster_manual_tunnel.R}.}
-  \item{balance}{This logical flag controls if load balancing is done
+    \item{balance}{This logical flag controls if load balancing is done
     across the cluster.  Load balancing can result in better cluster
     utilization; however, increased communication can reduce
     performance.  This option is best used if each individual call to
     \code{\link[Matching]{Match}} takes at least several minutes to
-    calculate or if the
-    nodes in the cluster vary significantly in their performance. If
-    cluster==FALSE, this option has no effect.}  
-  \item{...}{Other options which are passed on to \code{\link[rgenoud]{genoud}}.}
-}
-\value{
-  \item{value}{The fit values at the solution.  By default, this is a
-  vector of p-values sorted from the smallest to the largest.  There
-  will generally be twice as many p-values as there are variables in
-  \code{BalanceMatrix}, unless there are dichotomous variables in this
-  matrix.  There is one p-value for each covariate in
-  \code{BalanceMatrix} which is the result of a paired t-test and
-  another p-value for each non-dichotomous variable in
-  \code{BalanceMatrix} which is the result of a Kolmogorov-Smirnov
-  test. Recall that these p-values cannot be interpreted as hypothesis
-  tests.  They are simply measures of balance.}
-  \item{par}{A vector of the weights given to each variable in \code{X}.}
-  \item{Weight.matrix}{A matrix whose diagonal corresponds to the weight
-    given to each variable in \code{X}.  This object corresponds to the
-    \code{Weight.matrix} in the \code{\link{Match}} function.}
-  \item{matches}{A matrix where the first column contains the row
-    numbers of the treated observations in the matched dataset. The second
-    column contains the row numbers of the control observations. And the
-    third column contains the weight that each matched pair is given.
-    These columns correspond respectively to the \code{index.treated},
-    \code{index.control} and \code{weights} objects which are returned by
-    \code{\link{Match}}.}
-  \item{ecaliper }{The size of the enforced caliper on the scale of the
-    \code{X} variables.  This object has the same length as the number of
-    covariates in \code{X}.}
-}
-\references{
-  Sekhon, Jasjeet S. 2011.  "Multivariate and Propensity Score
-  Matching Software with Automated Balance Optimization.''
-  \emph{Journal of Statistical Software} 42(7): 1-52.
-  \url{http://www.jstatsoft.org/v42/i07/}
+    calculate or if the nodes in the cluster vary significantly in their
+    performance. If cluster==FALSE, this option has no effect.}
+    \item{...}{Other options which are passed on to
+    \code{\link[rgenoud]{genoud}}.}  } \value{ \item{value}{The fit
+    values at the solution.  By default, this is a vector of p-values
+    sorted from the smallest to the largest.  There will generally be
+    twice as many p-values as there are variables in
+    \code{BalanceMatrix}, unless there are dichotomous variables in this
+    matrix.  There is one p-value for each covariate in
+    \code{BalanceMatrix} which is the result of a paired t-test and
+    another p-value for each non-dichotomous variable in
+    \code{BalanceMatrix} which is the result of a Kolmogorov-Smirnov
+    test. Recall that these p-values cannot be interpreted as hypothesis
+    tests.  They are simply measures of balance.}  \item{par}{A vector
+    of the weights given to each variable in \code{X}.}
+    \item{Weight.matrix}{A matrix whose diagonal corresponds to the
+    weight given to each variable in \code{X}.  This object corresponds
+    to the \code{Weight.matrix} in the \code{\link{Match}} function.}
+    \item{matches}{A matrix where the first column contains the row
+    numbers of the treated observations in the matched dataset. The
+    second column contains the row numbers of the control
+    observations. And the third column contains the weight that each
+    matched pair is given.  These objects may not correspond
+    respectively to the \code{index.treated}, \code{index.control} and
+    \code{weights} objects which are returned by \code{\link{Match}}
+    because they may be ordered in a different way. Therefore, end users
+    should use the objects returned by \code{\link{Match}} because those
+    are ordered in the way that users expect.}
+  \item{ecaliper }{The
+    size of the enforced caliper on the scale of the \code{X} variables.
+    This object has the same length as the number of covariates in
+    \code{X}.}  } \references{ Sekhon, Jasjeet S. 2011.  "Multivariate
+    and Propensity Score Matching Software with Automated Balance
+    Optimization.''  \emph{Journal of Statistical Software} 42(7): 1-52.
+    \url{http://www.jstatsoft.org/v42/i07/}
   
-  Diamond, Alexis and Jasjeet S. Sekhon. Forthcoming. "Genetic Matching for
-  Estimating Causal Effects: A General Multivariate Matching Method for
-  Achieving Balance in Observational Studies.'' \emph{Review of Economics and Statistics}.
+  Diamond, Alexis and Jasjeet S. Sekhon. 2013. "Genetic
+  Matching for Estimating Causal Effects: A General Multivariate
+  Matching Method for Achieving Balance in Observational Studies.''
+  \emph{Review of Economics and Statistics}.  95 (3): 932--945.
   \url{http://sekhon.berkeley.edu/papers/GenMatch.pdf}
 
   Sekhon, Jasjeet Singh and Walter R. Mebane, Jr. 1998.  "Genetic

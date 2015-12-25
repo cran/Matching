@@ -1378,22 +1378,25 @@ sdiff.pooled  <- function(Tr, Co, weights=rep(1,length(Co)),
       {
         obs.Tr <- sum(weights.Tr)
         obs.Co <- sum(weights.Co)
-        obs.total <- obs.Tr+obs.Co
+#        obs.total <- obs.Tr+obs.Co
         
         mean.Tr <- sum(Tr*weights.Tr)/obs.Tr
         mean.Co <- sum(Co*weights.Co)/obs.Co
         diff  <- mean.Tr - mean.Co
 
 #match Rubin
-        mean.total <- sum(Tr*weights.Tr)/obs.total + sum(Co*weights.Co)/obs.total
-        var.total  <- sum( ( (Tr - mean.total)^2 )*weights.Tr)/(obs.total-1) +
-          sum( ( (Co - mean.total)^2 )*weights.Co)/(obs.total-1)
+#        mean.total <- sum(Tr*weights.Tr)/obs.total + sum(Co*weights.Co)/obs.total
+#        var.total  <- sum( ( (Tr - mean.total)^2 )*weights.Tr)/(obs.total-1) +
+#          sum( ( (Co - mean.total)^2 )*weights.Co)/(obs.total-1)
+        var.pooled <- ( sum( ( (Tr - mean.Tr)^2)*weights.Tr)/(obs.Tr-1) +
+          sum( ( (Co - mean.Co)^2 )*weights.Co)/(obs.Co-1) )/2 
+        
 
-        if(var.total==0 & diff==0)
+        if(var.pooled==0 & diff==0)
           {
             sdiff <- 0
           } else {
-            sdiff <- 100*diff/sqrt( var.total/2 )
+            sdiff <- 100*diff/sqrt( var.pooled )
           }
         
       } else{
@@ -1402,16 +1405,22 @@ sdiff.pooled  <- function(Tr, Co, weights=rep(1,length(Co)),
         mean.Co <- sum(Co*weights)/sum(weights)
 
 #match Rubin
-        obs <- sum(weights)*2
-        mean.total <- (mean.Tr + mean.Co)/2
-        var.total  <- sum( ( (Tr - mean.total)^2 )*weights)/(obs-1) +
-          sum( ( (Co - mean.total)^2 )*weights)/(obs-1)
+        obs <- sum(weights)
 
-        if(var.total==0 & diff==0)
+#       obs for total        
+#       obs = sum(weights)*2
+#        mean.total <- (mean.Tr + mean.Co)/2
+#        var.total  <- sum( ( (Tr - mean.total)^2 )*weights)/(obs-1) +
+#          sum( ( (Co - mean.total)^2 )*weights)/(obs-1)
+        
+        var.pooled  <- ( sum( ( (Tr - mean.Tr)^2 )*weights)/(obs-1) +
+          sum( ( (Co - mean.Co)^2 )*weights)/(obs-1) )/2
+
+        if(var.pooled==0 & diff==0)
           {
             sdiff <- 0
           } else {
-            sdiff <- 100*diff/sqrt(var.total/2)
+            sdiff <- 100*diff/sqrt(var.pooled)
           }        
       }
 
