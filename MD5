@@ -1,11 +1,12 @@
 ec6b5829dd4e7882beaba7c47b0d4796 *ChangeLog
-69e896f1333dba86833f94389158ffd6 *DESCRIPTION
-24cb9de2a7b3dc9e871158fe0a821482 *NAMESPACE
+ee0cfc05fd85f1ae849a5b5561732992 *DESCRIPTION
+845bc613175e07a602c9bf7af27fc0e7 *NAMESPACE
 1f2509f5a21b31e54aaae8e306e0c223 *R/AI.R
 3258819f0958393d804c697806f63597 *R/GenBalance.R
 296198264207d0a8d1121d03a351fc99 *R/GenMatching.R
 afefd28590c34bfd9a79e4911946dcdd *R/Matchby.R
 13aa4e0aa2aa52009ddbc177cfd605e4 *R/Matching.R
+542c5d277638c61a3b61d70878feca71 *README.md
 cc252abeaa229f4a7383795668edaefa *cleanup
 cdbd4293f5310cb1fdcb9562d92a70ff *configure
 f0eb37f10acce35525dde0f0f77cdaae *configure.ac
@@ -52,9 +53,10 @@ add4afc432903b0b1af9c8a67e1fd6a9 *src/Makevars.win
 23412ef7cadbc99d334bccb681475c22 *src/cblas_dasum.c
 5144f435129eeaa64ba77a2e6df79e9b *src/cblas_dgemm.c
 ff53079d13f29acecc79eae9f0c60c66 *src/cblas_dscal.c
-db94d449957d9ba946d5982c9383f0c5 *src/matching.cc
+a0eaa4b79064135b17da1da7897fc77c *src/init.c
+7db587f98b3821a59d98a0b8697161f8 *src/matching.cc
 7151f4226f9af6c3194b3cfe2f7711df *src/matching.h
-8a602fa692a839b4c4911709a2d5d82a *src/scythematrix.cc
+df015a1862aa65d7ad98de676894c0aa *src/scythematrix.cc
 d87a64aece7c9f3d29ef9abfff89caf5 *src/scythematrix.h
 285d577d455850cc6629f4be93b2b86b *tests/AbadieImbens.R
 03375e3425adc5c43ee6bd932311b77b *tests/AbadieImbens.Rout.save
