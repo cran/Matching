@@ -1,5 +1,5 @@
 ec6b5829dd4e7882beaba7c47b0d4796 *ChangeLog
-92be4322db9738315bd58e50dc1102ef *DESCRIPTION
+6306a321423aa1fa7396ab8704f7b1ce *DESCRIPTION
 845bc613175e07a602c9bf7af27fc0e7 *NAMESPACE
 1f2509f5a21b31e54aaae8e306e0c223 *R/AI.R
 3258819f0958393d804c697806f63597 *R/GenBalance.R
@@ -58,11 +58,11 @@ a0eaa4b79064135b17da1da7897fc77c *src/init.c
 7151f4226f9af6c3194b3cfe2f7711df *src/matching.h
 df015a1862aa65d7ad98de676894c0aa *src/scythematrix.cc
 d87a64aece7c9f3d29ef9abfff89caf5 *src/scythematrix.h
-285d577d455850cc6629f4be93b2b86b *tests/AbadieImbens.R
-03375e3425adc5c43ee6bd932311b77b *tests/AbadieImbens.Rout.save
-c5f80f1f6362f122bac3c3567c5a63d7 *tests/DehejiaWahba.R
-5d3a8c271f87bdbbf03969c392385c1a *tests/DehejiaWahba.Rout.save
-f590b354b221d87af5d99a5ad5efcda3 *tests/GenMatch.R
-cbed33f3da57ab0c81399c750c36cd2b *tests/GenMatch.Rout.save
-197eae32e8bb3ada8fca780bc56da52e *tests/Matchby.R
-88dcb4e30893166439b110bb231ad4c7 *tests/Matchby.Rout.save
+e0b5ac043bbd06c87c539f54956e4391 *tests/AbadieImbens.R
+17749b74b75d0369c47179743a11877d *tests/AbadieImbens.Rout.save
+ff4b23259c7bb3b98a3b31a357fba63e *tests/DehejiaWahba.R
+a15a445f1a90d274167e44031acd767f *tests/DehejiaWahba.Rout.save
+89edfc0781bdfbbed66c624f0ce82707 *tests/GenMatch.R
+cb58599421a809595b1f06f362f56d90 *tests/GenMatch.Rout.save
+3d7d18b673525f02a0427d1d2fbd2c9b *tests/Matchby.R
+dd5eb05a969b09610d244083ca6cb5b6 *tests/Matchby.Rout.save
