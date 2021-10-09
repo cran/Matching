@@ -1,5 +1,5 @@
 ec6b5829dd4e7882beaba7c47b0d4796 *ChangeLog
-363b4cfb336b53d5ab35ce270d062956 *DESCRIPTION
+e9fa712cfacb1cccfcf3080740f2588c *DESCRIPTION
 845bc613175e07a602c9bf7af27fc0e7 *NAMESPACE
 1f2509f5a21b31e54aaae8e306e0c223 *R/AI.R
 3258819f0958393d804c697806f63597 *R/GenBalance.R
@@ -7,6 +7,7 @@ be7daa3b0dccaf696b18d124a74b6c6d *R/GenMatching.R
 afefd28590c34bfd9a79e4911946dcdd *R/Matchby.R
 ec8c2b55a406a4211d2f5449e3c089db *R/Matching.R
 d2fd41ec1b4b171256c2e770fcbc09aa *README.md
+b2b83cc13c61f71bbe06e7ca79661dc2 *build/partial.rdb
 cc252abeaa229f4a7383795668edaefa *cleanup
 cdbd4293f5310cb1fdcb9562d92a70ff *configure
 f0eb37f10acce35525dde0f0f77cdaae *configure.ac
@@ -16,7 +17,7 @@ a828d7c18cd6973954a10765fa448185 *data/lalonde.rda
 d884e68217519144b6f45e0bbe39f1cf *demo/AbadieImbens.R
 611fc9c09770b3883fda2899fdb48f22 *demo/DehejiaWahba.R
 a80aed093ad9f83a31eef7cf0d98042f *demo/GerberGreenImai.R
-29de06a6b9374426700e774f534ea249 *inst/CITATION
+d4cea6666406a9186a3a2941de0e5432 *inst/CITATION
 89787966f25136da01087cfd235e0fcc *inst/extras/ICC
 ef61b9e05d4127d1686ef30fd42d7d1e *inst/extras/Makevars.win.gcc3
 33d513feaa81a98ec9df542141eca8ac *inst/extras/Makevars.win.gcc4
@@ -34,15 +35,15 @@ c3c3703a877c4f33bee259a92c9b18e8 *inst/extras/makefile.icc
 387d63291ef9f32e63ee3fecdfae3885 *inst/extras/makefile.osx.in
 6d92c6dd98b5b21fe18ea05344cdd19f *inst/extras/makefile.sun
 9166b6b448695e22da52fd8ec3121d6f *inst/extras/malloc.c
-78ed4ee2f3496ee2df2e87b4dc831ed1 *man/GenMatch.Rd
+fd67a12f402646d03b2059e6cba583c8 *man/GenMatch.Rd
 d3481e32ea95bb214412ded663cc6c77 *man/GerberGreenImai.Rd
-4bf227f7da8d08e750214994accecd48 *man/Match.Rd
-dfdf53fec6ac6bc7004252d61250fecf *man/MatchBalance.Rd
-af83704fc35c4c5e1be130d567574820 *man/Matchby.Rd
-5c2c174cb847ec4ef0d0d9f285e2a1d1 *man/balanceUV.Rd
-568e4cf548290ca8abad5ab5671775bb *man/ks.boot.Rd
+64b895b23c95ca793bfd711ab37e47b5 *man/Match.Rd
+e9ef67f4bd89e18344c420a4a805912d *man/MatchBalance.Rd
+77ffbfcd77f6230b3ff3475580f1e53b *man/Matchby.Rd
+60499c8fc314fd12dacafdaf5ba0e9aa *man/balanceUV.Rd
+3b72c12647d9e7715bd27e2cefa4a699 *man/ks.boot.Rd
 369f9a6c97c7d29f7d62afae11c932cf *man/lalonde.Rd
-21e57d904008d7cef6cec41869a87ffe *man/qqstats.Rd
+5eea14515e8d01a0aae6ddf6296a94b7 *man/qqstats.Rd
 33671f2b88627bb8190ad73e8928173c *man/summary.Match.Rd
 fca6afc7bb6a3ee81db3337ed7940c8c *man/summary.Matchby.Rd
 a7b537fbd89ff83d66f273fb39a8077c *man/summary.balanceUV.Rd
