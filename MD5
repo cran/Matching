@@ -1,13 +1,13 @@
 ec6b5829dd4e7882beaba7c47b0d4796 *ChangeLog
-b7f091e4bf5d96c87e4dfc21f7b88919 *DESCRIPTION
+92c8166b7e6addf3fb571f304b38167b *DESCRIPTION
 845bc613175e07a602c9bf7af27fc0e7 *NAMESPACE
 1f2509f5a21b31e54aaae8e306e0c223 *R/AI.R
 3258819f0958393d804c697806f63597 *R/GenBalance.R
 be7daa3b0dccaf696b18d124a74b6c6d *R/GenMatching.R
-afefd28590c34bfd9a79e4911946dcdd *R/Matchby.R
-ec8c2b55a406a4211d2f5449e3c089db *R/Matching.R
+a0ff682e63fd3e3e19f0486c042490bb *R/Matchby.R
+6c92f82dd6d5148bd3f1ffe75e399a77 *R/Matching.R
 7a16cdc7ead6b27fb86ebc25b4ffced5 *README.md
-554a148b1a9b063ddc796184538259f8 *build/partial.rdb
+0c6ad5b3446721162c89589e8077ab1c *build/partial.rdb
 e9c387ae58b8769a9227428e79d429d3 *data/GerberGreenImai.rda
 a828d7c18cd6973954a10765fa448185 *data/lalonde.rda
 649a1baa0133c3c29e17832bc9006b30 *demo/00Index
@@ -33,7 +33,7 @@ c3c3703a877c4f33bee259a92c9b18e8 *inst/extras/makefile.icc
 6d92c6dd98b5b21fe18ea05344cdd19f *inst/extras/makefile.sun
 9166b6b448695e22da52fd8ec3121d6f *inst/extras/malloc.c
 fd67a12f402646d03b2059e6cba583c8 *man/GenMatch.Rd
-d3481e32ea95bb214412ded663cc6c77 *man/GerberGreenImai.Rd
+5c56f3b24448d1685734cf256ef2a7a8 *man/GerberGreenImai.Rd
 64b895b23c95ca793bfd711ab37e47b5 *man/Match.Rd
 e9ef67f4bd89e18344c420a4a805912d *man/MatchBalance.Rd
 77ffbfcd77f6230b3ff3475580f1e53b *man/Matchby.Rd
