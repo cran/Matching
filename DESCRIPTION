@@ -1,6 +1,6 @@
 Package: Matching
-Version: 4.10-14
-Date: 2023-09-13
+Version: 4.10-15
+Date: 2024-10-14
 Title: Multivariate and Propensity Score Matching with Balance
         Optimization
 Authors@R: c(
@@ -20,8 +20,8 @@ License: GPL-3
 URL: https://github.com/JasjeetSekhon/Matching
 NeedsCompilation: yes
 RoxygenNote: 7.2.1
-Packaged: 2023-09-14 02:08:55 UTC; theosaa
+Packaged: 2024-10-14 13:11:12 UTC; theosaa
 Author: Jasjeet Singh Sekhon [aut, cre],
   Theo Saarinen [aut]
 Repository: CRAN
-Date/Publication: 2023-09-14 09:20:08 UTC
+Date/Publication: 2024-10-14 14:20:02 UTC
